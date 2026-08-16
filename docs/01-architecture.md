@@ -11,7 +11,7 @@ Every choice below was screened against four tests: **cheap at scale**, **fast**
 | Hosting | **Vercel** (Hobby → Pro $20) | Zero-ops serverless; school traffic is light JSON, well within Pro limits when files bypass it | $0 → $20 |
 | Database | **Neon Postgres** | Scale-to-zero fits school hours (nights/weekends/holidays idle); branching gives free staging DBs | $0 → ~$25 at 20 schools |
 | ORM | **Drizzle ORM** *(recommended — decision #2)* | SQL-shaped, tiny runtime, fastest cold starts on serverless, first-class RLS support; Prisma is the video's choice and fine, but heavier per-invocation | $0 |
-| Auth | **Better Auth** *(recommended — decision #1)* | Self-hosted in our own Postgres → **$0 forever, any user count**. Per-MAU vendors (Clerk) break our margin: 20 schools ≈ 15–25k MAUs ≈ $100–$300/mo for something we can own | $0 |
+| Auth | **Better Auth** *(recommended — decision #1)* | Self-hosted in our own Postgres → **$0 forever, any user count**. Email/password **+ Google sign-in** (built-in social provider; needs a free Google OAuth client — see HANDOFF.md). Per-MAU vendors (Clerk) break our margin: 20 schools ≈ 15–25k MAUs ≈ $100–$300/mo for something we can own | $0 |
 | File storage | **Cloudflare R2** | $0 egress; presigned direct upload/download keeps Vercel bill flat | $0 → ~$5 |
 | Payments | **Paystack** *(recommended — decision #3)* | Mobile money + cards in Ghana; subscriptions API; also usable later for schools collecting fees from parents | % per transaction only |
 | Email | **Resend** | 3k emails/mo free; transactional only (invites, receipts, resets) | $0 → $20 |

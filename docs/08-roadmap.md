@@ -17,6 +17,12 @@ so they come first even though they're invisible to customers.
 
 **Exit test:** two dummy schools on two subdomains, different module sets, provably isolated data.
 
+> **HANDOFF.md** — maintained from Phase 0 and finalized at deployment: every credential,
+> account, and DNS step that only the owner can do (domain nameservers + wildcard, Neon, R2,
+> Google OAuth client, Paystack keys + webhook, Resend, SMS gateway), each with exact
+> instructions and the env var it fills. The app runs locally with none of them (Docker
+> Postgres, auth without Google, fake payment mode) so the build never blocks on credentials.
+
 ## Phase 1 — Core SIS (the Starter plan exists)
 
 - Academic structure: years, terms, levels, classes, subjects.

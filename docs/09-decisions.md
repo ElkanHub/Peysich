@@ -16,6 +16,11 @@ and building starts.
 **Recommendation: A.** The video used Clerk because it's a tutorial for one school under the free
 tier. We're a multi-tenant platform; user count is our growth metric and shouldn't be a cost metric.
 
+**Confirmed requirement:** sign-in methods are **email/password + Google**. Better Auth ships a
+Google provider out of the box (free; needs a Google OAuth client ID/secret — listed in HANDOFF.md).
+Google accounts link to existing users by verified email. School-created student/parent accounts
+without email still use username/password — Google is an addition, not a replacement.
+
 ## 2. ORM
 
 | Option | Trade-off |

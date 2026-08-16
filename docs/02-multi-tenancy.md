@@ -33,6 +33,28 @@ they live above tenants and are reachable only from `(platform)` routes.
 - Custom domains (`portal.stmarys.edu.gh`) become a **premium/custom plan perk** later — Vercel
   supports it natively.
 
+### How subdomains actually work (no per-school DNS work — ever)
+
+Subdomains are **not** created per school. There is one wildcard record, set up once, and after
+that a "new subdomain" is nothing but a row in our `schools` table:
+
+1. **One-time setup (you, ~15 minutes, in HANDOFF.md):** point the domain's nameservers at
+   Vercel (wildcard domains on Vercel require their nameservers), then add `*.peysich.com` as a
+   domain on the Vercel project. Vercel issues and renews a wildcard TLS certificate
+   automatically. *(Alternative if you prefer keeping DNS at Cloudflare: proxy `*` through
+   Cloudflare to Vercel — either works; pick one in HANDOFF.md.)*
+2. **From then on, DNS matches every subdomain automatically.** `anything.peysich.com` already
+   resolves to our app — whether or not a school exists with that slug.
+3. **The app decides what a subdomain means.** Middleware reads the `Host` header on each
+   request, extracts the slug (`stmarys` from `stmarys.peysich.com`), looks it up in `schools`
+   (cached), and either serves that tenant's `(school)` routes or shows a "school not found"
+   page. Reserved slugs (`www`, `admin`, `api`, `app`, `mail`, …) are blocked at signup.
+4. **School signup = one DB insert.** The subdomain is live the same second the row exists.
+   Zero DNS work, zero certificates, zero deploys, zero involvement from you per school.
+
+Local dev mirrors this with `*.localhost` (e.g. `stmarys.localhost:3000`), which browsers
+resolve natively, so tenancy is exercised on every dev machine, not just production.
+
 ## The tenant lifecycle
 
 ```mermaid
