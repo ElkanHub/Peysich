@@ -91,6 +91,27 @@ dashboard automatically reflects the switchboard:
   (auto-save only for toggles) and unsaved-changes guard.
 - **Danger zone** styled and separated (archive class, reset term…), each behind typed confirmation.
 
+## Branded deliverables (school-facing outputs)
+
+Everything a school prints or sends carries **their** identity, not ours — one shared
+`SchoolBrand` config (logo, name, motto, address, contacts, primary color, signature lines)
+set in Settings → Branding and consumed by every renderer:
+
+- **Report cards (PDF)**: positioned as the school's **digital report card** — usable as their
+  official card, or alongside a physical one. Template is configurable per school: brand header,
+  toggleable sections (attendance summary, position, promotion status, next-term dates, fee
+  memo), signature blocks. Schools that keep their own external card simply don't publish ours —
+  results remain viewable in-app either way. Ours must look professional enough to *become*
+  the official card.
+- **Invoices & receipts (PDF/print)**: school brand header, itemised, numbered, with payment
+  method and balance — office-printable.
+- **Emails**: school-branded template (logo + colors) by default for all school→parent/staff
+  mail; Peysich branding only on platform-level mail (billing, system notices).
+- **SMS**: sender ID = school's registered ID where the gateway allows it; message templates
+  prefixed with the school's short name.
+- All rendered via one HTML→PDF pipeline (server-side, output to R2), so a new deliverable type
+  is a new template, not new infrastructure.
+
 ## Accessibility & i18n baseline
 
 - Keyboard navigable, visible focus rings, WCAG AA contrast (checked once at token level —
