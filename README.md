@@ -20,6 +20,7 @@ Low-cost at any scale, fast, modular, self-serve subscriptions.
 | 7 | [docs/07-cost-economics.md](docs/07-cost-economics.md) | Infra cost vs revenue vs profit at every stage |
 | 8 | [docs/08-roadmap.md](docs/08-roadmap.md) | Build order — phases, what ships when |
 | 9 | [docs/09-decisions.md](docs/09-decisions.md) | **⬅ The calls only you can make. Start or end here.** |
+| 10 | [docs/10-role-flows.md](docs/10-role-flows.md) | What each role actually does in the app, flow by flow, and how pages are tuned for them |
 
 ## The one-paragraph pitch
 
