@@ -11,7 +11,7 @@ export default function SignIn() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await authClient.signIn.email({ email, password, callbackURL: "/" });
+    const { error } = await authClient.signIn.email({ email, password, callbackURL: "/go" });
     if (error) setError(error.message ?? "Sign-in failed");
   }
 

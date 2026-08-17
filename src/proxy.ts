@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
-const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/t/", "/s/"];
+const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/t/", "/s/", "/go"];
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
