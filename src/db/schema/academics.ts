@@ -71,3 +71,19 @@ export const reportCards = pgTable("report_cards", {
   }>().notNull(),
   publishedAt: timestamp("published_at"),
 }, (t) => [uniqueIndex("report_student_term").on(t.studentId, t.termId)]);
+
+// ── preschool skills-based assessment (doc 05: a mode, not a module) ──
+export const skillDomains = pgTable("skill_domains", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  name: text("name").notNull(), sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const skillRatings = pgTable("skill_ratings", {
+  schoolId: sid(),
+  studentId: text("student_id").notNull(),
+  termId: text("term_id").notNull(),
+  domainId: text("domain_id").notNull().references(() => skillDomains.id, { onDelete: "cascade" }),
+  rating: text("rating").notNull(), // emerging | developing | secure
+  ratedBy: text("rated_by").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [uniqueIndex("skill_pk").on(t.studentId, t.termId, t.domainId)]);

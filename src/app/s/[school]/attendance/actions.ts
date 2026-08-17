@@ -30,17 +30,18 @@ export async function saveRegister(slug: string, classId: string, f: FormData) {
   // absence alerts → guardians (the feature that sells to parents, doc 10)
   const absent = ids.filter((sidv) => String(f.get(`st_${sidv}`)) === "absent");
   if (absent.length) {
-    const { guardians, studentGuardians, smsLog } = await import("@/db/schema");
+    const { guardians, studentGuardians } = await import("@/db/schema");
     const gs = await db.select({ phone: guardians.phone, sid: studentGuardians.studentId })
       .from(studentGuardians)
       .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
       .where(inArray(studentGuardians.studentId, absent));
     const names = new Map((await db.select().from(students)
       .where(inArray(students.id, absent))).map((s) => [s.id, s.firstName]));
-    if (gs.length) await db.insert(smsLog).values(gs.map((g) => ({
-      id: uid(), schoolId: school.id, to: g.phone, kind: "absence",
+    const { sendSmsBatch } = await import("@/lib/notify");
+    await sendSmsBatch(gs.map((g) => ({
+      schoolId: school.id, to: g.phone, kind: "absence",
+      senderId: school.branding.smsSenderId,
       body: `${names.get(g.sid)} was marked absent today at ${school.name}. Contact the office if unexpected.`,
-      status: process.env.SMS_API_KEY ? "sent" : "queued",
     })));
   }
   revalidatePath(`/attendance`);

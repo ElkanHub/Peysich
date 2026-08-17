@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { assignments, classes, subjects, submissions } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
+import Link from "next/link";
 import { createHomework } from "./actions";
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls } from "@/ui/kit";
 
@@ -33,7 +34,7 @@ export default async function Homework({ params }: { params: Promise<{ school: s
       <DataTable head={["Title", "Class", "Subject", "Due", "Submissions"]}>
         {rows.map((r, i) => (
           <Tr key={r.id}>
-            <Td className="font-medium">{r.title}</Td>
+            <Td className="font-medium"><Link href={`/homework/${r.id}`} className="text-primary underline-offset-2 hover:underline">{r.title}</Link></Td>
             <Td>{r.className}</Td><Td>{r.subject}</Td>
             <Td>{r.dueDate}</Td><Td>{counts[i]}</Td>
           </Tr>

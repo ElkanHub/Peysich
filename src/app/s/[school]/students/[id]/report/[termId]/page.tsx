@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { reportCards, students, classes, terms, academicYears } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
+import { assertParentOf, getStudentSelf } from "@/core/portal";
 
 /** School-branded digital report card — print-optimized (browser print → PDF).
  *  Server PDF→R2 pipeline swaps in at deploy without changing this template. */
@@ -15,6 +16,8 @@ export default async function ReportCard({ params }: {
     eq(reportCards.studentId, id), eq(reportCards.termId, termId),
     eq(reportCards.schoolId, school.id)));
   if (!rc || (!rc.published && !["admin", "platform_admin"].includes(user.role))) notFound();
+  if (user.role === "parent" && !(await assertParentOf(school.id, user.id, id))) notFound();
+  if (user.role === "student" && (await getStudentSelf(school.id, user.id))?.id !== id) notFound();
   const [s] = await db.select().from(students).where(eq(students.id, id));
   const [cls] = s?.classId ? await db.select().from(classes).where(eq(classes.id, s.classId)) : [null];
   const [t] = await db.select().from(terms).where(eq(terms.id, termId));

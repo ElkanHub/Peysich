@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { students, classes, guardians, studentGuardians, enrollments, academicYears } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { Card, PageHeader } from "@/ui/kit";
+import { IssueLoginButton } from "@/ui/issue-login";
 
 export default async function StudentDetail({ params }: {
   params: Promise<{ school: string; id: string }>;
@@ -36,6 +37,9 @@ export default async function StudentDetail({ params }: {
             <div className="flex justify-between"><dt className="text-muted-foreground">Sex</dt><dd className="capitalize">{s.sex}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Date of birth</dt><dd>{s.dob ?? "—"}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Admitted</dt><dd>{s.createdAt.toISOString().slice(0, 10)}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">Student login</dt>
+              <dd>{s.userId ? <span className="text-success">active</span>
+                : <IssueLoginButton slug={slug} kind="student" id={s.id} />}</dd></div>
           </dl>
         </Card>
         <Card>

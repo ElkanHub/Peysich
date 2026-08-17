@@ -1,20 +1,22 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { academicYears, terms, levels, classes, subjects } from "@/db/schema";
+import { academicYears, terms, levels, classes, subjects, staff } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { LEVEL_TEMPLATE } from "@/lib/levels";
 import { createYear, setCurrentTerm, setupLevels, addClass, saveBranding, promoteAll } from "../actions";
+import { setClassTeacher } from "../accounts-actions";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 
 export default async function Settings({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
   const { school } = await requireSchool(slug, ["admin"]);
-  const [yrs, tms, lvs, cls, subs] = await Promise.all([
+  const [yrs, tms, lvs, cls, subs, tchs] = await Promise.all([
     db.select().from(academicYears).where(eq(academicYears.schoolId, school.id)),
     db.select().from(terms).where(eq(terms.schoolId, school.id)),
     db.select().from(levels).where(eq(levels.schoolId, school.id)).orderBy(levels.sortOrder),
     db.select().from(classes).where(eq(classes.schoolId, school.id)),
     db.select().from(subjects).where(eq(subjects.schoolId, school.id)),
+    db.select().from(staff).where(eq(staff.schoolId, school.id)),
   ]);
   const b = school.branding;
 
@@ -60,9 +62,18 @@ export default async function Settings({ params }: { params: Promise<{ school: s
           </form>
         ) : (
           <div className="mt-3 space-y-2 text-sm">
-            {lvs.map((l) => (
-              <p key={l.id}><span className="font-medium">{l.name}:</span>{" "}
-                {cls.filter((c) => c.levelId === l.id).map((c) => c.name).join(", ") || "—"}</p>
+            {cls.map((c) => (
+              <div key={c.id} className="flex items-center justify-between gap-2">
+                <span className="font-medium">{c.name}</span>
+                <form action={setClassTeacher.bind(null, slug, c.id)} className="flex items-center gap-1">
+                  <select name="staffId" defaultValue={c.classTeacherId ?? ""}
+                    className="rounded-md border border-border px-2 py-1 text-xs">
+                    <option value="">No class teacher</option>
+                    {tchs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  <button className="rounded border border-border px-2 py-1 text-xs hover:bg-muted">Set</button>
+                </form>
+              </div>
             ))}
             <form action={addClass.bind(null, slug)} className="mt-3 flex items-end gap-2">
               <Field label="Level">

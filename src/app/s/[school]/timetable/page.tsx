@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { classes, subjects, staff, lessons } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
+import { getStudentSelf } from "@/core/portal";
 import { addLesson, deleteLesson } from "./actions";
 import { Card, Field, PageHeader, inputCls, btnCls } from "@/ui/kit";
 
@@ -14,7 +15,11 @@ export default async function Timetable({ params, searchParams }: {
   const { school: slug } = await params;
   const sp = await searchParams;
   const { school, user } = await requireModule(slug, "timetable");
-  const cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+  let cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+  if (user.role === "student") {
+    const me = await getStudentSelf(school.id, user.id);
+    cls = cls.filter((c) => c.id === me?.classId);
+  }
   const active = cls.find((c) => c.id === sp.c) ?? cls[0];
   if (!active) return <p>Create classes first (Settings).</p>;
   const [subs, tchs, rows] = await Promise.all([

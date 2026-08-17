@@ -91,3 +91,12 @@ export const feePayments = pgTable("fee_payments", {
   recordedBy: text("recorded_by"), // staff id for cash entries
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [index("pay_school").on(t.schoolId, t.createdAt)]);
+
+/** Parent online fee payment intents (reference → invoice to credit on success). */
+export const feeCheckouts = pgTable("fee_checkouts", {
+  reference: text("reference").primaryKey(),
+  schoolId: sid(),
+  invoiceId: text("invoice_id").notNull(),
+  amountPesewas: integer("amount_pesewas").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

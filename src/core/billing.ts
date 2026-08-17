@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { plans, schools, subscriptions } from "@/db/schema";
+import { plans, schools, subscriptions, feeCheckouts, feeInvoices, feePayments } from "@/db/schema";
 import { invalidateModules } from "./entitlements";
 import { uid } from "@/lib/utils";
 
@@ -42,4 +42,22 @@ export async function dunningSweep() {
     if (now > grace) await db.update(schools).set({ status: "suspended" }).where(eq(schools.id, s.id));
     else if (now > latest.periodEnd) await db.update(schools).set({ status: "past_due" }).where(eq(schools.id, s.id));
   }
+}
+
+/** Fulfillment for parent fee payments (webhook + fake-pay). Idempotent. */
+export async function applyFeePayment(reference: string) {
+  const [c] = await db.select().from(feeCheckouts).where(eq(feeCheckouts.reference, reference));
+  if (!c) return;
+  const [existing] = await db.select().from(feePayments).where(eq(feePayments.reference, reference));
+  if (existing) return;
+  const [inv] = await db.select().from(feeInvoices).where(eq(feeInvoices.id, c.invoiceId));
+  if (!inv) return;
+  await db.insert(feePayments).values({
+    id: uid(), schoolId: c.schoolId, invoiceId: c.invoiceId,
+    amountPesewas: c.amountPesewas, method: "momo", reference,
+  });
+  const paid = inv.paidPesewas + c.amountPesewas;
+  await db.update(feeInvoices).set({
+    paidPesewas: paid, status: paid >= inv.totalPesewas ? "paid" : "part_paid",
+  }).where(eq(feeInvoices.id, c.invoiceId));
 }

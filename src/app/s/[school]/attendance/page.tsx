@@ -2,16 +2,18 @@ import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { classes, students, attendanceRecords } from "@/db/schema";
-import { requireModule } from "@/core/school-context";
+import { requireModule, getTeacherClassIds } from "@/core/school-context";
 import { Card, PageHeader } from "@/ui/kit";
 
 /** Today's classes as cards — grey = not marked, green = marked (doc 10). */
 export default async function Attendance({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
-  const { school } = await requireModule(slug, "attendance", ["admin", "teacher"]);
+  const { school, user } = await requireModule(slug, "attendance", ["admin", "teacher"]);
+  const mine = user.role === "teacher" ? await getTeacherClassIds(school.id, user.id) : undefined;
   const today = new Date().toISOString().slice(0, 10);
 
-  const cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+  let cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+  if (mine !== undefined) cls = cls.filter((c) => mine?.has(c.id));
   const counts = await db.select({
     classId: attendanceRecords.classId,
     present: sql<number>`count(*) filter (where status = 'present')`,
@@ -29,6 +31,9 @@ export default async function Attendance({ params }: { params: Promise<{ school:
   return (
     <div>
       <PageHeader title="Attendance" sub={`Today, ${today}`} />
+      {mine !== undefined && cls.length === 0 && (
+        <p className="text-sm text-muted-foreground">No classes assigned to you yet — ask your admin to set you as a class teacher (Settings) or add you to the timetable.</p>
+      )}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {cls.map((c) => {
           const marked = byClass.get(c.id);

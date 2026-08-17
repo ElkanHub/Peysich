@@ -2,7 +2,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { feeStructures, feeInvoices, feePayments, students, classes, smsLog, guardians, studentGuardians } from "@/db/schema";
+import { feeStructures, feeInvoices, feePayments, students, classes, guardians, studentGuardians } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { uid } from "@/lib/utils";
 
@@ -77,10 +77,10 @@ export async function sendFeeReminders(slug: string) {
     .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
     .where(inArray(studentGuardians.studentId, unpaid.map((i) => i.studentId)));
   const balance = new Map(unpaid.map((i) => [i.studentId, i.totalPesewas - i.paidPesewas]));
-  await db.insert(smsLog).values(gs.map((g) => ({
-    id: uid(), schoolId: school.id, to: g.phone, kind: "fees",
+  const { sendSmsBatch } = await import("@/lib/notify");
+  await sendSmsBatch(gs.map((g) => ({
+    schoolId: school.id, to: g.phone, kind: "fees", senderId: school.branding.smsSenderId,
     body: `${school.name}: outstanding fees of GHS ${((balance.get(g.sid) ?? 0) / 100).toFixed(2)} for this term. Please settle at the office or via MoMo.`,
-    status: process.env.SMS_API_KEY ? "sent" : "queued",
   })));
   revalidatePath(`/fees`);
 }

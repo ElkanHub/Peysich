@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { guardians } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { DataTable, PageHeader, Tr, Td } from "@/ui/kit";
+import { IssueLoginButton } from "@/ui/issue-login";
 import { Pagination, SearchBox, PER_PAGE } from "@/ui/list-controls";
 
 export default async function Guardians({ params, searchParams }: {
@@ -24,12 +25,14 @@ export default async function Guardians({ params, searchParams }: {
     <div className="max-w-3xl">
       <PageHeader title="Guardians" sub={`${n} guardians`} />
       <div className="mb-3"><SearchBox /></div>
-      <DataTable head={["Name", "Phone", "Email", "Relation"]}>
+      <DataTable head={["Name", "Phone", "Email", "Relation", "Parent login"]}>
         {rows.map((g) => (
           <Tr key={g.id}>
             <Td className="font-medium">{g.name}</Td>
             <Td>{g.phone}</Td><Td>{g.email ?? "—"}</Td>
             <Td className="capitalize">{g.relation}</Td>
+            <Td>{g.userId ? <span className="text-xs text-success">active</span>
+              : <IssueLoginButton slug={slug} kind="guardian" id={g.id} />}</Td>
           </Tr>
         ))}
       </DataTable>

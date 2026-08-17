@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { staff } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { createStaff } from "../actions";
+import { IssueLoginButton } from "@/ui/issue-login";
 import { Card, DataTable, Field, PageHeader, Tr, Td, btnCls, inputCls } from "@/ui/kit";
 
 export default async function Staff({ params }: { params: Promise<{ school: string }> }) {
@@ -14,12 +15,14 @@ export default async function Staff({ params }: { params: Promise<{ school: stri
   return (
     <div className="max-w-3xl">
       <PageHeader title="Staff" sub={`${rows.length} staff members`} />
-      <DataTable head={["Name", "Role", "Email", "Phone"]}>
+      <DataTable head={["Name", "Role", "Email", "Phone", "Login"]}>
         {rows.map((s) => (
           <Tr key={s.id}>
             <Td className="font-medium">{s.name}</Td>
             <Td className="capitalize">{s.staffRole}</Td>
             <Td>{s.email ?? "—"}</Td><Td>{s.phone ?? "—"}</Td>
+            <Td>{s.userId ? <span className="text-xs text-success">active</span>
+              : <IssueLoginButton slug={slug} kind="staff" id={s.id} />}</Td>
           </Tr>
         ))}
       </DataTable>
