@@ -1,10 +1,12 @@
 import type { ModuleManifest } from "./types";
+import { attendanceModule } from "./attendance/manifest";
+import { assessmentModule } from "./assessment/manifest";
 
 // ⭐ The single registration point. Adding a module = one import + one line.
-// Manifests must stay serializable-light (no heavy imports) — middleware reads route maps.
 
 const manifests: ModuleManifest[] = [
-  // Phase 2+: attendanceModule, assessmentModule, ...
+  attendanceModule,
+  assessmentModule,
 ];
 
 export const registry = new Map(manifests.map((m) => [m.key, m]));
