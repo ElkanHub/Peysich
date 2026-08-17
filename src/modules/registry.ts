@@ -1,12 +1,20 @@
 import type { ModuleManifest } from "./types";
 import { attendanceModule } from "./attendance/manifest";
 import { assessmentModule } from "./assessment/manifest";
+import { timetableModule } from "./timetable/manifest";
+import { homeworkModule } from "./homework/manifest";
+import { commsModule } from "./comms/manifest";
+import { feesModule } from "./fees/manifest";
 
 // ⭐ The single registration point. Adding a module = one import + one line.
 
 const manifests: ModuleManifest[] = [
   attendanceModule,
   assessmentModule,
+  timetableModule,
+  homeworkModule,
+  commsModule,
+  feesModule,
 ];
 
 export const registry = new Map(manifests.map((m) => [m.key, m]));
