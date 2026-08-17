@@ -1,42 +1,29 @@
-import { notFound, redirect } from "next/navigation";
-import { getSchoolBySlug } from "@/core/tenant";
-import { getSession } from "@/core/session";
-import { getEnabledModules } from "@/core/entitlements";
+import { requireSchool } from "@/core/school-context";
+import { Shell } from "@/ui/shell";
 
-/**
- * Tenant gate: resolves the school from the subdomain (middleware rewrote it
- * into the [school] segment), requires a session belonging to THIS school,
- * and loads the enabled-module set. Deep role/module checks per page.
- */
-export default async function SchoolLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: Promise<{ school: string }>;
+export default async function SchoolLayout({ children, params }: {
+  children: React.ReactNode; params: Promise<{ school: string }>;
 }) {
   const { school: slug } = await params;
-  const school = await getSchoolBySlug(slug);
-  if (!school || school.status === "archived") notFound();
+  const { school, user, modules } = await requireSchool(slug);
 
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-  const u = session.user as { schoolId?: string | null; role: string };
-  // platform staff may enter any school (impersonation, audited later)
-  if (u.schoolId !== school.id && u.role !== "platform_admin") redirect("/sign-in");
-
-  const modules = await getEnabledModules(school.id);
+  if (school.status === "suspended" && user.role !== "platform_admin") {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8 text-center">
+        <div>
+          <h1 className="text-xl font-semibold">Account suspended</h1>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            {school.name}&apos;s subscription needs attention. Your data is safe.
+            Please contact the school office or settle the outstanding payment.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen">
-      {/* AppShell (sidebar from module registry) lands with Phase 1 UI pass */}
-      <header className="border-b border-border bg-card px-6 py-3">
-        <span className="font-semibold">{school.name}</span>
-        <span className="ml-2 text-xs text-muted-foreground">
-          {school.status} · modules: {[...modules].join(", ") || "core"}
-        </span>
-      </header>
-      <main className="p-6">{children}</main>
-    </div>
+    <Shell schoolName={school.name} role={user.role} userName={user.name} modules={modules}>
+      {children}
+    </Shell>
   );
 }
