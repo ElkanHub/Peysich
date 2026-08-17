@@ -3,8 +3,24 @@
 Multi-tenant school management platform for **Preschool → JHS** (no SHS, no university).
 Low-cost at any scale, fast, modular, self-serve subscriptions.
 
-> **Status: Planning phase.** This branch contains the full architecture blueprint for review.
-> Nothing here is code yet — read the docs, make the calls in `docs/09-decisions.md`, and building starts.
+> **Status: Built through Phase 5.** All six roadmap phases are implemented and verified
+> (see `docs/08-roadmap.md`). Deployment needs the owner steps in **HANDOFF.md**.
+
+## Run it locally
+
+```bash
+docker compose up -d          # Postgres (or any PG on :5432, creds in .env.example)
+cp .env.example .env
+npm install
+npm run db:migrate            # apply migrations
+npm run db:seed               # plans + 2 demo schools + users (password123)
+npx tsx --env-file=.env src/db/seed-roster.ts   # 221-student demo roster
+npm run dev
+```
+
+Then open `stmarys.localhost:3000` (admin@stmarys.test), `littlestars.localhost:3000`,
+`admin.localhost:3000` (platform@peysich.test), or `localhost:3000/signup` for the
+self-serve funnel. Payments run in fake mode until Paystack keys exist.
 
 ## The docs (read in order)
 

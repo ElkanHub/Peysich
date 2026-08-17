@@ -41,6 +41,22 @@ aren't needed until the phase shown.
 ## 7. SMS — Arkesel or Hubtel (*later*, Phase 4)
 - [ ] Create account, buy initial credits, register default sender ID → `SMS_API_KEY`.
 
-## 8. First platform login (after deploy)
-- [ ] Run the production seed for plans only, then create your platform account
-      (instructions will be finalized here at deployment).
+## 8. First deploy & platform login
+- [ ] Vercel: import the GitHub repo, set all env vars above, deploy.
+- [ ] Run migrations against Neon: locally set `DATABASE_URL` to the Neon URL, then
+      `npm run db:migrate`, then seed plans only: `npx tsx --env-file=.env -e` —
+      or simplest: run `npm run db:seed` once and delete the two demo schools in the
+      platform console afterwards.
+- [ ] Promote your account: sign up at `/signup` skipping school creation is not possible,
+      so instead run against Neon:
+      `psql "$DATABASE_URL" -c "update \"user\" set role='platform_admin', school_id=null where email='<your email>'"`.
+- [ ] Open `admin.<your-domain>` — you should see the platform console.
+- [ ] Add a Vercel Cron hitting `/api/cron/dunning` daily (route wraps `dunningSweep`;
+      create it when enabling — one 10-line route).
+
+## Notes
+- Payments run in **fake mode** (instant success) until `PAYSTACK_SECRET_KEY` is set.
+- SMS logs as `queued` (cost-tracked) until `SMS_API_KEY` is set.
+- Google button appears automatically once its two env vars exist.
+- Report cards are print-to-PDF HTML today; the R2 pipeline is the swap-in when
+  R2 creds exist (template unchanged).

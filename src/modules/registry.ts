@@ -5,6 +5,12 @@ import { timetableModule } from "./timetable/manifest";
 import { homeworkModule } from "./homework/manifest";
 import { commsModule } from "./comms/manifest";
 import { feesModule } from "./fees/manifest";
+import { admissionsModule } from "./admissions/manifest";
+import { libraryModule } from "./library/manifest";
+import { transportModule } from "./transport/manifest";
+import { inventoryModule } from "./inventory/manifest";
+import { hrModule } from "./hr/manifest";
+import { analyticsModule } from "./analytics/manifest";
 
 // ⭐ The single registration point. Adding a module = one import + one line.
 
@@ -15,6 +21,12 @@ const manifests: ModuleManifest[] = [
   homeworkModule,
   commsModule,
   feesModule,
+  admissionsModule,
+  libraryModule,
+  transportModule,
+  inventoryModule,
+  hrModule,
+  analyticsModule,
 ];
 
 export const registry = new Map(manifests.map((m) => [m.key, m]));
