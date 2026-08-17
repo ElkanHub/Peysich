@@ -22,6 +22,11 @@ Then open `stmarys.localhost:3000` (admin@stmarys.test), `littlestars.localhost:
 `admin.localhost:3000` (platform@peysich.test), or `localhost:3000/signup` for the
 self-serve funnel. Payments run in fake mode until Paystack keys exist.
 
+**No wildcard subdomains where you're hosting (e.g. `*.vercel.app`)?** The app falls back
+to preview mode on the root host: enter a school at `/t/<slug>`, leave with `/t/exit`,
+platform console at `/platform`. Subdomain mode activates automatically once a real
+domain + wildcard is configured (see HANDOFF.md §0–1).
+
 ## The docs (read in order)
 
 | # | Doc | What it answers |

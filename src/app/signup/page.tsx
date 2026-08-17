@@ -74,9 +74,16 @@ export default function Signup() {
         {step === 3 && done && (
           <div className="mt-4 text-sm">
             <p className="text-success">🎉 Your school is ready.</p>
-            <a className={btnCls + " mt-3 w-full"} href={`http://${done.slug}.${host}`}>
-              Open {done.slug}.{host.replace(/^www\./, "")}
-            </a>
+            {host.endsWith("vercel.app") ? (
+              <a className={btnCls + " mt-3 w-full"} href={`/t/${done.slug}`}>
+                Open your school dashboard
+              </a>
+            ) : (
+              <a className={btnCls + " mt-3 w-full"}
+                href={`${window.location.protocol}//${done.slug}.${host}`}>
+                Open {done.slug}.{host.replace(/^www\./, "")}
+              </a>
+            )}
             <p className="mt-2 text-xs text-muted-foreground">Sign in there with the account you just created.</p>
           </div>
         )}

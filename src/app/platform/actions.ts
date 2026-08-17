@@ -40,7 +40,7 @@ export async function createSchool(_: unknown, formData: FormData) {
   await db.insert(schools).values({ id, name, slug, planKey, status: "active" });
   await audit(u.id, "school.create", id, { name, slug, planKey });
   invalidateSchool(slug);
-  redirect(`/schools/${id}`);
+  redirect(`/platform/schools/${id}`);
 }
 
 /** Switchboard: mode = "default" removes the override row; "on"/"off" upserts it. */
@@ -59,12 +59,12 @@ export async function setModuleMode(schoolId: string, moduleKey: string, mode: s
   } else return;
   await audit(u.id, "switchboard.set", schoolId, { moduleKey, mode });
   invalidateModules(schoolId);
-  revalidatePath(`/schools/${schoolId}`);
+  revalidatePath(`/platform/schools/${schoolId}`);
 }
 
 export async function setSchoolStatus(schoolId: string, status: "active" | "suspended") {
   const u = await requirePlatformAdmin();
   await db.update(schools).set({ status, updatedAt: new Date() }).where(eq(schools.id, schoolId));
   await audit(u.id, `school.${status === "active" ? "reactivate" : "suspend"}`, schoolId, {});
-  revalidatePath(`/schools/${schoolId}`);
+  revalidatePath(`/platform/schools/${schoolId}`);
 }

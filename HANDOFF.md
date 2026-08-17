@@ -7,7 +7,21 @@ Everything only you can do. Each item says where to do it and which env var it f
 Status: 🚧 maintained during the build; finalized at deployment. Items marked *later*
 aren't needed until the phase shown.
 
-## 1. Domain & DNS (Phase 0 deploy)
+## 0. Deploy WITHOUT a domain first (preview mode — works today)
+No domain needed to see it live. On `yourapp.vercel.app` the app runs in **preview mode**:
+schools are entered via a link instead of a subdomain (auth still verifies membership —
+same security, different URL shape).
+- [ ] Vercel: import the repo, set `DATABASE_URL`, `BETTER_AUTH_SECRET`, and:
+      `NEXT_PUBLIC_ROOT_DOMAIN=yourapp.vercel.app`, `BETTER_AUTH_URL=https://yourapp.vercel.app`.
+- [ ] Migrate + seed Neon (section 2), then:
+      - Marketing/signup: `https://yourapp.vercel.app`
+      - A school: visit `https://yourapp.vercel.app/t/<school-slug>` once, then sign in
+        (`/t/exit` returns to the marketing site)
+      - Platform console: `https://yourapp.vercel.app/platform`
+When you later complete section 1 (real domain + wildcard) and update the two env vars +
+redeploy, subdomain mode takes over automatically — no code changes.
+
+## 1. Domain & DNS (when you buy the domain)
 - [ ] Buy the domain (e.g. `peysich.com`).
 - [ ] In Vercel: add the project, then add domains `peysich.com`, `www`, and `*.peysich.com`.
 - [ ] Point the domain's **nameservers to Vercel** (required for wildcard TLS). Vercel shows the
