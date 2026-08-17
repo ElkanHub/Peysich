@@ -30,7 +30,7 @@ const getEnabledModuleKeys = (schoolId: string) =>
       return [...set];
     },
     [`modules-${schoolId}`],
-    { tags: [`modules:${schoolId}`] },
+    { tags: [`modules:${schoolId}`], revalidate: 300 },
   )();
 
 export const getEnabledModules = async (schoolId: string) =>
@@ -39,4 +39,6 @@ export const getEnabledModules = async (schoolId: string) =>
 export const isEnabled = async (schoolId: string, moduleKey: string) =>
   moduleKey === "core" || (await getEnabledModules(schoolId)).has(moduleKey);
 
-export const invalidateModules = (schoolId: string) => revalidateTag(`modules:${schoolId}`, "max");
+export const invalidateModules = (schoolId: string) => {
+  try { revalidateTag(`modules:${schoolId}`, "max"); } catch { /* outside request context (scripts) */ }
+};

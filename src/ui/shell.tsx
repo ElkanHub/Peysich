@@ -9,6 +9,7 @@ const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
   { label: "Guardians", href: "/guardians", roles: ["admin"] },
   { label: "Staff", href: "/staff", roles: ["admin"] },
   { label: "Settings", href: "/settings", roles: ["admin"] },
+  { label: "Billing", href: "/billing", roles: ["admin"] },
 ];
 
 /** App shell: fixed sidebar (nav composed from core + enabled modules for this

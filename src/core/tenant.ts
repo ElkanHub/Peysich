@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/db";
 import { schools } from "@/db/schema";
 
@@ -34,5 +34,9 @@ export const getSchoolBySlug = (slug: string) =>
       return school ?? null;
     },
     [`school-${slug}`],
-    { tags: [`school:${slug}`] },
+    { tags: [`school:${slug}`], revalidate: 300 },
   )();
+
+export const invalidateSchool = (slug: string) => {
+  try { revalidateTag(`school:${slug}`, "max"); } catch { /* outside request context */ }
+};

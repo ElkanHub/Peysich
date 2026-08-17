@@ -73,3 +73,11 @@ export const platformAuditLogs = pgTable("platform_audit_logs", {
   detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [index("platform_audit_school_idx").on(t.schoolId, t.createdAt)]);
+
+/** Self-serve checkout intents (reference → what to fulfill on success). */
+export const pendingCheckouts = pgTable("pending_checkouts", {
+  reference: text("reference").primaryKey(),
+  schoolId: text("school_id").notNull(),
+  planKey: text("plan_key").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { platformAuditLogs, schoolModules, schools } from "@/db/schema";
 import { getSession } from "@/core/session";
 import { invalidateModules } from "@/core/entitlements";
-import { isValidSlug } from "@/core/tenant";
+import { isValidSlug, invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
 
 async function requirePlatformAdmin() {
@@ -39,6 +39,7 @@ export async function createSchool(_: unknown, formData: FormData) {
   const id = uid();
   await db.insert(schools).values({ id, name, slug, planKey, status: "active" });
   await audit(u.id, "school.create", id, { name, slug, planKey });
+  invalidateSchool(slug);
   redirect(`/schools/${id}`);
 }
 
