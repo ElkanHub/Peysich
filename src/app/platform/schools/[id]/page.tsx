@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { plans, schoolModules, schools } from "@/db/schema";
 import { MODULE_CATALOG } from "@/modules/catalog";
 import { getEnabledModules } from "@/core/entitlements";
-import { setModuleMode, setSchoolStatus } from "../../actions";
+import { setModuleMode, setSchoolStatus, setCustomPlan } from "../../actions";
 import { cn } from "@/lib/utils";
 
 export default async function SchoolDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -74,6 +74,29 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
           })}
         </tbody>
       </table>
+
+      <h2 className="mt-8 text-lg font-semibold">Custom plan</h2>
+      <p className="text-sm text-muted-foreground">Compose exactly the modules this school pays for, at your price. Overrides above still apply on top.</p>
+      <form action={setCustomPlan.bind(null, id)} className="mt-3 rounded-lg border border-border bg-card p-4">
+        <div className="grid grid-cols-3 gap-2 text-sm">
+          {MODULE_CATALOG.map((m) => (
+            <label key={m.key} className="flex items-center gap-2">
+              <input type="checkbox" name={`m_${m.key}`} defaultChecked={plan?.moduleKeys.includes(m.key)} /> {m.name}
+            </label>
+          ))}
+        </div>
+        <div className="mt-3 flex items-end gap-3 text-sm">
+          <label>Price GHS/term<br />
+            <input name="priceGhs" type="number" step="0.01" defaultValue={(plan?.pricePerTermPesewas ?? 0) / 100}
+              className="mt-1 w-32 rounded-md border border-border px-2 py-1" /></label>
+          <label>Student cap (blank = unlimited)<br />
+            <input name="studentCap" type="number" defaultValue={plan?.studentCap ?? ""}
+              className="mt-1 w-32 rounded-md border border-border px-2 py-1" /></label>
+          <button className={cn("rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground")}>
+            Apply custom plan
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

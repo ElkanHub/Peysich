@@ -2,6 +2,7 @@ import { eq, desc, sql, and } from "drizzle-orm";
 import { db } from "@/db";
 import { announcements, events, classes, smsLog } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
+import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { postAnnouncement, createEvent, sendBlast } from "./actions";
 import { Card, Field, PageHeader, inputCls, btnCls } from "@/ui/kit";
 
@@ -18,6 +19,14 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
       .from(smsLog).where(and(eq(smsLog.schoolId, school.id))),
   ]);
   const className = new Map(cls.map((c) => [c.id, c.name]));
+  // parents/students see school-wide + their own classes only (video's model)
+  let visible: Set<string> | null = null;
+  if (user.role === "parent")
+    visible = new Set((await getParentChildren(school.id, user.id)).map((k) => k.classId).filter(Boolean) as string[]);
+  else if (user.role === "student")
+    visible = new Set([(await getStudentSelf(school.id, user.id))?.classId].filter(Boolean) as string[]);
+  const seeAnns = visible ? anns.filter((a) => !a.classId || visible.has(a.classId)) : anns;
+  const seeEvts = visible ? evts.filter((e) => !e.classId || visible.has(e.classId)) : evts;
   const canPost = ["admin", "teacher", "platform_admin"].includes(user.role);
   const isAdmin = ["admin", "platform_admin"].includes(user.role);
 
@@ -26,7 +35,7 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
       <div>
         <PageHeader title="Announcements" />
         <div className="space-y-3">
-          {anns.map((a) => (
+          {seeAnns.map((a) => (
             <Card key={a.id}>
               <p className="font-medium">{a.title}
                 <span className="ml-2 text-xs text-muted-foreground">
@@ -55,7 +64,7 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
       <div>
         <PageHeader title="Events" />
         <div className="space-y-3">
-          {evts.map((e) => (
+          {seeEvts.map((e) => (
             <Card key={e.id}>
               <p className="font-medium">{e.title}</p>
               <p className="text-xs text-muted-foreground">

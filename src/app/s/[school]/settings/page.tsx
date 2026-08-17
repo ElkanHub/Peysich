@@ -1,11 +1,14 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { academicYears, terms, levels, classes, subjects, staff } from "@/db/schema";
+import { academicYears, terms, levels, classes, subjects, staff, gradingSchemes } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { LEVEL_TEMPLATE } from "@/lib/levels";
 import { createYear, setCurrentTerm, setupLevels, addClass, saveBranding, promoteAll } from "../actions";
 import { setClassTeacher } from "../accounts-actions";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { GradingEditor } from "./grading";
+import { LogoUploader } from "./logo";
+import { r2Enabled } from "@/lib/r2";
 
 export default async function Settings({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -18,6 +21,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
     db.select().from(subjects).where(eq(subjects.schoolId, school.id)),
     db.select().from(staff).where(eq(staff.schoolId, school.id)),
   ]);
+  const [scheme] = await db.select().from(gradingSchemes).where(eq(gradingSchemes.schoolId, school.id));
   const b = school.branding;
 
   return (
@@ -89,6 +93,15 @@ export default async function Settings({ params }: { params: Promise<{ school: s
         )}
       </Card>
 
+      <GradingEditor slug={slug}
+        caWeight={scheme?.caWeight ?? 50} examWeight={scheme?.examWeight ?? 50}
+        bands={scheme?.bands ?? [
+          { min: 80, grade: "1", remark: "Excellent" }, { min: 70, grade: "2", remark: "Very Good" },
+          { min: 60, grade: "3", remark: "Good" }, { min: 55, grade: "4", remark: "Credit" },
+          { min: 50, grade: "5", remark: "Average" }, { min: 40, grade: "6", remark: "Below Average" },
+          { min: 35, grade: "7", remark: "Pass" }, { min: 30, grade: "8", remark: "Weak Pass" },
+          { min: 0, grade: "9", remark: "Fail" }]} />
+
       <Card>
         <h2 className="font-semibold">Branding</h2>
         <p className="text-sm text-muted-foreground">Used on report cards, invoices, receipts, emails and SMS.</p>
@@ -101,6 +114,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
           <Field label="SMS sender ID"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
           <button className={btnCls + " col-span-2"}>Save branding</button>
         </form>
+        <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} /></div>
       </Card>
 
       <Card>

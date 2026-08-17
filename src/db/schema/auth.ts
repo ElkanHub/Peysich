@@ -13,7 +13,8 @@ export const user = pgTable("user", {
   // Peysich fields
   role: text("role").notNull().default("parent"), // platform_admin | admin | teacher | student | parent
   schoolId: text("school_id").references(() => schools.id, { onDelete: "cascade" }), // null = platform staff
-  username: text("username"), // school-issued logins (students/parents without email)
+  username: text("username").unique(), // school-issued logins (students/parents without email)
+  displayUsername: text("display_username"), // required by better-auth username plugin
   phone: text("phone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

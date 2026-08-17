@@ -2,7 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   assessments, scores, gradingSchemes, reportCards, students, subjects,
-  attendanceRecords, terms,
+  attendanceRecords, terms, classes, levels, skillDomains, skillRatings,
 } from "@/db/schema";
 import { uid } from "@/lib/utils";
 
@@ -40,12 +40,24 @@ export async function publishTermReports(schoolId: string, termId: string) {
     await db.insert(gradingSchemes).values({ schoolId });
     [scheme] = await db.select().from(gradingSchemes).where(eq(gradingSchemes.schoolId, schoolId));
   }
-  const roster = await db.select({ id: students.id }).from(students)
+  const roster = await db.select({ id: students.id, classId: students.classId }).from(students)
     .where(and(eq(students.schoolId, schoolId), eq(students.status, "active")));
+  const cls = await db.select().from(classes).where(eq(classes.schoolId, schoolId));
+  const lvs = await db.select().from(levels).where(eq(levels.schoolId, schoolId));
+  const preschoolClass = new Set(cls
+    .filter((c) => lvs.find((l) => l.id === c.levelId)?.preschool).map((c) => c.id));
+  const domains = await db.select().from(skillDomains).where(eq(skillDomains.schoolId, schoolId));
+  const domainName = new Map(domains.map((d) => [d.id, d.name]));
   let published = 0;
   for (const s of roster) {
     const subjectRows = await computeStudent(schoolId, s.id, termId, scheme);
-    if (!subjectRows.length) continue;
+    let skills: { domain: string; rating: string }[] | undefined;
+    if (s.classId && preschoolClass.has(s.classId)) {
+      const rs = await db.select().from(skillRatings).where(and(
+        eq(skillRatings.studentId, s.id), eq(skillRatings.termId, termId)));
+      skills = rs.map((r) => ({ domain: domainName.get(r.domainId) ?? "", rating: r.rating }));
+    }
+    if (!subjectRows.length && !skills?.length) continue;
     const [att] = await db.select({
       present: sql<number>`count(*) filter (where status != 'absent')`,
       total: sql<number>`count(*)`,
@@ -54,6 +66,7 @@ export async function publishTermReports(schoolId: string, termId: string) {
     const data = {
       subjects: subjectRows,
       attendance: { present: Number(att?.present ?? 0), total: Number(att?.total ?? 0) },
+      ...(skills?.length ? { skills } : {}),
     };
     await db.insert(reportCards)
       .values({ id: uid(), schoolId, studentId: s.id, termId, published: true, data, publishedAt: new Date() })

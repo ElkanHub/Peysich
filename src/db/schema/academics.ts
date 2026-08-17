@@ -67,6 +67,7 @@ export const reportCards = pgTable("report_cards", {
   data: jsonb("data").$type<{
     subjects: { name: string; ca: number; exam: number; total: number; grade: string; remark: string }[];
     attendance: { present: number; total: number };
+    skills?: { domain: string; rating: string }[];
     teacherRemark?: string;
   }>().notNull(),
   publishedAt: timestamp("published_at"),

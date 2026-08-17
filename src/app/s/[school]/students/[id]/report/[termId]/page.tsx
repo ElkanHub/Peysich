@@ -40,6 +40,25 @@ export default async function ReportCard({ params }: {
         <p><span className="text-neutral-500">Admission No:</span> {s?.admissionNo}</p>
         <p><span className="text-neutral-500">Attendance:</span> {rc.data.attendance.present}/{rc.data.attendance.total} days</p>
       </div>
+      {rc.data.skills && rc.data.skills.length > 0 && (
+        <table className="mt-4 w-full border-collapse text-sm">
+          <thead>
+            <tr style={{ background: color, color: "white" }}>
+              <th className="border px-2 py-1.5 text-left">Learning Area</th>
+              <th className="border px-2 py-1.5 text-left">Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rc.data.skills.map((r) => (
+              <tr key={r.domain}>
+                <td className="border px-2 py-1">{r.domain}</td>
+                <td className="border px-2 py-1 capitalize">{r.rating}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {rc.data.subjects.length > 0 && (
       <table className="mt-4 w-full border-collapse text-sm">
         <thead>
           <tr style={{ background: color, color: "white" }}>
@@ -64,6 +83,7 @@ export default async function ReportCard({ params }: {
           ))}
         </tbody>
       </table>
+      )}
       <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
         {(b.signatureLines?.length ? b.signatureLines : ["Class Teacher", "Head Teacher"]).map((l) => (
           <div key={l} className="border-t border-neutral-400 pt-1 text-center">{l}</div>

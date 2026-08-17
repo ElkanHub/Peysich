@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { platformAuditLogs, schoolModules, schools } from "@/db/schema";
+import { platformAuditLogs, schoolModules, schools, plans } from "@/db/schema";
 import { getSession } from "@/core/session";
 import { invalidateModules } from "@/core/entitlements";
 import { isValidSlug, invalidateSchool } from "@/core/tenant";
@@ -66,5 +66,26 @@ export async function setSchoolStatus(schoolId: string, status: "active" | "susp
   const u = await requirePlatformAdmin();
   await db.update(schools).set({ status, updatedAt: new Date() }).where(eq(schools.id, schoolId));
   await audit(u.id, `school.${status === "active" ? "reactivate" : "suspend"}`, schoolId, {});
+  revalidatePath(`/platform/schools/${schoolId}`);
+}
+
+/** Custom plan composer: per-school module set + price + cap → plan "custom-<slug>". */
+export async function setCustomPlan(schoolId: string, f: FormData) {
+  const u = await requirePlatformAdmin();
+  const [school] = await db.select().from(schools).where(eq(schools.id, schoolId));
+  if (!school) return;
+  const moduleKeys: string[] = [];
+  for (const [k] of f.entries()) if (k.startsWith("m_")) moduleKeys.push(k.slice(2));
+  const price = Math.round(Number(f.get("priceGhs")) * 100) || 0;
+  const cap = Number(f.get("studentCap")) || null;
+  const key = `custom-${school.slug}`;
+  await db.insert(plans)
+    .values({ key, name: `Custom (${school.name})`, moduleKeys, studentCap: cap, pricePerTermPesewas: price })
+    .onConflictDoUpdate({ target: [plans.key],
+      set: { moduleKeys, studentCap: cap, pricePerTermPesewas: price } });
+  await db.update(schools).set({ planKey: key, studentCap: cap ?? 100000, updatedAt: new Date() })
+    .where(eq(schools.id, schoolId));
+  await audit(u.id, "plan.custom", schoolId, { moduleKeys, price, cap });
+  invalidateModules(schoolId);
   revalidatePath(`/platform/schools/${schoolId}`);
 }

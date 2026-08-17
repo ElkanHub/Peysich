@@ -39,7 +39,8 @@ export function Shell({ schoolName, role, userName, modules, children }: {
           ))}
         </nav>
         <div className="border-t border-border p-3 text-sm">
-          <p className="truncate font-medium">{userName}</p>
+          <Link href="/account" className="truncate font-medium hover:underline">{userName}</Link>
+          <p className="sr-only">{userName}</p>
           <p className="text-xs capitalize text-muted-foreground">{role}</p>
           <SignOutButton />
         </div>
