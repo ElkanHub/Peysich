@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Users, HeartHandshake, BriefcaseBusiness, Settings, CreditCard,
   CalendarCheck, GraduationCap, CalendarDays, BookOpen, Megaphone, Wallet,
   UserPlus, Library, Bus, Boxes, Briefcase, BarChart3, ClipboardList, Menu, X,
+  School, ListChecks, Inbox, Radio, ScrollText, Banknote,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,9 @@ const ICONS: Record<string, LucideIcon> = {
   Timetable: CalendarDays, Homework: BookOpen, Announcements: Megaphone, Fees: Wallet,
   Admissions: UserPlus, Library, Transport: Bus, Inventory: Boxes,
   "Staff HR": Briefcase, Analytics: BarChart3,
+  Overview: LayoutDashboard, Schools: School, Onboarding: ListChecks, Leads: Inbox,
+  Subscriptions: CreditCard, Financials: Banknote, Broadcast: Radio,
+  "All users": Users, "Audit log": ScrollText, "My Account": Users,
 };
 
 export type NavEntry = { label: string; href: string };
@@ -29,7 +33,8 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
     <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
       {items.map((n) => {
         const href = `/${n.href.replace(/^\//, "")}` || "/";
-        const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+        const isRoot = href === "/" || href === "/platform";
+        const active = isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
         const Icon = ICONS[n.label] ?? LayoutDashboard;
         return (
           <Link key={n.label + href} href={href} onClick={onNavigate}
@@ -49,8 +54,9 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
   );
 }
 
-function SidebarInner({ schoolName, role, userName, items, onNavigate }: {
+function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "Peysich", accountHref = "/account" }: {
   schoolName: string; role: string; userName: string; items: NavEntry[]; onNavigate?: () => void;
+  subtitle?: string; accountHref?: string;
 }) {
   return (
     <div className="flex h-full flex-col bg-ink">
@@ -58,12 +64,12 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate }: {
         <LogoMark size={30} variant="light" />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold leading-tight text-ink-text-strong">{schoolName}</p>
-          <p className="text-[11px] text-ink-text/60">Peysich</p>
+          <p className="text-[11px] text-ink-text/60">{subtitle}</p>
         </div>
       </div>
       <NavLinks items={items} onNavigate={onNavigate} />
       <div className="border-t border-ink-border p-3">
-        <Link href="/account" onClick={onNavigate}
+        <Link href={accountHref} onClick={onNavigate}
           className="flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-ink-2">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-active text-[11px] font-semibold uppercase text-ink-text-strong">
             {userName.slice(0, 2)}
@@ -80,7 +86,7 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate }: {
 }
 
 /** Responsive chrome: fixed ink sidebar ≥lg, slide-in drawer below. */
-export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[] }) {
+export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[]; subtitle?: string; accountHref?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>

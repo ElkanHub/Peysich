@@ -107,6 +107,10 @@ export async function createStudent(slug: string, _: unknown, f: FormData) {
   const d = p.data;
   const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(students)
     .where(eq(students.schoolId, school.id));
+  const [{ act }] = await db.select({ act: sql<number>`count(*)` }).from(students)
+    .where(and(eq(students.schoolId, school.id), eq(students.status, "active")));
+  if (Number(act) >= school.studentCap)
+    return { error: `Student limit reached (${school.studentCap} on your plan) — upgrade in Billing to add more` };
   const id = uid();
   await db.insert(students).values({
     id, schoolId: school.id,

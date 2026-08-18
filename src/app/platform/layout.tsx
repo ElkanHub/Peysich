@@ -1,28 +1,37 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/core/session";
-import { LogoMark } from "@/ui/logo";
+import { AppNav } from "@/ui/nav";
+import { Breadcrumbs } from "@/ui/breadcrumbs";
 
-/** Platform plane: platform_admin only. Ink chrome to match the product. */
+const NAV = [
+  { label: "Overview", href: "/platform" },
+  { label: "Schools", href: "/platform/schools" },
+  { label: "Onboarding", href: "/platform/onboarding" },
+  { label: "Leads", href: "/platform/leads" },
+  { label: "Subscriptions", href: "/platform/subscriptions" },
+  { label: "Financials", href: "/platform/financials" },
+  { label: "Broadcast", href: "/platform/broadcast" },
+  { label: "All users", href: "/platform/users" },
+  { label: "Audit log", href: "/platform/audit" },
+  { label: "Settings", href: "/platform/settings" },
+];
+
+/** Platform plane: the operations console. platform_admin only. */
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
-  if ((session.user as { role: string }).role !== "platform_admin") redirect("/sign-in");
+  const u = session.user as { role: string; name: string };
+  if (u.role !== "platform_admin") redirect("/sign-in");
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-ink-border bg-ink">
-        <div className="mx-auto flex h-13 max-w-6xl items-center gap-6 px-6">
-          <span className="flex items-center gap-2.5">
-            <LogoMark size={26} variant="light" />
-            <span className="text-[13px] font-semibold text-ink-text-strong">Peysich Console</span>
-          </span>
-          <nav className="flex items-center gap-1 text-[13px]">
-            <Link href="/platform" className="rounded-md px-3 py-1.5 font-medium text-ink-text transition-colors hover:bg-ink-2 hover:text-ink-text-strong">Schools</Link>
-            <Link href="/platform/audit" className="rounded-md px-3 py-1.5 font-medium text-ink-text transition-colors hover:bg-ink-2 hover:text-ink-text-strong">Audit</Link>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+    <div className="flex min-h-screen">
+      <AppNav schoolName="Peysich Console" subtitle="Platform" role="platform admin"
+        userName={u.name} items={NAV} accountHref="/platform/account" />
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-30 mt-13 flex h-12 items-center border-b border-border bg-card/85 px-4 backdrop-blur lg:mt-0 lg:px-8">
+          <Breadcrumbs root="Console" />
+        </header>
+        <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+      </div>
     </div>
   );
 }

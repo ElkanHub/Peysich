@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarCheck, GraduationCap, Wallet, Megaphone, ShieldCheck, Layers } from "lucide-react";
 import { LogoLockup } from "@/ui/logo";
+import { LeadForm } from "./lead-form";
 
 const FEATURES = [
   { icon: CalendarCheck, t: "30-second attendance", d: "Everyone starts present — teachers tap only the exceptions. Parents get absence alerts instantly." },
@@ -104,6 +105,20 @@ export default function Home() {
         <p className="mt-6 text-center text-[13px] text-muted-foreground">
           Bigger school or specific needs? <span className="font-medium text-foreground">Custom plans</span> compose exactly the modules you want.
         </p>
+      </section>
+
+      {/* lead capture */}
+      <section id="demo" className="border-t border-border bg-card">
+        <div className="mx-auto grid max-w-5xl gap-10 px-6 py-16 md:grid-cols-2">
+          <div>
+            <h2 className="text-[26px] font-semibold tracking-tight">Prefer a walkthrough first?</h2>
+            <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
+              Leave your number and we&apos;ll call to show you Peysich on your own school&apos;s
+              structure — classes, report cards, fees, everything.
+            </p>
+          </div>
+          <LeadForm />
+        </div>
       </section>
 
       <footer className="border-t border-border bg-card">

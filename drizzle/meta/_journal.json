@@ -57,6 +57,13 @@
       "when": 1787006549721,
       "tag": "0007_violet_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787015372158,
+      "tag": "0008_easy_james_howlett",
+      "breakpoints": true
     }
   ]
 }

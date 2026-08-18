@@ -89,3 +89,72 @@ export async function setCustomPlan(schoolId: string, f: FormData) {
   invalidateModules(schoolId);
   revalidatePath(`/platform/schools/${schoolId}`);
 }
+
+export async function extendTrial(schoolId: string, days: number) {
+  const u = await requirePlatformAdmin();
+  const [s] = await db.select().from(schools).where(eq(schools.id, schoolId));
+  if (!s) return;
+  const base = s.trialEndsAt && s.trialEndsAt > new Date() ? s.trialEndsAt : new Date();
+  const ends = new Date(base); ends.setDate(ends.getDate() + days);
+  await db.update(schools).set({ trialEndsAt: ends, status: "trial", updatedAt: new Date() })
+    .where(eq(schools.id, schoolId));
+  await audit(u.id, "trial.extend", schoolId, { days });
+  revalidatePath("/platform/subscriptions");
+}
+
+/** Edit a standard plan's price/caps (plans are data — doc 04). */
+export async function updatePlan(planKey: string, f: FormData) {
+  const u = await requirePlatformAdmin();
+  await db.update(plans).set({
+    pricePerTermPesewas: Math.round(Number(f.get("priceGhs")) * 100) || 0,
+    studentCap: Number(f.get("studentCap")) || null,
+  }).where(eq(plans.key, planKey));
+  await audit(u.id, "plan.update", null, { planKey });
+  revalidatePath("/platform/settings");
+}
+
+export async function setLeadStatus(id: string, status: string, f?: FormData) {
+  const u = await requirePlatformAdmin();
+  const { leads } = await import("@/db/schema");
+  await db.update(leads).set({ status, note: f ? String(f.get("note") || "") || null : undefined })
+    .where(eq(leads.id, id));
+  await audit(u.id, "lead.status", null, { id, status });
+  revalidatePath("/platform/leads");
+}
+
+/** Broadcast to every active school: lands as a school-wide announcement. */
+export async function sendBroadcast(f: FormData) {
+  const u = await requirePlatformAdmin();
+  const { announcements, platformBroadcasts } = await import("@/db/schema");
+  const title = String(f.get("title")), body = String(f.get("body"));
+  if (!title || !body) return;
+  const targets = await db.select().from(schools);
+  const active = targets.filter((s) => ["active", "trial", "past_due"].includes(s.status));
+  await db.insert(announcements).values(active.map((s) => ({
+    id: uid(), schoolId: s.id, title, body, classId: null, createdBy: u.id,
+  })));
+  await db.insert(platformBroadcasts).values({
+    id: uid(), title, body, sentBy: u.id, schoolsReached: active.length,
+  });
+  await audit(u.id, "broadcast.send", null, { title, reached: active.length });
+  revalidatePath("/platform/broadcast");
+}
+
+/** Invite another platform admin (login shown once). */
+export async function invitePlatformAdmin(_: unknown, f: FormData) {
+  const u = await requirePlatformAdmin();
+  const { createSchoolLogin } = await import("@/core/accounts");
+  const email = String(f.get("email")).trim();
+  const name = String(f.get("name")).trim();
+  if (!email || !name) return { error: "Name and email required" };
+  const r = await createSchoolLogin({
+    schoolId: null, schoolSlug: "platform", name, role: "admin", email,
+    username: email.split("@")[0],
+  });
+  if ("error" in r) return { error: r.error };
+  const { user: userTable } = await import("@/db/schema");
+  await db.update(userTable).set({ role: "platform_admin", schoolId: null })
+    .where(eq(userTable.id, r.userId));
+  await audit(u.id, "platform.invite", null, { email });
+  return { loginAs: r.loginAs, password: r.password };
+}

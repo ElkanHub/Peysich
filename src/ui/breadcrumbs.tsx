@@ -10,7 +10,9 @@ const LABELS: Record<string, string> = {
   skills: "Skills", timetable: "Timetable", homework: "Homework", comms: "Announcements",
   fees: "Fees", admissions: "Admissions", library: "Library", transport: "Transport",
   inventory: "Inventory", hr: "Staff HR", analytics: "Analytics", children: "My Children",
-  report: "Report card", platform: "Platform", schools: "Schools", audit: "Audit log",
+  report: "Report card", platform: "Console", schools: "Schools", audit: "Audit log",
+  onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
+  financials: "Financials", broadcast: "Broadcast", users: "All users",
 };
 
 /** Path-derived breadcrumbs; id-looking segments render as a neutral marker. */

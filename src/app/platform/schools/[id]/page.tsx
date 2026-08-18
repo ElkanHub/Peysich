@@ -1,10 +1,12 @@
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { plans, schoolModules, schools } from "@/db/schema";
+import { plans, schoolModules, schools, subscriptions } from "@/db/schema";
 import { MODULE_CATALOG } from "@/modules/catalog";
 import { getEnabledModules } from "@/core/entitlements";
-import { setModuleMode, setSchoolStatus, setCustomPlan } from "../../actions";
+import { setModuleMode, setSchoolStatus, setCustomPlan, extendTrial } from "../../actions";
+import { getOnboardingStages, getSchoolUsers } from "@/core/onboarding";
+import { Badge } from "@/ui/kit";
 import { cn } from "@/lib/utils";
 
 export default async function SchoolDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +19,10 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
       .map((o) => [o.moduleKey, o.mode]),
   );
   const effective = await getEnabledModules(id);
+  const [stages, people, subs] = await Promise.all([
+    getOnboardingStages(id), getSchoolUsers(id),
+    db.select().from(subscriptions).where(eq(subscriptions.schoolId, id)),
+  ]);
 
   const MODES = ["default", "on", "off"] as const;
   return (
@@ -34,6 +40,45 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             {school.status === "suspended" ? "Reactivate" : "Suspend"}
           </button>
         </form>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="font-semibold">Onboarding progress</h2>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {stages.map((st) => (
+              <li key={st.key} className="flex items-center justify-between">
+                <span>{st.label}</span>
+                {st.done ? <Badge tone="success">done</Badge> : <Badge tone="danger">pending</Badge>}
+              </li>
+            ))}
+          </ul>
+          {school.status === "trial" && (
+            <form action={extendTrial.bind(null, id, 14)} className="mt-3">
+              <button className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium hover:bg-muted">
+                Extend trial 14 days{school.trialEndsAt && ` (ends ${school.trialEndsAt.toISOString().slice(0, 10)})`}
+              </button>
+            </form>
+          )}
+        </div>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="font-semibold">People & contacts</h2>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {people.slice(0, 8).map((u) => (
+              <li key={u.id} className="flex items-center justify-between gap-2">
+                <span className="min-w-0"><span className="font-medium">{u.name}</span>
+                  <span className="block truncate text-[12px] text-muted-foreground">{u.email}{u.phone && ` · ${u.phone}`}</span></span>
+                <Badge tone={u.role === "admin" ? "success" : "default"}>{u.role}</Badge>
+              </li>
+            ))}
+            {people.length === 0 && <li className="text-muted-foreground">No accounts yet.</li>}
+          </ul>
+          {subs.length > 0 && (
+            <div className="mt-3 border-t border-border pt-2 text-[12px] text-muted-foreground">
+              {subs.length} payment{subs.length > 1 ? "s" : ""} · latest {subs.at(-1)!.planKey} until {subs.at(-1)!.periodEnd.toISOString().slice(0, 10)}
+            </div>
+          )}
+        </div>
       </div>
 
       <h2 className="mt-8 text-lg font-semibold">Module switchboard</h2>

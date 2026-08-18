@@ -15,6 +15,7 @@ export async function applySubscription(schoolId: string, planKey: string, refer
   const end = new Date(now); end.setDate(end.getDate() + 120); // one term ≈ 4 months
   await db.insert(subscriptions).values({
     id: uid(), schoolId, planKey, status: "active",
+    amountPesewas: plan.pricePerTermPesewas,
     periodStart: now, periodEnd: end, paystackSubscriptionCode: reference,
   });
   await db.update(schools).set({

@@ -13,7 +13,7 @@ export function tempPassword() {
 /** Create a login for a school person. No email → synthetic address + username
  *  sign-in (school-issued logins, doc 10: no self-signup inside a school). */
 export async function createSchoolLogin(opts: {
-  schoolId: string; schoolSlug: string; name: string; role: "admin" | "teacher" | "student" | "parent";
+  schoolId: string | null; schoolSlug: string; name: string; role: "admin" | "teacher" | "student" | "parent";
   email?: string | null; username: string; phone?: string | null;
 }) {
   const username = opts.username.toLowerCase().replace(/[^a-z0-9._-]/g, "");

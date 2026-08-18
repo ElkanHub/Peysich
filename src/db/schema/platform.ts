@@ -59,6 +59,7 @@ export const subscriptions = pgTable("subscriptions", {
   status: subscriptionStatus("status").notNull().default("active"),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
+  amountPesewas: integer("amount_pesewas").notNull().default(0),
   paystackCustomerCode: text("paystack_customer_code"),
   paystackSubscriptionCode: text("paystack_subscription_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -79,5 +80,29 @@ export const pendingCheckouts = pgTable("pending_checkouts", {
   reference: text("reference").primaryKey(),
   schoolId: text("school_id").notNull(),
   planKey: text("plan_key").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Marketing-page leads → platform pipeline (new → contacted → converted/lost). */
+export const leads = pgTable("leads", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  schoolName: text("school_name"),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  message: text("message"),
+  source: text("source").notNull().default("landing"),
+  status: text("status").notNull().default("new"), // new|contacted|converted|lost
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("leads_status_idx").on(t.status, t.createdAt)]);
+
+/** Platform → all-tenant broadcasts (delivered as announcements in every school). */
+export const platformBroadcasts = pgTable("platform_broadcasts", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  sentBy: text("sent_by").notNull(),
+  schoolsReached: integer("schools_reached").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
