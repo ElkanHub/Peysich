@@ -14,7 +14,9 @@ cp .env.example .env
 npm install
 npm run db:migrate            # apply migrations
 npm run db:seed               # plans + 2 demo schools + users (password123)
-npx tsx --env-file=.env src/db/seed-roster.ts   # 221-student demo roster
+npm run db:demo               # make St. Mary's a LIVING school: roster, timetable,
+                              # attendance, scores, report cards, fees, homework,
+                              # announcements + demo parent/student/teacher logins
 npm run dev
 ```
 
