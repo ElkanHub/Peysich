@@ -23,7 +23,7 @@ export default async function ReportCard({ params }: {
   const [t] = await db.select().from(terms).where(eq(terms.id, termId));
   const [y] = t ? await db.select().from(academicYears).where(eq(academicYears.id, t.yearId)) : [null];
   const b = school.branding;
-  const color = b.primaryColor || "#4338ca";
+  const color = b.primaryColor || "#5E1D3E";
 
   return (
     <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">

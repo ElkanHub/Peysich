@@ -107,7 +107,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
         <p className="text-sm text-muted-foreground">Used on report cards, invoices, receipts, emails and SMS.</p>
         <form action={saveBranding.bind(null, slug)} className="mt-3 grid grid-cols-2 gap-3">
           <Field label="Motto"><input name="motto" defaultValue={b.motto} className={inputCls} /></Field>
-          <Field label="Primary color"><input name="primaryColor" defaultValue={b.primaryColor} placeholder="#4338ca" className={inputCls} /></Field>
+          <Field label="Primary color"><input name="primaryColor" defaultValue={b.primaryColor} placeholder="#5E1D3E" className={inputCls} /></Field>
           <Field label="Address"><input name="address" defaultValue={b.address} className={inputCls} /></Field>
           <Field label="Phone"><input name="phone" defaultValue={b.phone} className={inputCls} /></Field>
           <Field label="Email"><input name="email" defaultValue={b.email} className={inputCls} /></Field>

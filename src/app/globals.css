@@ -4,10 +4,10 @@
    One deliberate look: ink sidebar, paper canvas, hairline borders,
    a single confident accent. Swap the brand block to re-skin (logo colors). */
 :root {
-  /* brand — replace these three when the real logo lands */
-  --brand: #4f46e5;
-  --brand-strong: #4338ca;
-  --brand-soft: #eef2ff;
+  /* brand — from the Peysich logo (wine accent) */
+  --brand: #5e1d3e;
+  --brand-strong: #4a1730;
+  --brand-soft: #f7edf3;
 
   /* canvas */
   --background: #f7f7f9;
@@ -20,13 +20,13 @@
   --border: #e6e8ec;
   --border-strong: #d5d8de;
 
-  /* ink chrome (sidebar / topbars) */
-  --ink: #16192c;
-  --ink-2: #1e2238;
-  --ink-border: #2a2f4a;
-  --ink-text: #c9cde4;
+  /* ink chrome (sidebar / topbars) — plum-tinted near-black, from the logo */
+  --ink: #1a1218;
+  --ink-2: #251a23;
+  --ink-border: #362737;
+  --ink-text: #d8c9d4;
   --ink-text-strong: #ffffff;
-  --ink-active: #313866;
+  --ink-active: #45253c;
 
   /* semantics */
   --primary: var(--brand);

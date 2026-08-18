@@ -13,7 +13,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
       <header className="sticky top-0 z-30 border-b border-ink-border bg-ink">
         <div className="mx-auto flex h-13 max-w-6xl items-center gap-6 px-6">
           <span className="flex items-center gap-2.5">
-            <LogoMark size={26} />
+            <LogoMark size={26} variant="light" />
             <span className="text-[13px] font-semibold text-ink-text-strong">Peysich Console</span>
           </span>
           <nav className="flex items-center gap-1 text-[13px]">

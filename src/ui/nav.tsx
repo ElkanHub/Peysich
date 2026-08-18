@@ -55,7 +55,7 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate }: {
   return (
     <div className="flex h-full flex-col bg-ink">
       <div className="flex items-center gap-2.5 border-b border-ink-border px-4 py-4">
-        <LogoMark size={30} />
+        <LogoMark size={30} variant="light" />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold leading-tight text-ink-text-strong">{schoolName}</p>
           <p className="text-[11px] text-ink-text/60">Peysich</p>
@@ -93,7 +93,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
           className="rounded-md p-1.5 text-ink-text hover:bg-ink-2">
           <Menu size={20} />
         </button>
-        <LogoMark size={24} />
+        <LogoMark size={24} variant="light" />
         <span className="truncate text-[13px] font-semibold text-ink-text-strong">{props.schoolName}</span>
       </div>
       {open && (
