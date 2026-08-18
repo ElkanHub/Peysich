@@ -158,3 +158,18 @@ export async function invitePlatformAdmin(_: unknown, f: FormData) {
   await audit(u.id, "platform.invite", null, { email });
   return { loginAs: r.loginAs, password: r.password };
 }
+
+/** Directly set a school's plan (the console's plan lever). */
+export async function setSchoolPlan(schoolId: string, f: FormData) {
+  const u = await requirePlatformAdmin();
+  const planKey = String(f.get("planKey"));
+  const [plan] = await db.select().from(plans).where(eq(plans.key, planKey));
+  if (!plan) return;
+  await db.update(schools).set({
+    planKey, studentCap: plan.studentCap ?? 100000,
+    storageCapMb: plan.storageCapMb, updatedAt: new Date(),
+  }).where(eq(schools.id, schoolId));
+  await audit(u.id, "plan.set", schoolId, { planKey });
+  invalidateModules(schoolId);
+  revalidatePath(`/platform/schools/${schoolId}`);
+}

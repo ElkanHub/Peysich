@@ -33,6 +33,11 @@ async function main() {
   const [school] = await db.select().from(schools).where(eq(schools.slug, "stmarys"));
   if (!school) throw new Error("Run `pnpm run db:seed` first (creates the demo schools)");
   const sid = school.id;
+  if (school.planKey !== "premium") {
+    await db.update(schools).set({ planKey: "premium", status: "active", studentCap: 100000 })
+      .where(eq(schools.id, sid));
+    log("St. Mary's moved to the PREMIUM plan (all modules on)");
+  }
 
   // ── 1. academic year + terms ──
   let [year] = await db.select().from(academicYears)

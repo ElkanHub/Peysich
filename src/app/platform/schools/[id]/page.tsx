@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { plans, schoolModules, schools, subscriptions } from "@/db/schema";
 import { MODULE_CATALOG } from "@/modules/catalog";
 import { getEnabledModules } from "@/core/entitlements";
-import { setModuleMode, setSchoolStatus, setCustomPlan, extendTrial } from "../../actions";
+import { setModuleMode, setSchoolStatus, setCustomPlan, extendTrial, setSchoolPlan } from "../../actions";
 import { getOnboardingStages, getSchoolUsers } from "@/core/onboarding";
 import { Badge } from "@/ui/kit";
 import { cn } from "@/lib/utils";
@@ -34,12 +34,23 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             {school.slug} · plan: {plan?.name ?? school.planKey} · status: {school.status}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <form action={setSchoolPlan.bind(null, id)} className="flex items-center gap-1">
+          <select name="planKey" defaultValue={school.planKey}
+            className="rounded-md border border-border bg-card px-2 py-1.5 text-sm">
+            {["trial", "starter", "standard", "premium", `custom-${school.slug}`].map((k) => (
+              <option key={k} value={k}>{k}</option>
+            ))}
+          </select>
+          <button className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">Set plan</button>
+        </form>
         <form action={setSchoolStatus.bind(null, id, school.status === "suspended" ? "active" : "suspended")}>
           <button className={cn("rounded-md px-3 py-1.5 text-sm font-medium text-white",
             school.status === "suspended" ? "bg-success" : "bg-danger")}>
             {school.status === "suspended" ? "Reactivate" : "Suspend"}
           </button>
         </form>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
