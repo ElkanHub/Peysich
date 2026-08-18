@@ -1,21 +1,48 @@
 @import "tailwindcss";
 
-/* ── Peysich design tokens (doc 06) — single source for the premium morph ── */
+/* ── Peysich design system ─────────────────────────────────────────────
+   One deliberate look: ink sidebar, paper canvas, hairline borders,
+   a single confident accent. Swap the brand block to re-skin (logo colors). */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* brand — replace these three when the real logo lands */
+  --brand: #4f46e5;
+  --brand-strong: #4338ca;
+  --brand-soft: #eef2ff;
+
+  /* canvas */
+  --background: #f7f7f9;
+  --foreground: #16181d;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #4338ca;            /* confident indigo — brand hue */
+  --card-foreground: #16181d;
+  --muted: #f1f2f4;
+  --muted-foreground: #6b7280;
+  --faint: #9aa1ab;
+  --border: #e6e8ec;
+  --border-strong: #d5d8de;
+
+  /* ink chrome (sidebar / topbars) */
+  --ink: #16192c;
+  --ink-2: #1e2238;
+  --ink-border: #2a2f4a;
+  --ink-text: #c9cde4;
+  --ink-text-strong: #ffffff;
+  --ink-active: #313866;
+
+  /* semantics */
+  --primary: var(--brand);
   --primary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --ring: #6366f1;
-  --success: #059669;
-  --warning: #d97706;
+  --ring: var(--brand);
+  --success: #0d9463;
+  --success-soft: #e7f6ef;
+  --warning: #b45309;
+  --warning-soft: #fdf3e3;
   --danger: #dc2626;
-  --radius: 0.625rem;
+  --danger-soft: #fdeeee;
+
+  --radius: 10px;
+  --shadow-sm: 0 1px 2px rgb(22 24 29 / 0.05);
+  --shadow-md: 0 2px 8px -2px rgb(22 24 29 / 0.10), 0 1px 2px rgb(22 24 29 / 0.05);
+  --shadow-lg: 0 12px 32px -8px rgb(22 24 29 / 0.18);
 }
 
 @theme inline {
@@ -25,18 +52,64 @@
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-strong: var(--brand-strong);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-border: var(--ink-border);
+  --color-ink-text: var(--ink-text);
+  --color-ink-text-strong: var(--ink-text-strong);
+  --color-ink-active: var(--ink-active);
   --color-ring: var(--ring);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --radius-md: var(--radius);
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --radius-lg: calc(var(--radius) + 4px);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 { letter-spacing: -0.02em; }
+
+/* data reads better with equal-width digits */
+table, [data-nums] { font-variant-numeric: tabular-nums; }
+
+/* quiet scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+*::-webkit-scrollbar { height: 8px; width: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+
+/* consistent focus everywhere */
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+
+/* skeleton shimmer */
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--muted) 25%, #e9eaee 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media print {
+  body { background: #fff; }
 }

@@ -2,12 +2,12 @@ import Link from "next/link";
 import { and, eq, desc, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  students, staff, classes, academicYears, lessons, subjects,
-  assignments, submissions, announcements, attendanceRecords, reportCards,
+  students, staff, classes, lessons, subjects,
+  assignments, submissions, announcements, events, attendanceRecords, feeInvoices,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm, getTeacherClassIds } from "@/core/school-context";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
-import { Card, PageHeader } from "@/ui/kit";
+import { Card, PageHeader, Stat } from "@/ui/kit";
 import { PayFeesButton } from "@/ui/pay-fees";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -174,39 +174,134 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     );
   }
 
-  // ── admin (and platform_admin visiting) ──
-  const [[st], [sf], [cl], [yr], [rc]] = await Promise.all([
+  // ── admin (and platform_admin visiting): the 90-second morning check ──
+  const today = new Date().toISOString().slice(0, 10);
+  const [[st], [sf], allCls, attToday, fees, anns, evts, rosters] = await Promise.all([
     db.select({ n: sql<number>`count(*)` }).from(students)
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active"))),
     db.select({ n: sql<number>`count(*)` }).from(staff).where(eq(staff.schoolId, school.id)),
-    db.select({ n: sql<number>`count(*)` }).from(classes).where(eq(classes.schoolId, school.id)),
-    db.select({ n: sql<number>`count(*)` }).from(academicYears).where(eq(academicYears.schoolId, school.id)),
-    db.select({ n: sql<number>`count(*)` }).from(reportCards)
-      .where(and(eq(reportCards.schoolId, school.id), eq(reportCards.published, true))),
+    db.select().from(classes).where(eq(classes.schoolId, school.id)),
+    db.select({
+      classId: attendanceRecords.classId,
+      present: sql<number>`count(*) filter (where status != 'absent')`,
+      total: sql<number>`count(*)`,
+    }).from(attendanceRecords)
+      .where(and(eq(attendanceRecords.schoolId, school.id), eq(attendanceRecords.date, today)))
+      .groupBy(attendanceRecords.classId),
+    term
+      ? db.select({
+          billed: sql<number>`coalesce(sum(total_pesewas),0)`,
+          paid: sql<number>`coalesce(sum(paid_pesewas),0)`,
+        }).from(feeInvoices)
+          .where(and(eq(feeInvoices.schoolId, school.id), eq(feeInvoices.termId, term.id)))
+      : [{ billed: 0, paid: 0 }],
+    db.select().from(announcements).where(eq(announcements.schoolId, school.id))
+      .orderBy(desc(announcements.createdAt)).limit(3),
+    db.select().from(events).where(eq(events.schoolId, school.id))
+      .orderBy(desc(events.startsAt)).limit(3),
+    db.select({ classId: students.classId, n: sql<number>`count(*)` }).from(students)
+      .where(and(eq(students.schoolId, school.id), eq(students.status, "active")))
+      .groupBy(students.classId),
   ]);
-  const setupNeeded = Number(yr.n) === 0 || Number(cl.n) === 0 || Number(st.n) === 0;
+  const f = fees[0];
+  const rosterN = new Map(rosters.map((r) => [r.classId, Number(r.n)]));
+  const attByClass = new Map(attToday.map((a) => [a.classId, a]));
+  const markedCount = attToday.length;
+  const presentToday = attToday.reduce((a, r) => a + Number(r.present), 0);
+  const totalToday = attToday.reduce((a, r) => a + Number(r.total), 0);
+  const outstanding = Number(f.billed) - Number(f.paid);
+  const setupNeeded = !term || allCls.length === 0 || Number(st.n) === 0;
+
   return (
     <div>
       <PageHeader title="Dashboard" sub={sub} />
       {setupNeeded && (
-        <Card className="mb-5">
+        <Card className="mb-6">
           <p className="font-medium">Get {school.name} running</p>
           <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-muted-foreground">
-            {Number(yr.n) === 0 && <li><Link className="text-primary underline-offset-2 hover:underline" href="/settings">Set up your academic year & term dates</Link></li>}
-            {Number(cl.n) === 0 && <li><Link className="text-primary underline-offset-2 hover:underline" href="/settings">Choose your levels — classes & subjects are created for you</Link></li>}
-            <li><Link className="text-primary underline-offset-2 hover:underline" href="/staff">Add your staff</Link></li>
-            {Number(st.n) === 0 && <li><Link className="text-primary underline-offset-2 hover:underline" href="/students/import">Import students (CSV)</Link> or <Link className="text-primary underline-offset-2 hover:underline" href="/students/new">add them one by one</Link></li>}
+            {!term && <li><Link className="text-primary hover:underline" href="/settings">Set up your academic year & term dates</Link></li>}
+            {allCls.length === 0 && <li><Link className="text-primary hover:underline" href="/settings">Choose your levels — classes & subjects are created for you</Link></li>}
+            <li><Link className="text-primary hover:underline" href="/staff">Add your staff</Link></li>
+            {Number(st.n) === 0 && <li><Link className="text-primary hover:underline" href="/students/import">Import students (CSV)</Link> or <Link className="text-primary hover:underline" href="/students/new">add them one by one</Link></li>}
           </ol>
         </Card>
       )}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {[["Students", st.n, "/students"], ["Staff", sf.n, "/staff"],
-          ["Classes", cl.n, "/settings"], ["Reports published", rc.n, "/assessment/matrix"]].map(([l, n, href]) => (
-          <Link key={String(l)} href={String(href)}>
-            <Card><p className="text-sm text-muted-foreground">{l}</p>
-              <p className="mt-1 text-3xl font-semibold">{String(n)}</p></Card>
-          </Link>
-        ))}
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat label="Active students" value={String(st.n)} />
+        <Stat label="Present today" value={totalToday ? `${presentToday}/${totalToday}` : "—"}
+          tone={totalToday && presentToday / totalToday < 0.85 ? "danger" : "default"} />
+        <Stat label="Collected this term" value={`GHS ${(Number(f.paid) / 100).toLocaleString()}`} tone="success" />
+        <Stat label="Outstanding" value={`GHS ${(outstanding / 100).toLocaleString()}`}
+          tone={outstanding > 0 ? "danger" : "success"} />
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        {/* attendance today — every number is a link (doc 10) */}
+        <Card className="lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Attendance today</h2>
+            <span className="text-[12px] text-muted-foreground">{markedCount}/{allCls.length} classes marked</span>
+          </div>
+          <div className="mt-4 space-y-2.5">
+            {allCls.slice(0, 8).map((c) => {
+              const a = attByClass.get(c.id);
+              const total = rosterN.get(c.id) ?? 0;
+              const pct = a && Number(a.total) ? Math.round((Number(a.present) / Number(a.total)) * 100) : null;
+              return (
+                <Link key={c.id} href={`/attendance/${c.id}`} className="group flex items-center gap-3">
+                  <span className="w-24 shrink-0 truncate text-[13px] font-medium group-hover:text-primary">{c.name}</span>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    {pct !== null && (
+                      <span className="block h-full rounded-full bg-primary/80 transition-all"
+                        style={{ width: `${pct}%` }} />
+                    )}
+                  </span>
+                  <span data-nums="" className="w-28 shrink-0 whitespace-nowrap text-right text-[12px] text-muted-foreground">
+                    {pct !== null ? `${pct}% · ${a!.present}/${a!.total}` : `${total} · not marked`}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+          {allCls.length > 8 && (
+            <Link href="/attendance" className="mt-3 inline-block text-[13px] font-medium text-primary">
+              All {allCls.length} classes →
+            </Link>
+          )}
+        </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <h2 className="font-semibold">Quick actions</h2>
+            <div className="mt-3 grid gap-2">
+              {[["/students/new", "Add a student"], ["/students/import", "Import students (CSV)"],
+                ["/comms", "Post an announcement"], ["/assessment/matrix", "Term closing status"],
+                ["/fees", "Fees & invoices"]].map(([href, label]) => (
+                <Link key={href} href={href}
+                  className="rounded-md border border-border px-3 py-2 text-[13px] font-medium transition-colors hover:border-border-strong hover:bg-muted">
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </Card>
+          <Card>
+            <h2 className="font-semibold">Latest</h2>
+            <ul className="mt-2.5 space-y-2 text-[13px]">
+              {anns.map((a) => (
+                <li key={a.id} className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{a.title}</span> · {a.createdAt.toISOString().slice(5, 10)}
+                </li>
+              ))}
+              {evts.map((e) => (
+                <li key={e.id} className="text-muted-foreground">
+                  📅 <span className="font-medium text-foreground">{e.title}</span> · {e.startsAt.toISOString().slice(5, 10)}
+                </li>
+              ))}
+              {anns.length + evts.length === 0 && <li className="text-muted-foreground">Nothing yet.</li>}
+            </ul>
+          </Card>
+        </div>
       </div>
     </div>
   );
