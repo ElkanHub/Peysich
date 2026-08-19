@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { guardians } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { DataTable, PageHeader, Tr, Td } from "@/ui/kit";
-import { IssueLoginButton } from "@/ui/issue-login";
+import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { Pagination, SearchBox, PER_PAGE } from "@/ui/list-controls";
 
 export default async function Guardians({ params, searchParams }: {
@@ -31,7 +31,9 @@ export default async function Guardians({ params, searchParams }: {
             <Td className="font-medium">{g.name}</Td>
             <Td>{g.phone}</Td><Td>{g.email ?? "—"}</Td>
             <Td className="capitalize">{g.relation}</Td>
-            <Td>{g.userId ? <span className="text-xs text-success">active</span>
+            <Td>{g.userId
+              ? <span className="inline-flex items-center gap-2"><span className="text-xs text-success">active</span>
+                  <ResetPasswordButton slug={slug} kind="guardian" id={g.id} /></span>
               : <IssueLoginButton slug={slug} kind="guardian" id={g.id} />}</Td>
           </Tr>
         ))}

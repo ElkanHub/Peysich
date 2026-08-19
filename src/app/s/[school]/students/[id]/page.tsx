@@ -5,12 +5,12 @@ import { db } from "@/db";
 import {
   students, classes, guardians, studentGuardians, enrollments, academicYears,
   studentFiles, studentItems, feeInvoices, feePayments, reportCards, terms,
-  attendanceRecords, rooms,
+  attendanceRecords, rooms, user as userTable,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Card, DataTable, Field, PageHeader, Tr, Td, Badge, Empty, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
-import { IssueLoginButton } from "@/ui/issue-login";
+import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { PhotoUploader, DocumentUploader } from "./uploaders";
 import { addStudentItem, returnStudentItem, savePaymentNote } from "./actions";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,10 @@ export default async function StudentFile({ params, searchParams }: {
   const [room] = cls?.roomId ? await db.select().from(rooms).where(eq(rooms.id, cls.roomId)) : [null];
   const term = await getCurrentTerm(school.id);
   const photoUrl = s.photoUrl && r2Enabled ? await presignDownload(s.photoUrl) : null;
+  const [login] = s.userId
+    ? await db.select({ username: userTable.username, email: userTable.email })
+        .from(userTable).where(eq(userTable.id, s.userId))
+    : [null];
 
   const gs = await db.select({ name: guardians.name, phone: guardians.phone, relation: guardians.relation })
     .from(studentGuardians)
@@ -66,7 +70,12 @@ export default async function StudentFile({ params, searchParams }: {
             </p>
           </div>
         </div>
-        {isAdmin && <Link href={`/students/${id}/edit`} className={btnCls}>Edit profile</Link>}
+        {isAdmin && (
+          <div className="flex shrink-0 gap-2">
+            <Link href={`/students/${id}/enroll`} className={btnGhostCls}>Enrol</Link>
+            <Link href={`/students/${id}/edit`} className={btnCls}>Edit profile</Link>
+          </div>
+        )}
       </div>
 
       {/* tabs — URL state, stable order */}
@@ -88,7 +97,8 @@ export default async function StudentFile({ params, searchParams }: {
               {[["Date of birth", s.dob], ["Place of birth", s.placeOfBirth],
                 ["Nationality", s.nationality], ["Hometown", s.hometown],
                 ["Religion", s.religion], ["Residential address", s.address],
-                ["Previous school", s.previousSchool]].map(([l, v]) => (
+                ["Previous school", s.previousSchool],
+                ["Attendance", s.boarding ? "Boarder" : "Day student"]].map(([l, v]) => (
                 <div key={String(l)} className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">{l}</dt>
                   <dd className="text-right">{v ?? "—"}</dd>
@@ -126,14 +136,20 @@ export default async function StudentFile({ params, searchParams }: {
           <Card>
             <h2 className="font-semibold">Access & photo</h2>
             <dl className="mt-2.5 space-y-1.5 text-sm">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <dt className="text-muted-foreground">Student login</dt>
-                <dd>{s.userId ? <span className="text-success">active</span>
-                  : isAdmin ? <IssueLoginButton slug={slug} kind="student" id={s.id} /> : "—"}</dd>
+                <dd className="flex items-center gap-2">
+                  {s.userId ? (
+                    <>
+                      <span className="font-mono text-xs">{login?.username ?? login?.email}</span>
+                      {isAdmin && <ResetPasswordButton slug={slug} kind="student" id={s.id} />}
+                    </>
+                  ) : isAdmin ? <IssueLoginButton slug={slug} kind="student" id={s.id} /> : "—"}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Admitted</dt>
-                <dd>{s.createdAt.toISOString().slice(0, 10)}</dd>
+                <dd>{s.admittedOn ?? s.createdAt.toISOString().slice(0, 10)}</dd>
               </div>
             </dl>
             {isAdmin && <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} /></div>}
@@ -164,15 +180,25 @@ async function AcademicsTab({ schoolId, studentId, termId }: {
       .innerJoin(academicYears, eq(enrollments.yearId, academicYears.id))
       .innerJoin(classes, eq(enrollments.classId, classes.id))
       .where(eq(enrollments.studentId, studentId)),
-    db.select({ termId: reportCards.termId, name: terms.name, published: reportCards.published })
-      .from(reportCards).innerJoin(terms, eq(reportCards.termId, terms.id))
-      .where(eq(reportCards.studentId, studentId)),
+    db.select({
+      termId: reportCards.termId, name: terms.name, published: reportCards.published,
+      data: reportCards.data, startsAt: terms.startsAt,
+    }).from(reportCards).innerJoin(terms, eq(reportCards.termId, terms.id))
+      .where(eq(reportCards.studentId, studentId)).orderBy(terms.startsAt),
     termId
       ? db.select().from(attendanceRecords).where(and(
           eq(attendanceRecords.studentId, studentId), eq(attendanceRecords.termId, termId)))
       : [],
   ]);
   const present = att.filter((a) => a.status !== "absent").length;
+  // performance over time: average subject total per term (from the immutable
+  // report snapshots), so the office sees the trend at a glance
+  const trend = reports
+    .filter((r) => r.data.subjects.length > 0)
+    .map((r) => ({
+      name: r.name,
+      avg: Math.round(r.data.subjects.reduce((a, x) => a + x.total, 0) / r.data.subjects.length),
+    }));
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
@@ -195,6 +221,23 @@ async function AcademicsTab({ schoolId, studentId, termId }: {
           {reports.length === 0 && <li className="text-muted-foreground">None yet.</li>}
         </ul>
       </Card>
+      {trend.length > 0 && (
+        <Card className="md:col-span-2">
+          <h2 className="font-semibold">Performance over time</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">Average score across all subjects, per term.</p>
+          <div className="mt-3 space-y-2">
+            {trend.map((t, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm">
+                <span className="w-28 shrink-0 text-muted-foreground">{t.name}</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, t.avg)}%` }} />
+                </div>
+                <span className="w-10 text-right font-medium" data-nums="">{t.avg}%</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
       <Card className="md:col-span-2">
         <h2 className="font-semibold">Enrolment history</h2>
         <ul className="mt-2 space-y-1 text-sm">

@@ -13,7 +13,7 @@ const LABELS: Record<string, string> = {
   report: "Report card", platform: "Console", schools: "Schools", audit: "Audit log",
   onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
   financials: "Financials", broadcast: "Broadcast", users: "All users",
-  edit: "Edit",
+  edit: "Edit", enroll: "Enrol",
 };
 
 /** Path-derived breadcrumbs; id-looking segments render as a neutral marker. */

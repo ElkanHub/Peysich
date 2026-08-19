@@ -28,6 +28,29 @@ export function SearchBox({ placeholder = "Search…" }: { placeholder?: string 
   );
 }
 
+/** URL-driven filter dropdown — changing it filters the list immediately. */
+export function FilterSelect({ name, options, allLabel }: {
+  name: string; options: { value: string; label: string }[]; allLabel: string;
+}) {
+  const router = useRouter();
+  return (
+    <select
+      defaultValue={typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get(name) ?? "" : ""}
+      onChange={(e) => {
+        const p = new URLSearchParams(window.location.search);
+        e.target.value ? p.set(name, e.target.value) : p.delete(name);
+        p.delete("page");
+        router.push(`${window.location.pathname}?${p}`);
+      }}
+      className="rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+    >
+      <option value="">{allLabel}</option>
+      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
+
 export const PER_PAGE = 15;
 
 export function Pagination({ page, count }: { page: number; count: number }) {

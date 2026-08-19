@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { staff } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { createStaff } from "../actions";
-import { IssueLoginButton } from "@/ui/issue-login";
+import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { Card, DataTable, Field, PageHeader, Tr, Td, btnCls, inputCls } from "@/ui/kit";
 
 export default async function Staff({ params }: { params: Promise<{ school: string }> }) {
@@ -21,7 +21,9 @@ export default async function Staff({ params }: { params: Promise<{ school: stri
             <Td className="font-medium">{s.name}</Td>
             <Td className="capitalize">{s.staffRole}</Td>
             <Td>{s.email ?? "—"}</Td><Td>{s.phone ?? "—"}</Td>
-            <Td>{s.userId ? <span className="text-xs text-success">active</span>
+            <Td>{s.userId
+              ? <span className="inline-flex items-center gap-2"><span className="text-xs text-success">active</span>
+                  <ResetPasswordButton slug={slug} kind="staff" id={s.id} /></span>
               : <IssueLoginButton slug={slug} kind="staff" id={s.id} />}</Td>
           </Tr>
         ))}

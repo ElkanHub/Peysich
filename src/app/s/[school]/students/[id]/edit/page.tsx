@@ -41,6 +41,12 @@ export default async function EditStudent({ params }: {
                 {cls.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
+            <Field label="Admission date"><input name="admittedOn" type="date" defaultValue={s.admittedOn ?? ""} className={inputCls} /></Field>
+            <Field label="Attendance type">
+              <label className="flex h-10 items-center gap-2 text-sm">
+                <input type="checkbox" name="boarding" defaultChecked={s.boarding} /> Boarder (unticked = day student)
+              </label>
+            </Field>
           </div>
         </Card>
 

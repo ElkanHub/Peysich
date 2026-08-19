@@ -2,9 +2,10 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { staff, guardians, students, classes } from "@/db/schema";
+import { staff, guardians, students, classes, user as userTable } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
-import { createSchoolLogin } from "@/core/accounts";
+import { auth } from "@/core/auth";
+import { createSchoolLogin, tempPassword } from "@/core/accounts";
 
 export type IssueResult = { loginAs: string; password: string } | { error: string };
 
@@ -56,6 +57,25 @@ export async function issueLogin(
   await db.update(students).set({ userId: r.userId }).where(eq(students.id, id));
   revalidatePath(`/students/${id}`);
   return { loginAs: r.loginAs, password: r.password };
+}
+
+/** Reset a school person's password — for when a family loses the login and
+ *  comes to the office. New temp password is shown ONCE to the admin. */
+export async function resetLogin(
+  slug: string, kind: "staff" | "guardian" | "student", id: string,
+): Promise<IssueResult> {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const table = kind === "staff" ? staff : kind === "guardian" ? guardians : students;
+  const [rec] = await db.select({ userId: table.userId }).from(table)
+    .where(and(eq(table.id, id), eq(table.schoolId, school.id)));
+  if (!rec?.userId) return { error: "No login exists yet" };
+  const [u] = await db.select().from(userTable).where(and(
+    eq(userTable.id, rec.userId), eq(userTable.schoolId, school.id)));
+  if (!u) return { error: "Login not found" };
+  const password = tempPassword();
+  const ctx = await auth.$context;
+  await ctx.internalAdapter.updatePassword(u.id, await ctx.password.hash(password));
+  return { loginAs: u.username ?? u.email, password };
 }
 
 export async function setClassTeacher(slug: string, classId: string, f: FormData) {

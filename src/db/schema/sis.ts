@@ -62,9 +62,13 @@ export const students = pgTable("students", {
   emergencyName: text("emergency_name"), emergencyPhone: text("emergency_phone"),
   /** How/where this family pays fees (MoMo number, bank branch, who pays, when) */
   paymentNote: text("payment_note"),
+  boarding: boolean("boarding").notNull().default(false), // day student vs boarder
+  admittedOn: date("admitted_on"), // official admission date (createdAt = record creation)
+  /** Admission wizard progress: 1..7 while a draft, null once admission completes. */
+  admissionStep: integer("admission_step"),
   classId: text("class_id"), // current class (denormalized; history in enrollments)
   userId: text("user_id"), // optional JHS login
-  status: text("status").notNull().default("active"), // active|alumni|left
+  status: text("status").notNull().default("active"), // draft|active|alumni|left
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
