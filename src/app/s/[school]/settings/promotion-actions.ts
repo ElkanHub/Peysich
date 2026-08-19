@@ -69,5 +69,5 @@ export async function runPromotion(slug: string, f: FormData) {
 
   revalidatePath("/");
   revalidatePath("/settings");
-  redirect("/settings?promoted=1");
+  redirect("/settings?flash=done");
 }

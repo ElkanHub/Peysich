@@ -6,6 +6,7 @@ import { students, classes, academicYears, enrollments, rooms } from "@/db/schem
 import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { enrollStudent } from "../actions";
+import { SubmitButton } from "@/ui/feedback";
 
 /** ENROLL STUDENT — academic placement for a child who already exists in the
  *  directory (the other half of add ≠ enrol). Shows seats vs. room capacity. */
@@ -73,7 +74,7 @@ export default async function EnrollStudent({ params }: {
           </Field>
           <div className="col-span-2 mt-1 flex items-center justify-between border-t border-border pt-4">
             <Link href={`/students/${id}`} className={btnGhostCls}>Cancel</Link>
-            <button className={btnCls}>Enrol student</button>
+            <SubmitButton className={btnCls} pendingText="Enrolling…">Enrol student</SubmitButton>
           </div>
         </form>
       </Card>

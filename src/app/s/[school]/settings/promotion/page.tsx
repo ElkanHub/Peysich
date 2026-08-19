@@ -5,6 +5,7 @@ import { levels, classes, students } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { runPromotion } from "../promotion-actions";
+import { SubmitButton } from "@/ui/feedback";
 
 /** YEAR-END PROMOTION — mirrors what actually happens on the ground:
  *  each class is sent somewhere (next class, graduate, or stay), and the
@@ -101,7 +102,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
 
         <div className="flex items-center justify-between">
           <Link href="/settings" className={btnGhostCls}>Cancel</Link>
-          <button className={btnCls + " bg-danger"}>Run promotion</button>
+          <SubmitButton className={btnCls + " bg-danger"} pendingText="Promoting…">Run promotion</SubmitButton>
         </div>
       </form>
     </div>

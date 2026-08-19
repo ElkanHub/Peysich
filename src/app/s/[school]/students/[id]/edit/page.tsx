@@ -8,6 +8,7 @@ import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { PhotoUploader } from "../uploaders";
 import { updateStudent } from "../actions";
+import { SubmitButton } from "@/ui/feedback";
 
 /** Edit the Student File — every field the office keeps on a child, grouped
  *  the same way the file displays them. Save returns to the file. */
@@ -98,7 +99,7 @@ export default async function EditStudent({ params, searchParams }: {
         </Card>
 
         <div className="flex items-center gap-3">
-          <button className={btnCls}>Save student file</button>
+          <SubmitButton className={btnCls} pendingText="Saving…">Save student file</SubmitButton>
           <Link href={`/students/${id}`} className={btnGhostCls}>Cancel</Link>
         </div>
       </form>

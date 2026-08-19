@@ -1,6 +1,7 @@
 "use server";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
 import {
@@ -90,6 +91,7 @@ export async function saveBranding(slug: string, f: FormData) {
     updatedAt: new Date(),
   }).where(eq(schools.id, school.id));
   revalidatePath(`/settings`);
+  redirect(`/settings?flash=saved`);
 }
 
 // ── People ──

@@ -36,7 +36,7 @@ export async function updateStudent(slug: string, id: string, f: FormData) {
     boarding: f.get("boarding") === "on", admittedOn: str(f, "admittedOn"),
   }).where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   revalidatePath(`/students/${id}`);
-  redirect(`/students/${id}`);
+  redirect(`/students/${id}?flash=saved`);
 }
 
 /** ENROL an existing student: place them into a year + class. One enrolment
@@ -150,6 +150,7 @@ export async function savePaymentNote(slug: string, id: string, f: FormData) {
   await db.update(students).set({ paymentNote: str(f, "paymentNote") })
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   revalidatePath(`/students/${id}`);
+  redirect(`/students/${id}?tab=fees&flash=saved`);
 }
 
 export async function setStudentPhoto(slug: string, id: string, fileKey: string) {

@@ -16,6 +16,7 @@ import {
   completeAdmission, discardAdmission,
 } from "./wizard-actions";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/ui/feedback";
 
 const STAGES = ["Identity", "Placement", "Guardians", "Health", "Documents", "Billing", "Review"];
 const ERR: Record<string, string> = {
@@ -92,7 +93,7 @@ function Footer({ back, label = "Save & continue" }: { back?: string; label?: st
   return (
     <div className="col-span-2 mt-1 flex items-center justify-between border-t border-border pt-4">
       {back ? <Link href={back} className={btnGhostCls}>Back</Link> : <span />}
-      <button className={btnCls}>{label}</button>
+      <SubmitButton className={btnCls}>{label}</SubmitButton>
     </div>
   );
 }
@@ -209,7 +210,7 @@ async function GuardiansStage({ slug, s }: { slug: string; s: S }) {
           <label className="col-span-2 flex items-center gap-2 text-sm">
             <input type="checkbox" name="isPrimary" defaultChecked={gs.length === 0} /> Primary contact (billing & pickups)
           </label>
-          <button className={btnGhostCls + " col-span-2"}>Add guardian</button>
+          <SubmitButton className={btnGhostCls + " col-span-2"}>Add guardian</SubmitButton>
         </form>
       </Card>
       <Card>
@@ -295,7 +296,7 @@ async function DocumentsStage({ slug, s }: { slug: string; s: S }) {
           <Field label="Kept at (be precise)"><input name="location" placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
           <Field label="Received from"><input name="receivedFrom" className={inputCls} /></Field>
           <Field label="Note"><input name="note" className={inputCls} /></Field>
-          <button className={btnGhostCls + " col-span-2"}>Record item</button>
+          <SubmitButton className={btnGhostCls + " col-span-2"}>Record item</SubmitButton>
         </form>
       </Card>
       <form action={advanceStep.bind(null, slug, s.id, 5)}>
@@ -398,7 +399,7 @@ async function ReviewStage({ slug, s, schoolId }: { slug: string; s: S; schoolId
           </label>
           <div className="mt-2 flex items-center justify-between border-t border-border pt-4">
             <Link href={`?draft=${s.id}&step=6`} className={btnGhostCls}>Back</Link>
-            <button className={btnCls}>Complete admission</button>
+            <SubmitButton className={btnCls} pendingText="Completing…">Complete admission</SubmitButton>
           </div>
         </form>
         <form action={discardAdmission.bind(null, slug, s.id)} className="mt-3 text-right">

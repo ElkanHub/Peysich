@@ -15,6 +15,7 @@ import { PhotoUploader, DocumentUploader } from "./uploaders";
 import { addStudentItem, returnStudentItem, savePaymentNote, cancelExit } from "./actions";
 import { addGuardianToStudent, unlinkChild } from "../../guardians/actions";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/ui/feedback";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 const TABS = ["profile", "academics", "documents", "fees"] as const;
@@ -203,7 +204,7 @@ export default async function StudentFile({ params, searchParams }: {
                   <label className="col-span-2 flex items-center gap-2 text-[13px]">
                     <input type="checkbox" name="isPrimary" /> Primary contact
                   </label>
-                  <button className={btnGhostCls + " col-span-2"}>Add guardian</button>
+                  <SubmitButton className={btnGhostCls + " col-span-2"}>Add guardian</SubmitButton>
                 </form>
               </details>
             )}
@@ -403,7 +404,7 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
                           className="flex items-center gap-1">
                           <input name="returnedTo" placeholder="returned to…"
                             className="w-28 rounded-md border border-border px-2 py-1 text-[12px]" />
-                          <button className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">Return</button>
+                          <SubmitButton className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">Return</SubmitButton>
                         </form>
                       )}
                     </Td>
@@ -419,7 +420,7 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
             <Field label="Kept at (be precise)"><input name="location" required placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
             <Field label="Received from"><input name="receivedFrom" placeholder="Mother — Akosua Mensah" className={inputCls} /></Field>
             <Field label="Note"><input name="note" className={inputCls} /></Field>
-            <button className={btnGhostCls + " col-span-2"}>Record item into custody</button>
+            <SubmitButton className={btnGhostCls + " col-span-2"}>Record item into custody</SubmitButton>
           </form>
         )}
       </Card>
@@ -450,7 +451,7 @@ async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
             <textarea name="paymentNote" rows={2} defaultValue={paymentNote ?? ""}
               placeholder='e.g. "Father pays via MoMo 024 XXX XXXX, usually week 2 of term. Backup: GCB Adum branch, standing order."'
               className={inputCls} />
-            <button className={btnGhostCls + " mt-2"}>Save arrangement</button>
+            <SubmitButton className={btnGhostCls + " mt-2"} pendingText="Saving…">Save arrangement</SubmitButton>
           </form>
         ) : (
           <p className="mt-2 text-sm">{paymentNote ?? "—"}</p>

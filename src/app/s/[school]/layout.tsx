@@ -1,4 +1,5 @@
 import { requireSchool } from "@/core/school-context";
+import { Flash } from "@/ui/feedback";
 import { Shell } from "@/ui/shell";
 
 export default async function SchoolLayout({ children, params }: {
@@ -35,6 +36,7 @@ export default async function SchoolLayout({ children, params }: {
         </div>
       )}
       {children}
+      <Flash />
     </Shell>
   );
 }

@@ -1,3 +1,4 @@
+import { Flash } from "@/ui/feedback";
 import { redirect } from "next/navigation";
 import { getSession } from "@/core/session";
 import { AppNav } from "@/ui/nav";
@@ -30,7 +31,8 @@ export default async function PlatformLayout({ children }: { children: React.Rea
         <header className="sticky top-0 z-30 mt-13 flex h-12 items-center border-b border-border bg-card/85 px-4 backdrop-blur lg:mt-0 lg:px-8">
           <Breadcrumbs root="Console" />
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">{children}
+      <Flash /></main>
       </div>
     </div>
   );

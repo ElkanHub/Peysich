@@ -10,6 +10,7 @@ import { Card, Field, PageHeader, Badge, Empty, inputCls, btnCls, btnGhostCls } 
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { updateGuardian, linkChild, unlinkChild, setPrimaryGuardian } from "../actions";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/ui/feedback";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 const PREF = {
@@ -131,7 +132,7 @@ export default async function GuardianProfile({ params, searchParams }: {
                   placeholder='e.g. "Call after 4pm — works night shift"' className={inputCls} />
               </Field>
             </div>
-            <button className={btnGhostCls + " col-span-2"}>Save contact details</button>
+            <SubmitButton className={btnGhostCls + " col-span-2"} pendingText="Saving…">Save contact details</SubmitButton>
           </form>
         </Card>
 
@@ -192,10 +193,10 @@ export default async function GuardianProfile({ params, searchParams }: {
                   {k.isPrimary
                     ? <Badge tone="brand">primary contact</Badge>
                     : <form action={setPrimaryGuardian.bind(null, slug, id, k.id)}>
-                        <button className="rounded border border-border px-2 py-1 text-[11.5px] hover:bg-muted">Make primary</button>
+                        <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] hover:bg-muted">Make primary</SubmitButton>
                       </form>}
                   <form action={unlinkChild.bind(null, slug, id, k.id)}>
-                    <button className="rounded border border-border px-2 py-1 text-[11.5px] text-danger hover:bg-muted">Unlink</button>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] text-danger hover:bg-muted">Unlink</SubmitButton>
                   </form>
                 </span>
               </li>
@@ -215,7 +216,7 @@ export default async function GuardianProfile({ params, searchParams }: {
                   <span>{c.lastName}, {c.firstName}
                     <span className="ml-2 text-[12px] text-muted-foreground">{c.admissionNo} · {c.className ?? "no class"}</span></span>
                   <form action={linkChild.bind(null, slug, id, c.id)}>
-                    <button className="rounded border border-border px-2 py-1 text-[11.5px] font-medium text-primary hover:bg-muted">Link</button>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] font-medium text-primary hover:bg-muted">Link</SubmitButton>
                   </form>
                 </li>
               ))}

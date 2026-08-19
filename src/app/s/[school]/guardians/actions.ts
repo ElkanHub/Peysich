@@ -38,6 +38,7 @@ export async function updateGuardian(slug: string, id: string, f: FormData) {
     note: str(f, "note"),
   }).where(and(eq(guardians.id, id), eq(guardians.schoolId, school.id)));
   touch(id);
+  redirect(`/guardians/${id}?flash=saved`);
 }
 
 /** Link an existing student to this guardian (guardian-profile side). */
@@ -49,7 +50,7 @@ export async function linkChild(slug: string, guardianId: string, studentId: str
   await db.insert(studentGuardians)
     .values({ studentId, guardianId, isPrimary: false }).onConflictDoNothing();
   touch(guardianId, studentId);
-  redirect(`/guardians/${guardianId}`);
+  redirect(`/guardians/${guardianId}?flash=linked`);
 }
 
 export async function unlinkChild(slug: string, guardianId: string, studentId: string) {

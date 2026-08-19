@@ -10,6 +10,7 @@ import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit
 import { GradingEditor } from "./grading";
 import { LogoUploader } from "./logo";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function Settings({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -49,7 +50,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
           <Field label="Year name"><input name="name" placeholder="2025/2026" required className={inputCls} /></Field>
           <Field label="Starts"><input name="startsAt" type="date" required className={inputCls} /></Field>
           <Field label="Ends"><input name="endsAt" type="date" required className={inputCls} /></Field>
-          <button className={btnCls + " col-span-3"}>Create year (3 terms auto-created)</button>
+          <SubmitButton className={btnCls + " col-span-3"}>Create year (3 terms auto-created)</SubmitButton>
         </form>
       </Card>
 
@@ -65,7 +66,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
                 </label>
               ))}
             </div>
-            <button className={btnCls + " mt-4"}>Create structure</button>
+            <SubmitButton className={btnCls + " mt-4"}>Create structure</SubmitButton>
           </form>
         ) : (
           <div className="mt-3 space-y-2 text-sm">
@@ -99,7 +100,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
                 </select>
               </Field>
               <Field label="Class name"><input name="name" placeholder="Basic 4 B" required className={inputCls} /></Field>
-              <button className={btnCls}>Add class</button>
+              <SubmitButton className={btnCls}>Add class</SubmitButton>
             </form>
             <p className="mt-2 text-muted-foreground">Subjects: {subs.map((s) => s.name).join(", ")}</p>
           </div>
@@ -139,7 +140,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
           </Field>
           <Field label="Capacity"><input name="capacity" type="number" min={1} placeholder="35" className={inputCls} /></Field>
           <Field label="Notes"><input name="notes" placeholder="Block B, upstairs" className={inputCls} /></Field>
-          <button className={btnGhostCls + " col-span-2 sm:col-span-4"}>Add room</button>
+          <SubmitButton className={btnGhostCls + " col-span-2 sm:col-span-4"}>Add room</SubmitButton>
         </form>
       </Card>
 
@@ -162,7 +163,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
           <Field label="Phone"><input name="phone" defaultValue={b.phone} className={inputCls} /></Field>
           <Field label="Email"><input name="email" defaultValue={b.email} className={inputCls} /></Field>
           <Field label="SMS sender ID"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
-          <button className={btnCls + " col-span-2"}>Save branding</button>
+          <SubmitButton className={btnCls + " col-span-2"} pendingText="Saving…">Save branding</SubmitButton>
         </form>
         <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>
       </Card>

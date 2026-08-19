@@ -9,6 +9,7 @@ import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { exitStudent } from "../actions";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/ui/feedback";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -140,7 +141,7 @@ export default async function ExitStudent({ params, searchParams }: {
           )}
           <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
             <Link href={`/students/${id}`} className={btnGhostCls}>Cancel</Link>
-            <button className={btnCls + " bg-danger"}>Exit student</button>
+            <SubmitButton className={btnCls + " bg-danger"} pendingText="Exiting…">Exit student</SubmitButton>
           </div>
         </Card>
       </form>
