@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { students, classes } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
-import { r2Enabled } from "@/lib/r2";
+import { r2Enabled, presignDownload } from "@/lib/r2";
 import { PhotoUploader } from "../uploaders";
 import { updateStudent } from "../actions";
 
@@ -22,6 +22,7 @@ export default async function EditStudent({ params, searchParams }: {
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   if (!s) notFound();
   const cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+  const photoUrl = s.photoUrl && r2Enabled ? await presignDownload(s.photoUrl) : null;
 
   return (
     <div className="max-w-3xl">
@@ -33,7 +34,7 @@ export default async function EditStudent({ params, searchParams }: {
       )}
       <Card className="mb-5">
         <h2 className="font-semibold">Profile photo</h2>
-        <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} /></div>
+        <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} /></div>
       </Card>
       <form action={updateStudent.bind(null, slug, id)} className="space-y-5">
         <Card>

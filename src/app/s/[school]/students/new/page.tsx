@@ -375,7 +375,7 @@ async function ReviewStage({ slug, s, schoolId }: { slug: string; s: S; schoolId
           </dl>
         </div>
         <div className="mt-4 border-t border-border pt-4">
-          <PhotoUploader slug={slug} studentId={s.id} enabled={r2Enabled} />
+          <PhotoUploader slug={slug} studentId={s.id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} />
         </div>
       </Card>
       <Card>

@@ -157,7 +157,7 @@ export default async function StudentFile({ params, searchParams }: {
                 <dd>{s.admittedOn ?? s.createdAt.toISOString().slice(0, 10)}</dd>
               </div>
             </dl>
-            {isAdmin && <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} /></div>}
+            {isAdmin && <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} /></div>}
           </Card>
         </div>
       )}

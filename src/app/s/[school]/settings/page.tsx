@@ -9,7 +9,7 @@ import { addRoom, deleteRoom, setClassRoom } from "../actions-rooms";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { GradingEditor } from "./grading";
 import { LogoUploader } from "./logo";
-import { r2Enabled } from "@/lib/r2";
+import { r2Enabled, presignDownload } from "@/lib/r2";
 
 export default async function Settings({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -25,6 +25,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
   ]);
   const [scheme] = await db.select().from(gradingSchemes).where(eq(gradingSchemes.schoolId, school.id));
   const b = school.branding;
+  const logoUrl = b.logoUrl && r2Enabled ? await presignDownload(b.logoUrl) : null;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -163,7 +164,7 @@ export default async function Settings({ params }: { params: Promise<{ school: s
           <Field label="SMS sender ID"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
           <button className={btnCls + " col-span-2"}>Save branding</button>
         </form>
-        <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} /></div>
+        <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>
       </Card>
 
       <Card>

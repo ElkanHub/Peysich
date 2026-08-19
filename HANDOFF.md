@@ -42,6 +42,14 @@ redeploy, subdomain mode takes over automatically — no code changes.
 ## 4. File storage — Cloudflare R2 (Phase 1)
 - [ ] Cloudflare account → R2 → create bucket `peysich` → API token (Object Read & Write)
       → `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
+- Until these are set, every upload UI (photos, documents, logo) shows
+  "activates once file storage is configured" instead of dead controls.
+- Optional `R2_ENDPOINT` overrides the account URL for any S3-compatible
+  store (e.g. MinIO for local dev); leave it unset in production.
+- R2 bucket → Settings → CORS policy: allow `PUT` and `GET` from your app
+  origins (`https://peysich.com`, `https://*.peysich.com`, and your
+  `*.vercel.app` URL while in preview mode) — browsers upload straight to R2
+  with presigned URLs, so R2 must accept cross-origin PUTs.
 
 ## 5. Payments — Paystack (*later*, Phase 3)
 - [ ] Register/verify a Paystack business account (needs business KYC docs).

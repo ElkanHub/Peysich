@@ -7,10 +7,17 @@ export const r2Enabled = Boolean(
   process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY,
 );
 
+/** R2_ENDPOINT overrides the account-derived URL — for any S3-compatible
+ *  store (MinIO in dev, another provider later). Path-style is forced there
+ *  because custom endpoints rarely support virtual-hosted buckets. */
+const endpoint = process.env.R2_ENDPOINT
+  || `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
 const client = r2Enabled
   ? new S3Client({
       region: "auto",
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint,
+      forcePathStyle: Boolean(process.env.R2_ENDPOINT),
       credentials: {
         accessKeyId: process.env.R2_ACCESS_KEY_ID!,
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
