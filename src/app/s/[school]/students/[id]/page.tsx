@@ -1,61 +1,370 @@
-import { and, eq } from "drizzle-orm";
+import Link from "next/link";
+import { and, eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { students, classes, guardians, studentGuardians, enrollments, academicYears } from "@/db/schema";
-import { requireSchool } from "@/core/school-context";
-import { Card, PageHeader } from "@/ui/kit";
+import {
+  students, classes, guardians, studentGuardians, enrollments, academicYears,
+  studentFiles, studentItems, feeInvoices, feePayments, reportCards, terms,
+  attendanceRecords, rooms,
+} from "@/db/schema";
+import { requireSchool, getCurrentTerm } from "@/core/school-context";
+import { r2Enabled, presignDownload } from "@/lib/r2";
+import { Card, DataTable, Field, PageHeader, Tr, Td, Badge, Empty, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { IssueLoginButton } from "@/ui/issue-login";
+import { PhotoUploader, DocumentUploader } from "./uploaders";
+import { addStudentItem, returnStudentItem, savePaymentNote } from "./actions";
+import { cn } from "@/lib/utils";
 
-export default async function StudentDetail({ params }: {
+const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+const TABS = ["profile", "academics", "documents", "fees"] as const;
+const TAB_LABEL = { profile: "Profile", academics: "Academics", documents: "Documents & Items", fees: "Fees & Payments" };
+
+/** THE STUDENT FILE — everything the office knows about one child, in one
+ *  place: profile, academic history, digital documents + physical custody
+ *  register, and the money story. Tabs are URL state; actions stay put. */
+export default async function StudentFile({ params, searchParams }: {
   params: Promise<{ school: string; id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { school: slug, id } = await params;
-  const { school } = await requireSchool(slug, ["admin", "teacher"]);
+  const sp = await searchParams;
+  const tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? sp.tab as typeof TABS[number] : "profile";
+  const { school, user } = await requireSchool(slug, ["admin", "teacher"]);
+  const isAdmin = ["admin", "platform_admin"].includes(user.role);
+
   const [s] = await db.select().from(students)
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   if (!s) notFound();
-  const [cls] = s.classId
-    ? await db.select().from(classes).where(eq(classes.id, s.classId)) : [null];
+  const [cls] = s.classId ? await db.select().from(classes).where(eq(classes.id, s.classId)) : [null];
+  const [room] = cls?.roomId ? await db.select().from(rooms).where(eq(rooms.id, cls.roomId)) : [null];
+  const term = await getCurrentTerm(school.id);
+  const photoUrl = s.photoUrl && r2Enabled ? await presignDownload(s.photoUrl) : null;
+
   const gs = await db.select({ name: guardians.name, phone: guardians.phone, relation: guardians.relation })
     .from(studentGuardians)
     .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
     .where(eq(studentGuardians.studentId, id));
-  const history = await db.select({ year: academicYears.name, className: classes.name, status: enrollments.status })
-    .from(enrollments)
-    .innerJoin(academicYears, eq(enrollments.yearId, academicYears.id))
-    .innerJoin(classes, eq(enrollments.classId, classes.id))
-    .where(eq(enrollments.studentId, id));
 
   return (
-    <div className="max-w-2xl">
-      <PageHeader title={`${s.firstName} ${s.lastName}`}
-        sub={`${s.admissionNo} · ${cls?.name ?? "no class"} · ${s.status}`} />
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <h2 className="font-semibold">Profile</h2>
-          <dl className="mt-2 space-y-1 text-sm">
-            <div className="flex justify-between"><dt className="text-muted-foreground">Sex</dt><dd className="capitalize">{s.sex}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">Date of birth</dt><dd>{s.dob ?? "—"}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">Admitted</dt><dd>{s.createdAt.toISOString().slice(0, 10)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">Student login</dt>
-              <dd>{s.userId ? <span className="text-success">active</span>
-                : <IssueLoginButton slug={slug} kind="student" id={s.id} />}</dd></div>
-          </dl>
-        </Card>
-        <Card>
-          <h2 className="font-semibold">Guardians</h2>
-          {gs.length === 0 && <p className="mt-2 text-sm text-muted-foreground">None linked.</p>}
-          <ul className="mt-2 space-y-1 text-sm">
-            {gs.map((g, i) => <li key={i}>{g.name} · {g.phone} <span className="text-muted-foreground">({g.relation})</span></li>)}
-          </ul>
-        </Card>
-        <Card className="md:col-span-2">
-          <h2 className="font-semibold">Enrolment history</h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            {history.map((h, i) => <li key={i}>{h.year} — {h.className} <span className="text-muted-foreground">({h.status})</span></li>)}
-          </ul>
-        </Card>
+    <div className="max-w-3xl">
+      {/* file header — identity + THE primary action, always top-right */}
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-lg font-semibold text-primary">
+            {photoUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+              : `${s.firstName[0]}${s.lastName[0]}`}
+          </span>
+          <div>
+            <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+              {s.firstName} {s.otherNames ? `${s.otherNames} ` : ""}{s.lastName}
+            </h1>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
+              {s.admissionNo} · {cls?.name ?? "no class"}{room ? ` (${room.name})` : ""} · <span className="capitalize">{s.sex}</span>
+              <span className="ml-2"><Badge tone={s.status === "active" ? "success" : "default"}>{s.status}</Badge></span>
+            </p>
+          </div>
+        </div>
+        {isAdmin && <Link href={`/students/${id}/edit`} className={btnCls}>Edit profile</Link>}
       </div>
+
+      {/* tabs — URL state, stable order */}
+      <div className="mb-5 flex gap-1 border-b border-border">
+        {TABS.map((t) => (
+          <Link key={t} href={`?tab=${t}`}
+            className={cn("border-b-2 px-3.5 py-2 text-[13px] font-medium transition-colors",
+              tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
+            {TAB_LABEL[t]}
+          </Link>
+        ))}
+      </div>
+
+      {tab === "profile" && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <h2 className="font-semibold">Personal</h2>
+            <dl className="mt-2.5 space-y-1.5 text-sm">
+              {[["Date of birth", s.dob], ["Place of birth", s.placeOfBirth],
+                ["Nationality", s.nationality], ["Hometown", s.hometown],
+                ["Religion", s.religion], ["Residential address", s.address],
+                ["Previous school", s.previousSchool]].map(([l, v]) => (
+                <div key={String(l)} className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">{l}</dt>
+                  <dd className="text-right">{v ?? "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+          <Card>
+            <h2 className="font-semibold">Health & emergency</h2>
+            <dl className="mt-2.5 space-y-1.5 text-sm">
+              <div className="flex justify-between"><dt className="text-muted-foreground">Blood group</dt><dd>{s.bloodGroup ?? "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Medical notes</dt>
+                <dd className="text-right">{s.medicalNotes ?? "—"}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Emergency contact</dt>
+                <dd>{s.emergencyName ? `${s.emergencyName} · ${s.emergencyPhone ?? ""}` : "—"}</dd></div>
+            </dl>
+            {s.medicalNotes && (
+              <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[12px] text-warning">
+                ⚠ Has medical notes — visible to teachers of this class.
+              </p>
+            )}
+          </Card>
+          <Card>
+            <h2 className="font-semibold">Guardians</h2>
+            {gs.length === 0 && <p className="mt-2 text-sm text-muted-foreground">None linked.</p>}
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {gs.map((g, i) => (
+                <li key={i} className="flex justify-between">
+                  <span className="font-medium">{g.name}</span>
+                  <span className="text-muted-foreground">{g.phone} · {g.relation}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+          <Card>
+            <h2 className="font-semibold">Access & photo</h2>
+            <dl className="mt-2.5 space-y-1.5 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-muted-foreground">Student login</dt>
+                <dd>{s.userId ? <span className="text-success">active</span>
+                  : isAdmin ? <IssueLoginButton slug={slug} kind="student" id={s.id} /> : "—"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Admitted</dt>
+                <dd>{s.createdAt.toISOString().slice(0, 10)}</dd>
+              </div>
+            </dl>
+            {isAdmin && <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} /></div>}
+          </Card>
+        </div>
+      )}
+
+      {tab === "academics" && <AcademicsTab schoolId={school.id} studentId={id} termId={term?.id} />}
+
+      {tab === "documents" && (
+        <DocumentsTab slug={slug} schoolId={school.id} studentId={id} isAdmin={isAdmin} />
+      )}
+
+      {tab === "fees" && (
+        <FeesTab slug={slug} schoolId={school.id} studentId={id}
+          paymentNote={s.paymentNote} isAdmin={isAdmin} />
+      )}
+    </div>
+  );
+}
+
+async function AcademicsTab({ schoolId, studentId, termId }: {
+  schoolId: string; studentId: string; termId?: string;
+}) {
+  const [history, reports, att] = await Promise.all([
+    db.select({ year: academicYears.name, className: classes.name, status: enrollments.status })
+      .from(enrollments)
+      .innerJoin(academicYears, eq(enrollments.yearId, academicYears.id))
+      .innerJoin(classes, eq(enrollments.classId, classes.id))
+      .where(eq(enrollments.studentId, studentId)),
+    db.select({ termId: reportCards.termId, name: terms.name, published: reportCards.published })
+      .from(reportCards).innerJoin(terms, eq(reportCards.termId, terms.id))
+      .where(eq(reportCards.studentId, studentId)),
+    termId
+      ? db.select().from(attendanceRecords).where(and(
+          eq(attendanceRecords.studentId, studentId), eq(attendanceRecords.termId, termId)))
+      : [],
+  ]);
+  const present = att.filter((a) => a.status !== "absent").length;
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card>
+        <h2 className="font-semibold">Attendance this term</h2>
+        <p className="mt-2 text-[26px] font-semibold" data-nums="">
+          {att.length ? `${present}/${att.length}` : "—"}
+          <span className="ml-1 text-sm font-normal text-muted-foreground">days present</span>
+        </p>
+      </Card>
+      <Card>
+        <h2 className="font-semibold">Report cards</h2>
+        <ul className="mt-2 space-y-1.5 text-sm">
+          {reports.map((r) => (
+            <li key={r.termId} className="flex justify-between">
+              <Link href={`/students/${studentId}/report/${r.termId}`}
+                className="text-primary underline-offset-2 hover:underline">{r.name} report</Link>
+              <Badge tone={r.published ? "success" : "default"}>{r.published ? "published" : "draft"}</Badge>
+            </li>
+          ))}
+          {reports.length === 0 && <li className="text-muted-foreground">None yet.</li>}
+        </ul>
+      </Card>
+      <Card className="md:col-span-2">
+        <h2 className="font-semibold">Enrolment history</h2>
+        <ul className="mt-2 space-y-1 text-sm">
+          {history.map((h, i) => (
+            <li key={i} className="flex justify-between">
+              <span>{h.year} — {h.className}</span>
+              <span className="capitalize text-muted-foreground">{h.status}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
+  slug: string; schoolId: string; studentId: string; isAdmin: boolean;
+}) {
+  const [files, items] = await Promise.all([
+    db.select().from(studentFiles)
+      .where(and(eq(studentFiles.schoolId, schoolId), eq(studentFiles.studentId, studentId)))
+      .orderBy(desc(studentFiles.createdAt)),
+    db.select().from(studentItems)
+      .where(and(eq(studentItems.schoolId, schoolId), eq(studentItems.studentId, studentId)))
+      .orderBy(desc(studentItems.receivedAt)),
+  ]);
+  const links = new Map<string, string>();
+  if (r2Enabled) for (const f of files) links.set(f.id, await presignDownload(f.fileKey));
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <h2 className="font-semibold">Digital documents</h2>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">
+          Scans and uploads linked to this student — birth certificate, immunization card, past reports.
+        </p>
+        {files.length === 0
+          ? <div className="mt-3"><Empty title="No documents yet"
+              hint={r2Enabled ? "Upload the first document below." : "Uploads activate once file storage (R2) is configured — use the physical register meanwhile."} /></div>
+          : (
+            <div className="mt-3">
+              <DataTable head={["Document", "Type", "Added", "By", ""]}>
+                {files.map((f) => (
+                  <Tr key={f.id}>
+                    <Td className="font-medium">{f.title}
+                      {f.note && <p className="text-[12px] font-normal text-muted-foreground">{f.note}</p>}</Td>
+                    <Td><Badge>{f.kind.replace(/_/g, " ")}</Badge></Td>
+                    <Td className="whitespace-nowrap text-muted-foreground">{f.createdAt.toISOString().slice(0, 10)}</Td>
+                    <Td className="text-muted-foreground">{f.uploadedBy}</Td>
+                    <Td>{links.has(f.id) &&
+                      <a href={links.get(f.id)} target="_blank" className="text-[13px] font-medium text-primary">Open ↗</a>}</Td>
+                  </Tr>
+                ))}
+              </DataTable>
+            </div>
+          )}
+        {isAdmin && r2Enabled && (
+          <div className="mt-4 border-t border-border pt-4">
+            <DocumentUploader slug={slug} studentId={studentId} />
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <h2 className="font-semibold">Physical items in custody</h2>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">
+          Originals handed to the office — what was received, from whom, and exactly where it is kept.
+        </p>
+        {items.length === 0
+          ? <div className="mt-3"><Empty title="Nothing in custody"
+              hint='e.g. "Birth certificate (original) — Office cabinet A, folder 12".' /></div>
+          : (
+            <div className="mt-3">
+              <DataTable head={["Item", "Kept at", "Received", "Status", ""]}>
+                {items.map((it) => (
+                  <Tr key={it.id}>
+                    <Td className="font-medium">{it.itemName}
+                      {it.receivedFrom && <p className="text-[12px] font-normal text-muted-foreground">from {it.receivedFrom}</p>}</Td>
+                    <Td>{it.location}</Td>
+                    <Td className="whitespace-nowrap text-muted-foreground">
+                      {it.receivedAt.toISOString().slice(0, 10)} · {it.receivedBy}</Td>
+                    <Td>{it.returnedAt
+                      ? <Badge>returned {it.returnedAt.toISOString().slice(0, 10)}</Badge>
+                      : <Badge tone="brand">in custody</Badge>}</Td>
+                    <Td>
+                      {isAdmin && !it.returnedAt && (
+                        <form action={returnStudentItem.bind(null, slug, studentId, it.id)}
+                          className="flex items-center gap-1">
+                          <input name="returnedTo" placeholder="returned to…"
+                            className="w-28 rounded-md border border-border px-2 py-1 text-[12px]" />
+                          <button className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">Return</button>
+                        </form>
+                      )}
+                    </Td>
+                  </Tr>
+                ))}
+              </DataTable>
+            </div>
+          )}
+        {isAdmin && (
+          <form action={addStudentItem.bind(null, slug, studentId)}
+            className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
+            <Field label="Item"><input name="itemName" required placeholder="Birth certificate (original)" className={inputCls} /></Field>
+            <Field label="Kept at (be precise)"><input name="location" required placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
+            <Field label="Received from"><input name="receivedFrom" placeholder="Mother — Akosua Mensah" className={inputCls} /></Field>
+            <Field label="Note"><input name="note" className={inputCls} /></Field>
+            <button className={btnGhostCls + " col-span-2"}>Record item into custody</button>
+          </form>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
+  slug: string; schoolId: string; studentId: string; paymentNote: string | null; isAdmin: boolean;
+}) {
+  const invoices = await db.select().from(feeInvoices)
+    .where(and(eq(feeInvoices.schoolId, schoolId), eq(feeInvoices.studentId, studentId)))
+    .orderBy(desc(feeInvoices.createdAt));
+  const pays = invoices.length
+    ? await db.select().from(feePayments)
+        .where(eq(feePayments.invoiceId, invoices[0].id)).orderBy(desc(feePayments.createdAt))
+    : [];
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <h2 className="font-semibold">Payment arrangement</h2>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">
+          How and where this family pays — the office memory that survives staff changes.
+        </p>
+        {isAdmin ? (
+          <form action={savePaymentNote.bind(null, slug, studentId)} className="mt-3">
+            <textarea name="paymentNote" rows={2} defaultValue={paymentNote ?? ""}
+              placeholder='e.g. "Father pays via MoMo 024 XXX XXXX, usually week 2 of term. Backup: GCB Adum branch, standing order."'
+              className={inputCls} />
+            <button className={btnGhostCls + " mt-2"}>Save arrangement</button>
+          </form>
+        ) : (
+          <p className="mt-2 text-sm">{paymentNote ?? "—"}</p>
+        )}
+      </Card>
+
+      <Card>
+        <h2 className="font-semibold">Invoices</h2>
+        <div className="mt-3">
+          <DataTable head={["Raised", "Total", "Paid", "Balance", "Status"]}>
+            {invoices.map((i) => (
+              <Tr key={i.id}>
+                <Td className="text-muted-foreground">{i.createdAt.toISOString().slice(0, 10)}</Td>
+                <Td data-nums="">{ghs(i.totalPesewas)}</Td>
+                <Td data-nums="" className="text-success">{ghs(i.paidPesewas)}</Td>
+                <Td data-nums="" className={i.totalPesewas - i.paidPesewas > 0 ? "text-danger" : "text-success"}>
+                  {ghs(i.totalPesewas - i.paidPesewas)}</Td>
+                <Td><Badge tone={i.status === "paid" ? "success" : i.status === "part_paid" ? "warning" : "danger"}>
+                  {i.status.replace("_", " ")}</Badge></Td>
+              </Tr>
+            ))}
+          </DataTable>
+        </div>
+        {pays.length > 0 && (
+          <div className="mt-3 text-[12px] text-muted-foreground">
+            <p className="font-medium text-foreground">Payment trail (latest invoice)</p>
+            {pays.map((p) => (
+              <p key={p.id}>{p.createdAt.toISOString().slice(0, 10)} · {ghs(p.amountPesewas)} · via {p.method} · ref {p.reference.slice(0, 16)}</p>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

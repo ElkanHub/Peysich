@@ -32,6 +32,7 @@ export const classes = pgTable("classes", {
   levelId: text("level_id").notNull().references(() => levels.id, { onDelete: "cascade" }),
   name: text("name").notNull(), // "Basic 4 A"
   classTeacherId: text("class_teacher_id"),
+  roomId: text("room_id"), // home room
 }, (t) => [index("classes_school").on(t.schoolId, t.levelId)]);
 
 export const subjects = pgTable("subjects", {
@@ -53,7 +54,14 @@ export const students = pgTable("students", {
   admissionNo: text("admission_no").notNull(),
   firstName: text("first_name").notNull(), lastName: text("last_name").notNull(),
   otherNames: text("other_names"), sex: sexEnum("sex").notNull(),
-  dob: date("dob"), photoUrl: text("photo_url"),
+  dob: date("dob"), photoUrl: text("photo_url"), // R2 key of profile photo
+  placeOfBirth: text("place_of_birth"), nationality: text("nationality"),
+  hometown: text("hometown"), religion: text("religion"), address: text("address"),
+  previousSchool: text("previous_school"),
+  bloodGroup: text("blood_group"), medicalNotes: text("medical_notes"), // allergies, conditions
+  emergencyName: text("emergency_name"), emergencyPhone: text("emergency_phone"),
+  /** How/where this family pays fees (MoMo number, bank branch, who pays, when) */
+  paymentNote: text("payment_note"),
   classId: text("class_id"), // current class (denormalized; history in enrollments)
   userId: text("user_id"), // optional JHS login
   status: text("status").notNull().default("active"), // active|alumni|left
@@ -88,3 +96,39 @@ export const enrollments = pgTable("enrollments", {
   uniqueIndex("enroll_student_year").on(t.studentId, t.yearId),
   index("enroll_school_class").on(t.schoolId, t.yearId, t.classId),
 ]);
+
+/** Physical spaces: classrooms, science lab, ICT lab, library, hall… */
+export const rooms = pgTable("rooms", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  name: text("name").notNull(), // "Science Lab", "Room 4"
+  kind: text("kind").notNull().default("classroom"), // classroom|science_lab|ict_lab|library|hall|office|other
+  capacity: integer("capacity"),
+  notes: text("notes"),
+}, (t) => [index("rooms_school").on(t.schoolId)]);
+
+/** The student file: digital documents (R2) linked to the student. */
+export const studentFiles = pgTable("student_files", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  studentId: text("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("other"), // photo|birth_certificate|immunization|previous_report|id_document|other
+  title: text("title").notNull(),
+  fileKey: text("file_key").notNull(), // R2 object key
+  note: text("note"),
+  uploadedBy: text("uploaded_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("sfiles_student").on(t.studentId)]);
+
+/** Physical custody register: originals handed to the office (no digital copy
+ *  needed) — WHAT was received, from WHOM, and WHERE it is kept. */
+export const studentItems = pgTable("student_items", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  studentId: text("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+  itemName: text("item_name").notNull(), // "Birth certificate (original)"
+  location: text("location").notNull(), // "Office cabinet A · folder 12"
+  receivedFrom: text("received_from"), // "Mother — Akosua Mensah"
+  receivedBy: text("received_by").notNull(),
+  receivedAt: timestamp("received_at").notNull().defaultNow(),
+  returnedAt: timestamp("returned_at"),
+  returnedTo: text("returned_to"),
+  note: text("note"),
+}, (t) => [index("sitems_student").on(t.studentId)]);

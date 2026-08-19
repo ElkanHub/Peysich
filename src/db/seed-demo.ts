@@ -8,6 +8,7 @@ import {
   guardians, studentGuardians, enrollments, lessons, attendanceRecords,
   assessments, scores, skillDomains, skillRatings, feeStructures, feeInvoices,
   feePayments, assignments, submissions, announcements, events, user as userTable,
+  rooms, studentItems,
 } from "./schema";
 import { publishTermReports } from "@/modules/assessment/publish";
 import { auth } from "@/core/auth";
@@ -312,6 +313,45 @@ async function main() {
       const younger = (byClass.get(academicCls[2]?.id ?? "") ?? [])[0];
       if (younger) await db.insert(studentGuardians)
         .values({ studentId: younger.id, guardianId: g.id }).onConflictDoNothing();
+    }
+  }
+
+  // ── 14. rooms + student-file extras (custody register, payment notes) ──
+  const haveRooms = await db.select({ n: sql<number>`count(*)` })
+    .from(rooms).where(eq(rooms.schoolId, sid));
+  if (!Number(haveRooms[0].n)) {
+    const roomRows = [
+      ...academicCls.map((c, i) => ({ id: uid(), schoolId: sid, name: `Room ${i + 1}`, kind: "classroom", capacity: 35 })),
+      { id: uid(), schoolId: sid, name: "Science Lab", kind: "science_lab", capacity: 30, notes: "Block B, ground floor" },
+      { id: uid(), schoolId: sid, name: "ICT Lab", kind: "ict_lab", capacity: 25, notes: "20 workstations" },
+      { id: uid(), schoolId: sid, name: "Library", kind: "library", capacity: 40 },
+      { id: uid(), schoolId: sid, name: "Assembly Hall", kind: "hall", capacity: 300 },
+    ];
+    await db.insert(rooms).values(roomRows);
+    for (let i = 0; i < academicCls.length; i++)
+      await db.update(classes).set({ roomId: roomRows[i].id }).where(eq(classes.id, academicCls[i].id));
+    log("rooms created; each class assigned a home room");
+  }
+
+  const haveItems = await db.select({ n: sql<number>`count(*)` })
+    .from(studentItems).where(eq(studentItems.schoolId, sid));
+  if (!Number(haveItems[0].n)) {
+    const someClass = academicCls[1];
+    const kids = (byClass.get(someClass?.id ?? "") ?? []).slice(0, 3);
+    if (kids.length >= 2) {
+      await db.insert(studentItems).values([
+        { id: uid(), schoolId: sid, studentId: kids[0].id, itemName: "Birth certificate (original)",
+          location: "Office cabinet A · folder 12", receivedFrom: `Mother — ${pick(FIRST)} ${kids[0].lastName}`,
+          receivedBy: "Front office", note: "To be returned after GES verification" },
+        { id: uid(), schoolId: sid, studentId: kids[1].id, itemName: "Immunization card",
+          location: "Office cabinet A · folder 13", receivedFrom: "Father", receivedBy: "Front office" },
+      ]);
+      await db.update(students).set({
+        paymentNote: "Father pays via MoMo 024 555 0192, usually week 2 of term. Backup: GCB Adum branch.",
+        nationality: "Ghanaian", hometown: "Kumasi", bloodGroup: "O+",
+        emergencyName: `Uncle — Kwame ${kids[0].lastName}`, emergencyPhone: "020 555 0134",
+      }).where(eq(students.id, kids[0].id));
+      log("custody register + payment arrangement samples on the student file");
     }
   }
 

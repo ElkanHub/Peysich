@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { academicYears, terms, levels, classes, subjects, staff, gradingSchemes } from "@/db/schema";
+import { academicYears, terms, levels, classes, subjects, staff, gradingSchemes, rooms } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { LEVEL_TEMPLATE } from "@/lib/levels";
 import { createYear, setCurrentTerm, setupLevels, addClass, saveBranding, promoteAll } from "../actions";
 import { setClassTeacher } from "../accounts-actions";
+import { addRoom, deleteRoom, setClassRoom } from "../actions-rooms";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { GradingEditor } from "./grading";
 import { LogoUploader } from "./logo";
@@ -13,13 +14,14 @@ import { r2Enabled } from "@/lib/r2";
 export default async function Settings({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
   const { school } = await requireSchool(slug, ["admin"]);
-  const [yrs, tms, lvs, cls, subs, tchs] = await Promise.all([
+  const [yrs, tms, lvs, cls, subs, tchs, rms] = await Promise.all([
     db.select().from(academicYears).where(eq(academicYears.schoolId, school.id)),
     db.select().from(terms).where(eq(terms.schoolId, school.id)),
     db.select().from(levels).where(eq(levels.schoolId, school.id)).orderBy(levels.sortOrder),
     db.select().from(classes).where(eq(classes.schoolId, school.id)),
     db.select().from(subjects).where(eq(subjects.schoolId, school.id)),
     db.select().from(staff).where(eq(staff.schoolId, school.id)),
+    db.select().from(rooms).where(eq(rooms.schoolId, school.id)).orderBy(rooms.name),
   ]);
   const [scheme] = await db.select().from(gradingSchemes).where(eq(gradingSchemes.schoolId, school.id));
   const b = school.branding;
@@ -67,16 +69,26 @@ export default async function Settings({ params }: { params: Promise<{ school: s
         ) : (
           <div className="mt-3 space-y-2 text-sm">
             {cls.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-2">
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium">{c.name}</span>
-                <form action={setClassTeacher.bind(null, slug, c.id)} className="flex items-center gap-1">
-                  <select name="staffId" defaultValue={c.classTeacherId ?? ""}
-                    className="rounded-md border border-border px-2 py-1 text-xs">
-                    <option value="">No class teacher</option>
-                    {tchs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <button className="rounded border border-border px-2 py-1 text-xs hover:bg-muted">Set</button>
-                </form>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <form action={setClassTeacher.bind(null, slug, c.id)} className="flex items-center gap-1">
+                    <select name="staffId" defaultValue={c.classTeacherId ?? ""}
+                      className="rounded-md border border-border px-2 py-1 text-xs">
+                      <option value="">No class teacher</option>
+                      {tchs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <button className="rounded border border-border px-2 py-1 text-xs hover:bg-muted">Set</button>
+                  </form>
+                  <form action={setClassRoom.bind(null, slug, c.id)} className="flex items-center gap-1">
+                    <select name="roomId" defaultValue={c.roomId ?? ""}
+                      className="rounded-md border border-border px-2 py-1 text-xs">
+                      <option value="">No home room</option>
+                      {rms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                    <button className="rounded border border-border px-2 py-1 text-xs hover:bg-muted">Set</button>
+                  </form>
+                </div>
               </div>
             ))}
             <form action={addClass.bind(null, slug)} className="mt-3 flex items-end gap-2">
@@ -91,6 +103,43 @@ export default async function Settings({ params }: { params: Promise<{ school: s
             <p className="mt-2 text-muted-foreground">Subjects: {subs.map((s) => s.name).join(", ")}</p>
           </div>
         )}
+      </Card>
+
+      <Card>
+        <h2 className="font-semibold">Rooms & facilities</h2>
+        <p className="text-sm text-muted-foreground">
+          Physical spaces — classrooms, labs, library, hall. Assign a home room to each class above; the timetable and reports can refer to them.
+        </p>
+        {rms.length > 0 && (
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {rms.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-2">
+                <span>
+                  <span className="font-medium">{r.name}</span>
+                  <span className="ml-2 text-xs capitalize text-muted-foreground">
+                    {r.kind.replace(/_/g, " ")}{r.capacity ? ` · seats ${r.capacity}` : ""}{r.notes ? ` · ${r.notes}` : ""}
+                  </span>
+                </span>
+                <form action={deleteRoom.bind(null, slug, r.id)}>
+                  <button className="rounded border border-border px-2 py-1 text-xs text-danger hover:bg-muted">Remove</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form action={addRoom.bind(null, slug)} className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
+          <Field label="Room name"><input name="name" required placeholder="Science Lab" className={inputCls} /></Field>
+          <Field label="Type">
+            <select name="kind" className={inputCls}>
+              {[["classroom", "Classroom"], ["science_lab", "Science lab"], ["ict_lab", "ICT lab"],
+                ["library", "Library"], ["hall", "Hall"], ["office", "Office"], ["other", "Other"]]
+                .map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </Field>
+          <Field label="Capacity"><input name="capacity" type="number" min={1} placeholder="35" className={inputCls} /></Field>
+          <Field label="Notes"><input name="notes" placeholder="Block B, upstairs" className={inputCls} /></Field>
+          <button className={btnGhostCls + " col-span-2 sm:col-span-4"}>Add room</button>
+        </form>
       </Card>
 
       <GradingEditor slug={slug}

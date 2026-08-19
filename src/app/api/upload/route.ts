@@ -3,7 +3,7 @@ import { auth } from "@/core/auth";
 import { presignUpload, r2Enabled } from "@/lib/r2";
 import { uid } from "@/lib/utils";
 
-const KINDS = new Set(["photo", "logo", "submission"]);
+const KINDS = new Set(["photo", "logo", "submission", "document"]);
 const MAX_MB = 10;
 
 /** Presigned direct upload: browser PUTs straight to R2, bypassing Vercel.
