@@ -22,6 +22,11 @@ const client = r2Enabled
         accessKeyId: process.env.R2_ACCESS_KEY_ID!,
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
       },
+      // AWS SDK ≥3.729 signs a default CRC32 (of an EMPTY body) into presigned
+      // PUT URLs; R2 then rejects the real upload as a checksum mismatch.
+      // Cloudflare's documented fix: only checksum when an API requires it.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
     })
   : null;
 
