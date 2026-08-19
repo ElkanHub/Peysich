@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { classes, levels, students, skillDomains, skillRatings } from "@/db/schema";
-import { requireModule, getCurrentTerm } from "@/core/school-context";
+import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { ensureSkillDomains } from "../../../actions-grading";
 import { PageHeader } from "@/ui/kit";
 import { SkillsGrid } from "./grid";
@@ -12,7 +12,11 @@ export default async function SkillsPage({ params }: {
   params: Promise<{ school: string; classId: string }>;
 }) {
   const { school: slug, classId } = await params;
-  const { school } = await requireModule(slug, "assessment", ["admin", "teacher"]);
+  const { school, user } = await requireModule(slug, "assessment", ["admin", "teacher"]);
+  if (user.role === "teacher") {
+    const scope = await getTeacherScope(school.id, user.id);
+    if (!scope?.homeroomIds.has(classId)) notFound();
+  }
   const term = await getCurrentTerm(school.id);
   const [cls] = await db.select().from(classes)
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));

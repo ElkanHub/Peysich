@@ -83,6 +83,18 @@ export const teachingAssignments = pgTable("teaching_assignments", {
   index("ta_school_teacher").on(t.schoolId, t.teacherId),
 ]);
 
+/** Admin → staff nudges ("your register isn't marked yet"): delivered by
+ *  SMS/email via notify AND shown on the teacher's dashboard until resolved. */
+export const staffNudges = pgTable("staff_nudges", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  staffId: text("staff_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("attendance"), // attendance|scores|other
+  refId: text("ref_id"), // e.g. the classId the nudge is about
+  message: text("message").notNull(),
+  sentBy: text("sent_by").notNull(),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+}, (t) => [index("nudges_staff").on(t.staffId, t.sentAt)]);
+
 export const sexEnum = pgEnum("sex", ["male", "female"]);
 export const students = pgTable("students", {
   id: text("id").primaryKey(), schoolId: sid(),

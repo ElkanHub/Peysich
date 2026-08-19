@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, or, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { students, classes } from "@/db/schema";
-import { requireSchool } from "@/core/school-context";
+import { requireSchool, getTeacherScope } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "@/ui/kit";
 import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
@@ -18,14 +18,29 @@ export default async function Students({ params, searchParams }: {
   const { school, user } = await requireSchool(slug, ["admin", "teacher"]);
   const isAdmin = ["admin", "platform_admin"].includes(user.role);
   const page = Math.max(1, Number(sp.page) || 1);
-  const status = ["active", "alumni", "left"].includes(sp.status ?? "") ? sp.status! : "active";
+  const status = isAdmin && ["active", "alumni", "left"].includes(sp.status ?? "") ? sp.status! : "active";
+
+  // teachers see ONLY the children of their homeroom + subject classes
+  const scope = isAdmin ? null : await getTeacherScope(school.id, user.id);
+  const myClassIds = scope ? [...scope.allClassIds] : null;
+  if (myClassIds && myClassIds.length === 0) {
+    return (
+      <div>
+        <PageHeader title="My students" sub="No classes assigned to you yet" />
+        <Empty title="No classes assigned"
+          hint="Once your admin assigns you as a class teacher or allocates you subjects, your students appear here." />
+      </div>
+    );
+  }
+  const classFilter = sp.classId && (!myClassIds || myClassIds.includes(sp.classId)) ? sp.classId : undefined;
 
   const where = and(
     eq(students.schoolId, school.id), eq(students.status, status),
+    myClassIds ? inArray(students.classId, myClassIds) : undefined,
     sp.search ? or(
       ilike(students.firstName, `%${sp.search}%`), ilike(students.lastName, `%${sp.search}%`),
       ilike(students.admissionNo, `%${sp.search}%`)) : undefined,
-    sp.classId ? eq(students.classId, sp.classId) : undefined,
+    classFilter ? eq(students.classId, classFilter) : undefined,
     sp.sex === "male" || sp.sex === "female" ? eq(students.sex, sp.sex) : undefined,
   );
 
@@ -39,7 +54,8 @@ export default async function Students({ params, searchParams }: {
       .limit(PER_PAGE).offset((page - 1) * PER_PAGE),
     db.select({ n: sql<number>`count(*)` }).from(students).where(where),
     db.select({ id: classes.id, name: classes.name }).from(classes)
-      .where(eq(classes.schoolId, school.id)),
+      .where(and(eq(classes.schoolId, school.id),
+        myClassIds ? inArray(classes.id, myClassIds) : undefined)),
     isAdmin
       ? db.select({
           id: students.id, firstName: students.firstName, lastName: students.lastName,
@@ -65,16 +81,18 @@ export default async function Students({ params, searchParams }: {
 
   return (
     <div>
-      <PageHeader title="Students" sub={`${count} ${status}`}
-        action={{ href: "/students/new", label: "Admit student" }} />
+      <PageHeader title={isAdmin ? "Students" : "My students"} sub={`${count} ${status}`}
+        action={isAdmin ? { href: "/students/new", label: "Admit student" } : undefined} />
 
       {/* data at a glance + the actions an office actually reaches for */}
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Active students" value={String(activeN)} />
-        <Stat label="Boarders / day" value={`${boarderN} / ${activeN - boarderN}`} />
-        <Stat label="Admissions in progress" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
-        <Stat label="Alumni" value={String(tally("alumni"))} />
-      </div>
+      {isAdmin && (
+        <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat label="Active students" value={String(activeN)} />
+          <Stat label="Boarders / day" value={`${boarderN} / ${activeN - boarderN}`} />
+          <Stat label="Admissions in progress" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
+          <Stat label="Alumni" value={String(tally("alumni"))} />
+        </div>
+      )}
       {isAdmin && (
         <div className="mb-4 flex flex-wrap gap-2">
           <Link href="/students/import" className={btnGhostCls}>Import from Excel</Link>
@@ -108,8 +126,10 @@ export default async function Students({ params, searchParams }: {
         <SearchBox placeholder="Name or admission no…" />
         <FilterSelect name="classId" allLabel="All classes"
           options={cls.map((c) => ({ value: c.id, label: c.name }))} />
-        <FilterSelect name="status" allLabel="Active"
-          options={[{ value: "alumni", label: "Alumni" }, { value: "left", label: "Left" }]} />
+        {isAdmin && (
+          <FilterSelect name="status" allLabel="Active"
+            options={[{ value: "alumni", label: "Alumni" }, { value: "left", label: "Left" }]} />
+        )}
         <FilterSelect name="sex" allLabel="All"
           options={[{ value: "male", label: "Male" }, { value: "female", label: "Female" }]} />
       </div>

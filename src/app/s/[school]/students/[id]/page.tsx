@@ -7,7 +7,7 @@ import {
   studentFiles, studentItems, feeInvoices, feePayments, reportCards, terms,
   attendanceRecords, rooms, user as userTable,
 } from "@/db/schema";
-import { requireSchool, getCurrentTerm } from "@/core/school-context";
+import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Card, DataTable, Field, PageHeader, Tr, Td, Badge, Empty, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
@@ -30,13 +30,19 @@ export default async function StudentFile({ params, searchParams }: {
 }) {
   const { school: slug, id } = await params;
   const sp = await searchParams;
-  const tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? sp.tab as typeof TABS[number] : "profile";
   const { school, user } = await requireSchool(slug, ["admin", "teacher"]);
   const isAdmin = ["admin", "platform_admin"].includes(user.role);
+  // money and custody are office business — teachers get profile + academics
+  const visibleTabs = isAdmin ? TABS : (["profile", "academics"] as const);
+  const tab = (visibleTabs as readonly string[]).includes(sp.tab ?? "") ? sp.tab as typeof TABS[number] : "profile";
 
   const [s] = await db.select().from(students)
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   if (!s) notFound();
+  if (!isAdmin) { // teachers open only THEIR students' files
+    const scope = await getTeacherScope(school.id, user.id);
+    if (!s.classId || !scope?.allClassIds.has(s.classId)) notFound();
+  }
   const [cls] = s.classId ? await db.select().from(classes).where(eq(classes.id, s.classId)) : [null];
   const [room] = cls?.roomId ? await db.select().from(rooms).where(eq(rooms.id, cls.roomId)) : [null];
   const term = await getCurrentTerm(school.id);
@@ -114,7 +120,7 @@ export default async function StudentFile({ params, searchParams }: {
 
       {/* tabs — URL state, stable order */}
       <div className="mb-5 flex gap-1 border-b border-border">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <Link key={t} href={`?tab=${t}`}
             className={cn("border-b-2 px-3.5 py-2 text-[13px] font-medium transition-colors",
               tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
@@ -209,7 +215,7 @@ export default async function StudentFile({ params, searchParams }: {
               </details>
             )}
           </Card>
-          <Card>
+          {isAdmin && <Card>
             <h2 className="font-semibold">Access & photo</h2>
             <dl className="mt-2.5 space-y-1.5 text-sm">
               <div className="flex items-center justify-between gap-2">
@@ -228,8 +234,8 @@ export default async function StudentFile({ params, searchParams }: {
                 <dd>{s.admittedOn ?? s.createdAt.toISOString().slice(0, 10)}</dd>
               </div>
             </dl>
-            {isAdmin && <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} /></div>}
-          </Card>
+            <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} /></div>
+          </Card>}
         </div>
       )}
 

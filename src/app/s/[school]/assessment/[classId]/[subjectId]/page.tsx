@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { assessments, classes, subjects, students, scores } from "@/db/schema";
-import { requireModule, getCurrentTerm } from "@/core/school-context";
+import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { createAssessment } from "../../actions";
 import { Card, Field, PageHeader, btnCls, inputCls } from "@/ui/kit";
 import { ScoreSheet } from "./sheet";
@@ -13,7 +13,11 @@ export default async function ScorePage({ params, searchParams }: {
 }) {
   const { school: slug, classId, subjectId } = await params;
   const { a: activeId } = await searchParams;
-  const { school } = await requireModule(slug, "assessment", ["admin", "teacher"]);
+  const { school, user } = await requireModule(slug, "assessment", ["admin", "teacher"]);
+  if (user.role === "teacher") {
+    const scope = await getTeacherScope(school.id, user.id);
+    if (!scope?.canScore(classId, subjectId)) notFound();
+  }
   const term = await getCurrentTerm(school.id);
   const [[cls], [sub]] = await Promise.all([
     db.select().from(classes).where(and(eq(classes.id, classId), eq(classes.schoolId, school.id))),

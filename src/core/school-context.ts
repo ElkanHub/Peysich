@@ -5,7 +5,7 @@ import { getSchoolBySlug } from "./tenant";
 import { getSession } from "./session";
 import { getEnabledModules } from "./entitlements";
 import { db } from "@/db";
-import { terms, academicYears, staff, classes, lessons, teachingAssignments } from "@/db/schema";
+import { terms, academicYears, staff, classes, teachingAssignments } from "@/db/schema";
 
 export type Ctx = {
   school: NonNullable<Awaited<ReturnType<typeof getSchoolBySlug>>>;
@@ -41,18 +41,39 @@ export const getCurrentTerm = cache(async (schoolId: string) => {
   return { ...t, year: y };
 });
 
-/** Classes a teacher owns: class-teacher of, or teaches lessons in. */
-export async function getTeacherClassIds(schoolId: string, userId: string): Promise<Set<string> | null> {
+
+/** THE teacher capability model — two distinct rights, never blended:
+ *  · homeroomIds — classes where they are class teacher (form master):
+ *    attendance register, skills sheets, remarks.
+ *  · cells — class+subject pairs from teaching allocations: score sheets
+ *    and homework for exactly those subjects.
+ *  Timetable lessons grant NO rights — they only display the schedule. */
+export async function getTeacherScope(schoolId: string, userId: string) {
   const [me] = await db.select().from(staff)
     .where(and(eq(staff.schoolId, schoolId), eq(staff.userId, userId)));
-  if (!me) return null; // unlinked account → caller decides (usually show none + hint)
-  const [own, taught, assigned] = await Promise.all([
+  if (!me) return null; // unlinked account → caller shows the hint
+  const [own, cells] = await Promise.all([
     db.select({ id: classes.id }).from(classes)
       .where(and(eq(classes.schoolId, schoolId), eq(classes.classTeacherId, me.id))),
-    db.select({ id: lessons.classId }).from(lessons)
-      .where(and(eq(lessons.schoolId, schoolId), eq(lessons.teacherId, me.id))),
-    db.select({ id: teachingAssignments.classId }).from(teachingAssignments)
+    db.select({ classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId })
+      .from(teachingAssignments)
       .where(and(eq(teachingAssignments.schoolId, schoolId), eq(teachingAssignments.teacherId, me.id))),
   ]);
-  return new Set([...own.map((r) => r.id), ...taught.map((r) => r.id), ...assigned.map((r) => r.id)]);
+  const homeroomIds = new Set(own.map((r) => r.id));
+  const subjectClassIds = new Set(cells.map((c) => c.classId));
+  return {
+    staffId: me.id, name: me.name,
+    homeroomIds, cells, subjectClassIds,
+    allClassIds: new Set([...homeroomIds, ...subjectClassIds]),
+    /** score-sheet right: form master of the class, or allocated the cell */
+    canScore: (classId: string, subjectId: string) =>
+      homeroomIds.has(classId) || cells.some((c) => c.classId === classId && c.subjectId === subjectId),
+  };
+}
+
+/** @deprecated prefer getTeacherScope — this returns the union of both
+ *  capabilities for callers that only need "is this one of my classes". */
+export async function getTeacherClassIds(schoolId: string, userId: string): Promise<Set<string> | null> {
+  const scope = await getTeacherScope(schoolId, userId);
+  return scope ? scope.allClassIds : null;
 }

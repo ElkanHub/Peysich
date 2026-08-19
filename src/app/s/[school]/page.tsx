@@ -2,10 +2,10 @@ import Link from "next/link";
 import { and, eq, desc, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  students, staff, classes, lessons, subjects,
+  students, staff, classes, lessons, subjects, staffNudges,
   assignments, submissions, announcements, events, attendanceRecords, feeInvoices,
 } from "@/db/schema";
-import { requireSchool, getCurrentTerm, getTeacherClassIds } from "@/core/school-context";
+import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { Card, PageHeader, Stat } from "@/ui/kit";
 import { PayFeesButton } from "@/ui/pay-fees";
@@ -142,33 +142,127 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
   }
 
   if (user.role === "teacher") {
-    const mine = await getTeacherClassIds(school.id, user.id);
+    // the teacher's morning in one screen: register duty, today's lessons,
+    // marking backlog, announcements — plus any admin nudges still live
+    const scope = await getTeacherScope(school.id, user.id);
     const today = new Date().toISOString().slice(0, 10);
-    let cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
-    if (mine) cls = cls.filter((c) => mine.has(c.id));
-    const marked = new Set((await db.select({ classId: attendanceRecords.classId })
-      .from(attendanceRecords)
-      .where(and(eq(attendanceRecords.schoolId, school.id), eq(attendanceRecords.date, today))))
-      .map((r) => r.classId));
+    const dayKey = (["", "mon", "tue", "wed", "thu", "fri", ""] as const)[new Date().getDay()] || null;
+    const allCls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+    const clsName = new Map(allCls.map((c) => [c.id, c.name]));
+    const homerooms = allCls.filter((c) => scope?.homeroomIds.has(c.id));
+    const myClassIds = scope ? [...scope.allClassIds] : [];
+
+    const [markedRows, myLessons, myAssignments, anns, nudges] = await Promise.all([
+      db.select({ classId: attendanceRecords.classId }).from(attendanceRecords)
+        .where(and(eq(attendanceRecords.schoolId, school.id), eq(attendanceRecords.date, today))),
+      scope && dayKey
+        ? db.select({
+            startMin: lessons.startMin, endMin: lessons.endMin,
+            classId: lessons.classId, subject: subjects.name,
+          }).from(lessons).leftJoin(subjects, eq(lessons.subjectId, subjects.id))
+            .where(and(eq(lessons.schoolId, school.id), eq(lessons.teacherId, scope.staffId),
+              eq(lessons.day, dayKey))).orderBy(lessons.startMin)
+        : [],
+      myClassIds.length
+        ? db.select().from(assignments)
+            .where(and(eq(assignments.schoolId, school.id), inArray(assignments.classId, myClassIds)))
+            .orderBy(desc(assignments.dueDate)).limit(10)
+        : [],
+      db.select().from(announcements).where(eq(announcements.schoolId, school.id))
+        .orderBy(desc(announcements.createdAt)).limit(3),
+      scope
+        ? db.select().from(staffNudges)
+            .where(and(eq(staffNudges.schoolId, school.id), eq(staffNudges.staffId, scope.staffId)))
+            .orderBy(desc(staffNudges.sentAt)).limit(3)
+        : [],
+    ]);
+    const marked = new Set(markedRows.map((r) => r.classId));
+    const unmarkedSubs = myAssignments.length
+      ? await db.select({ assignmentId: submissions.assignmentId, n: sql<number>`count(*) filter (where mark is null)` })
+          .from(submissions)
+          .where(inArray(submissions.assignmentId, myAssignments.map((a) => a.id)))
+          .groupBy(submissions.assignmentId)
+      : [];
+    const toMark = new Map(unmarkedSubs.map((u) => [u.assignmentId, Number(u.n)]));
+    const backlog = myAssignments.filter((a) => (toMark.get(a.id) ?? 0) > 0).slice(0, 5);
+    const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    // a nudge stays visible only while its register is still unmarked today
+    const liveNudges = nudges.filter((n) =>
+      n.sentAt >= startOfDay && n.kind === "attendance" && n.refId && !marked.has(n.refId));
+
     return (
       <div>
-        <PageHeader title="My Classes" sub={sub} />
-        {(!mine || cls.length === 0) && (
+        <PageHeader title={`Good day, ${user.name.split(" ")[0]}`} sub={sub} />
+        {!scope && (
           <p className="mb-4 text-sm text-muted-foreground">
-            No classes assigned yet — ask your admin to set you as a class teacher or add you to the timetable.
+            Your login isn&apos;t linked to a staff record yet — ask your admin to check your Staff File.
           </p>
         )}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {cls.map((c) => (
-            <Link key={c.id} href={`/attendance/${c.id}`}>
-              <Card className={marked.has(c.id) ? "border-success/40" : ""}>
-                <p className="font-medium">{c.name}</p>
-                <p className={`mt-1 text-sm ${marked.has(c.id) ? "text-success" : "text-warning"}`}>
-                  {marked.has(c.id) ? "Register saved ✓" : "Mark register"}
-                </p>
-              </Card>
-            </Link>
-          ))}
+
+        {liveNudges.map((n) => (
+          <div key={n.id} className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warning/50 bg-warning-soft px-4 py-2.5 text-sm">
+            <span>📣 <b>{n.sentBy}</b>: the {clsName.get(n.refId!) ?? ""} register for today isn&apos;t marked yet.</span>
+            <Link href={`/attendance/${n.refId}`} className="font-medium text-primary">Mark it now →</Link>
+          </div>
+        ))}
+
+        {homerooms.length > 0 && (
+          <>
+            <h2 className="mb-2.5 text-sm font-semibold">My register{homerooms.length === 1 ? "" : "s"}</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {homerooms.map((c) => (
+                <Link key={c.id} href={`/attendance/${c.id}`}>
+                  <Card className={marked.has(c.id) ? "border-success/40" : "border-warning/50"}>
+                    <p className="font-medium">{c.name}</p>
+                    <p className={`mt-1 text-sm ${marked.has(c.id) ? "text-success" : "font-medium text-warning"}`}>
+                      {marked.has(c.id) ? "Register saved ✓" : "Mark register →"}
+                    </p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <Card>
+            <h2 className="font-semibold">Today&apos;s lessons</h2>
+            {myLessons.length === 0 && <p className="mt-1 text-sm text-muted-foreground">Nothing scheduled for you today.</p>}
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {myLessons.map((l, i) => (
+                <li key={i} className="flex justify-between">
+                  <span><span className="font-medium">{clsName.get(l.classId)}</span> · {l.subject}</span>
+                  <span className="text-muted-foreground" data-nums="">{fmt(l.startMin)}–{fmt(l.endMin)}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/timetable" className="mt-3 inline-block text-[13px] font-medium text-primary">Full timetable →</Link>
+          </Card>
+          <Card>
+            <h2 className="font-semibold">Homework to mark</h2>
+            {backlog.length === 0 && <p className="mt-1 text-sm text-muted-foreground">All caught up ✓</p>}
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {backlog.map((a) => (
+                <li key={a.id} className="flex justify-between gap-2">
+                  <Link href={`/homework/${a.id}`} className="min-w-0 truncate text-primary underline-offset-2 hover:underline">
+                    {a.title}
+                  </Link>
+                  <span className="shrink-0 text-muted-foreground" data-nums="">{toMark.get(a.id)} to mark</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/assessment" className="mt-3 inline-block text-[13px] font-medium text-primary">Score sheets →</Link>
+          </Card>
+          <Card>
+            <h2 className="font-semibold">Announcements</h2>
+            <ul className="mt-2 space-y-2 text-[13px] text-muted-foreground">
+              {anns.map((a) => (
+                <li key={a.id}><span className="font-medium text-foreground">{a.title}</span> — {a.body.slice(0, 90)}{a.body.length > 90 ? "…" : ""}</li>
+              ))}
+              {anns.length === 0 && <li>Nothing yet.</li>}
+            </ul>
+          </Card>
         </div>
       </div>
     );
