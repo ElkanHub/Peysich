@@ -53,13 +53,14 @@ export function Card({ children, className }: { children: React.ReactNode; class
 
 /** Stat tile for dashboards. */
 export function Stat({ label, value, tone }: {
-  label: string; value: React.ReactNode; tone?: "success" | "danger" | "default";
+  label: string; value: React.ReactNode; tone?: "success" | "danger" | "warning" | "default";
 }) {
   return (
     <Card className="hover:shadow-[var(--shadow-md)]">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
       <p data-nums="" className={cn("mt-1.5 text-[26px] font-semibold leading-none tracking-tight",
-        tone === "success" && "text-success", tone === "danger" && "text-danger")}>
+        tone === "success" && "text-success", tone === "danger" && "text-danger",
+        tone === "warning" && "text-warning")}>
         {value}
       </p>
     </Card>

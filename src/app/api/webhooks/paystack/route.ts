@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
     const m = evt.data?.metadata ?? {};
     if (m.kind === "fee") await applyFeePayment(evt.data.reference);
     else if (m.schoolId && m.planKey)
-      await applySubscription(m.schoolId, m.planKey, evt.data.reference);
+      await applySubscription(m.schoolId, m.planKey, evt.data.reference,
+        m.cycle === "yearly" ? "yearly" : "monthly");
   }
   return NextResponse.json({ ok: true });
 }

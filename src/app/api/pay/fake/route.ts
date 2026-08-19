@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (ref.startsWith("fee_")) await applyFeePayment(ref);
   else {
     const [p] = await db.select().from(pendingCheckouts).where(eq(pendingCheckouts.reference, ref));
-    if (p) await applySubscription(p.schoolId, p.planKey, ref);
+    if (p) await applySubscription(p.schoolId, p.planKey, ref, p.cycle === "yearly" ? "yearly" : "monthly");
   }
   return NextResponse.redirect(new URL(cb, req.url));
 }

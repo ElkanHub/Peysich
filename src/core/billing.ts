@@ -5,17 +5,21 @@ import { invalidateModules } from "./entitlements";
 import { uid } from "@/lib/utils";
 
 /** Fulfillment: called by webhook AND fake-pay route. Idempotent by reference. */
-export async function applySubscription(schoolId: string, planKey: string, reference: string) {
+export async function applySubscription(
+  schoolId: string, planKey: string, reference: string, cycle: "monthly" | "yearly" = "monthly",
+) {
   const [existing] = await db.select().from(subscriptions)
     .where(eq(subscriptions.paystackSubscriptionCode, reference));
   if (existing) return; // already fulfilled
   const [plan] = await db.select().from(plans).where(eq(plans.key, planKey));
   if (!plan) throw new Error("Unknown plan");
   const now = new Date();
-  const end = new Date(now); end.setDate(end.getDate() + 120); // one term ≈ 4 months
+  const end = new Date(now);
+  if (cycle === "yearly") end.setFullYear(end.getFullYear() + 1);
+  else end.setMonth(end.getMonth() + 1);
   await db.insert(subscriptions).values({
-    id: uid(), schoolId, planKey, status: "active",
-    amountPesewas: plan.pricePerTermPesewas,
+    id: uid(), schoolId, planKey, status: "active", cycle,
+    amountPesewas: cycle === "yearly" ? plan.pricePerYearPesewas : plan.pricePerMonthPesewas,
     periodStart: now, periodEnd: end, paystackSubscriptionCode: reference,
   });
   await db.update(schools).set({

@@ -31,7 +31,7 @@ export async function startAdmission(slug: string, f: FormData) {
     admissionNo: `ADM${String(Number(n) + 1).padStart(4, "0")}`,
     firstName, lastName, otherNames: str(f, "otherNames"),
     sex: String(f.get("sex")) as "male" | "female",
-    dob: str(f, "dob"), placeOfBirth: str(f, "placeOfBirth"),
+    dob: str(f, "dob"), idNumber: str(f, "idNumber"), placeOfBirth: str(f, "placeOfBirth"),
     nationality: str(f, "nationality"), hometown: str(f, "hometown"),
     religion: str(f, "religion"), address: str(f, "address"),
     status: "draft", admissionStep: 1,
@@ -56,7 +56,7 @@ export async function saveIdentity(slug: string, id: string, f: FormData) {
   await db.update(students).set({
     firstName: str(f, "firstName") ?? s.firstName, lastName: str(f, "lastName") ?? s.lastName,
     otherNames: str(f, "otherNames"), sex: String(f.get("sex")) as "male" | "female",
-    dob: str(f, "dob"), placeOfBirth: str(f, "placeOfBirth"),
+    dob: str(f, "dob"), idNumber: str(f, "idNumber"), placeOfBirth: str(f, "placeOfBirth"),
     nationality: str(f, "nationality"), hometown: str(f, "hometown"),
     religion: str(f, "religion"), address: str(f, "address"),
     ...bump(s, 1),
@@ -91,6 +91,7 @@ export async function addAdmissionGuardian(slug: string, id: string, f: FormData
     await db.insert(guardians).values({
       id: gid, schoolId: school.id, name, phone,
       email: str(f, "email"), relation: str(f, "relation") ?? "parent",
+      occupation: str(f, "occupation"),
     });
     [g] = await db.select().from(guardians).where(eq(guardians.id, gid));
   }

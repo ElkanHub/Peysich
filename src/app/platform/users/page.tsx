@@ -2,7 +2,8 @@ import { desc, eq, ilike, or, sql, and } from "drizzle-orm";
 import { db } from "@/db";
 import { user, schools } from "@/db/schema";
 import { DataTable, PageHeader, Tr, Td, Badge } from "@/ui/kit";
-import { Pagination, SearchBox, PER_PAGE } from "@/ui/list-controls";
+import { Pagination, SearchBox } from "@/ui/list-controls";
+import { PER_PAGE } from "@/lib/utils";
 
 const TONE = { platform_admin: "brand", admin: "success", teacher: "default", parent: "warning", student: "default" } as const;
 

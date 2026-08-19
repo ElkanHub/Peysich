@@ -12,9 +12,9 @@ export default async function PlatformHome() {
     db.select().from(schools).limit(50),
     db.select().from(plans).where(eq(plans.active, true)),
   ]);
-  const price = new Map(allPlans.map((p) => [p.key, p.pricePerTermPesewas]));
+  const price = new Map(allPlans.map((p) => [p.key, p.pricePerMonthPesewas]));
   const active = rows.filter((s) => s.status === "active");
-  const termRevenue = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
+  const mrr = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between">
@@ -27,7 +27,7 @@ export default async function PlatformHome() {
       <div className="mt-4 grid grid-cols-4 gap-3 text-sm">
         {[["Active schools", active.length], ["Trials", rows.filter((s) => s.status === "trial").length],
           ["Suspended/past due", rows.filter((s) => ["suspended", "past_due"].includes(s.status)).length],
-          ["Revenue / term", `GHS ${(termRevenue / 100).toLocaleString()}`]].map(([l, v]) => (
+          ["MRR", `GHS ${(mrr / 100).toLocaleString()}`]].map(([l, v]) => (
           <div key={String(l)} className="rounded-lg border border-border bg-card p-3">
             <p className="text-xs text-muted-foreground">{l}</p>
             <p className="mt-0.5 text-xl font-semibold">{String(v)}</p>

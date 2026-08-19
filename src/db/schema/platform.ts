@@ -35,6 +35,10 @@ export const plans = pgTable("plans", {
   moduleKeys: jsonb("module_keys").$type<string[]>().notNull().default([]),
   studentCap: integer("student_cap"), // null = unlimited
   storageCapMb: integer("storage_cap_mb").notNull().default(2048),
+  // SaaS billing: monthly or yearly, like any other SaaS (no term-date chasing)
+  pricePerMonthPesewas: integer("price_per_month_pesewas").notNull().default(0),
+  pricePerYearPesewas: integer("price_per_year_pesewas").notNull().default(0),
+  /** @deprecated superseded by monthly/yearly pricing; kept for history */
   pricePerTermPesewas: integer("price_per_term_pesewas").notNull().default(0),
   active: boolean("active").notNull().default(true),
 });
@@ -59,6 +63,7 @@ export const subscriptions = pgTable("subscriptions", {
   status: subscriptionStatus("status").notNull().default("active"),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
+  cycle: text("cycle").notNull().default("monthly"), // monthly|yearly
   amountPesewas: integer("amount_pesewas").notNull().default(0),
   paystackCustomerCode: text("paystack_customer_code"),
   paystackSubscriptionCode: text("paystack_subscription_code"),
@@ -80,6 +85,7 @@ export const pendingCheckouts = pgTable("pending_checkouts", {
   reference: text("reference").primaryKey(),
   schoolId: text("school_id").notNull(),
   planKey: text("plan_key").notNull(),
+  cycle: text("cycle").notNull().default("monthly"), // monthly|yearly
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

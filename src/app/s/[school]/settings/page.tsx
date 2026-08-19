@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { academicYears, terms, levels, classes, subjects, staff, gradingSchemes, rooms } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { LEVEL_TEMPLATE } from "@/lib/levels";
-import { createYear, setCurrentTerm, setupLevels, addClass, saveBranding, promoteAll } from "../actions";
+import { createYear, setCurrentTerm, setupLevels, addClass, saveBranding } from "../actions";
 import { setClassTeacher } from "../accounts-actions";
 import { addRoom, deleteRoom, setClassRoom } from "../actions-rooms";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
@@ -168,11 +168,11 @@ export default async function Settings({ params }: { params: Promise<{ school: s
 
       <Card>
         <h2 className="font-semibold text-danger">Year end</h2>
-        <p className="text-sm text-muted-foreground">Promote all students one level up; top level graduates to alumni. Creates the new academic year.</p>
-        <form action={promoteAll.bind(null, slug)} className="mt-3 flex items-end gap-2">
-          <Field label="New year name"><input name="yearName" placeholder="2026/2027" className={inputCls} /></Field>
-          <button className={btnCls + " bg-danger"}>Promote all students</button>
-        </form>
+        <p className="text-sm text-muted-foreground">
+          Guided promotion: choose each class&apos;s destination, tick the students repeating,
+          graduate the top level, and open the new academic year — in one pass.
+        </p>
+        <a href="/settings/promotion" className={btnCls + " mt-3 inline-block bg-danger"}>Start year-end promotion</a>
       </Card>
     </div>
   );

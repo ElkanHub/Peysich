@@ -38,16 +38,18 @@ export async function createMySchool(_: unknown, f: FormData) {
 
   const [plan] = await db.select().from(plans).where(eq(plans.key, planKey));
   const ref = `sub_${uid()}`;
-  await db.insert(pendingCheckouts).values({ reference: ref, schoolId: id, planKey });
+  await db.insert(pendingCheckouts).values({ reference: ref, schoolId: id, planKey, cycle: "monthly" });
   const { checkoutUrl } = await initCheckout({
-    email: u.email, amountPesewas: plan.pricePerTermPesewas, reference: ref,
-    callbackUrl: `/signup/done?slug=${slug}`, metadata: { schoolId: id, planKey },
+    email: u.email, amountPesewas: plan.pricePerMonthPesewas, reference: ref,
+    callbackUrl: `/signup/done?slug=${slug}`, metadata: { schoolId: id, planKey, cycle: "monthly" },
   });
   return { ok: true, slug, checkoutUrl };
 }
 
 /** School-plane upgrade (billing page). Caller must be this school's admin. */
-export async function startUpgrade(schoolId: string, planKey: string, email: string) {
+export async function startUpgrade(
+  schoolId: string, planKey: string, email: string, cycle: "monthly" | "yearly" = "monthly",
+) {
   const session = await getSession();
   const u = session?.user as { role: string; schoolId?: string | null } | undefined;
   if (!u || (u.schoolId !== schoolId && u.role !== "platform_admin") ||
@@ -55,10 +57,10 @@ export async function startUpgrade(schoolId: string, planKey: string, email: str
   const [plan] = await db.select().from(plans).where(eq(plans.key, planKey));
   if (!plan) return { error: "Unknown plan" };
   const ref = `sub_${uid()}`;
-  await db.insert(pendingCheckouts).values({ reference: ref, schoolId, planKey });
+  await db.insert(pendingCheckouts).values({ reference: ref, schoolId, planKey, cycle });
   const { checkoutUrl } = await initCheckout({
-    email, amountPesewas: plan.pricePerTermPesewas, reference: ref,
-    callbackUrl: `/billing`, metadata: { schoolId, planKey },
+    email, amountPesewas: cycle === "yearly" ? plan.pricePerYearPesewas : plan.pricePerMonthPesewas,
+    reference: ref, callbackUrl: `/billing`, metadata: { schoolId, planKey, cycle },
   });
   return { checkoutUrl };
 }

@@ -76,13 +76,15 @@ export async function setCustomPlan(schoolId: string, f: FormData) {
   if (!school) return;
   const moduleKeys: string[] = [];
   for (const [k] of f.entries()) if (k.startsWith("m_")) moduleKeys.push(k.slice(2));
-  const price = Math.round(Number(f.get("priceGhs")) * 100) || 0;
+  const price = Math.round(Number(f.get("priceGhs")) * 100) || 0; // GHS/month
+  const priceYear = Math.round(Number(f.get("priceYearGhs")) * 100) || price * 10;
   const cap = Number(f.get("studentCap")) || null;
   const key = `custom-${school.slug}`;
   await db.insert(plans)
-    .values({ key, name: `Custom (${school.name})`, moduleKeys, studentCap: cap, pricePerTermPesewas: price })
+    .values({ key, name: `Custom (${school.name})`, moduleKeys, studentCap: cap,
+      pricePerMonthPesewas: price, pricePerYearPesewas: priceYear })
     .onConflictDoUpdate({ target: [plans.key],
-      set: { moduleKeys, studentCap: cap, pricePerTermPesewas: price } });
+      set: { moduleKeys, studentCap: cap, pricePerMonthPesewas: price, pricePerYearPesewas: priceYear } });
   await db.update(schools).set({ planKey: key, studentCap: cap ?? 100000, updatedAt: new Date() })
     .where(eq(schools.id, schoolId));
   await audit(u.id, "plan.custom", schoolId, { moduleKeys, price, cap });
@@ -106,7 +108,8 @@ export async function extendTrial(schoolId: string, days: number) {
 export async function updatePlan(planKey: string, f: FormData) {
   const u = await requirePlatformAdmin();
   await db.update(plans).set({
-    pricePerTermPesewas: Math.round(Number(f.get("priceGhs")) * 100) || 0,
+    pricePerMonthPesewas: Math.round(Number(f.get("priceMonthGhs")) * 100) || 0,
+    pricePerYearPesewas: Math.round(Number(f.get("priceYearGhs")) * 100) || 0,
     studentCap: Number(f.get("studentCap")) || null,
   }).where(eq(plans.key, planKey));
   await audit(u.id, "plan.update", null, { planKey });

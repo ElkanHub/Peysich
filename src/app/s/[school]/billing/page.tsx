@@ -32,7 +32,10 @@ export default async function Billing({ params }: { params: Promise<{ school: st
           return (
             <Card key={key} className={isCurrent ? "border-primary" : ""}>
               <p className="font-semibold">{p.name}</p>
-              <p className="mt-1 text-2xl font-semibold">GHS {(p.pricePerTermPesewas / 100).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/term</span></p>
+              <p className="mt-1 text-2xl font-semibold">GHS {(p.pricePerMonthPesewas / 100).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                or GHS {(p.pricePerYearPesewas / 100).toLocaleString()}/year — 2 months free
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {p.studentCap ? `Up to ${p.studentCap} students` : "Unlimited students"}
               </p>
@@ -50,11 +53,12 @@ export default async function Billing({ params }: { params: Promise<{ school: st
       </div>
       <h2 className="mt-8 font-semibold">Payment history</h2>
       <div className="mt-2">
-        <DataTable head={["Date", "Plan", "Period", "Status", "Reference"]}>
+        <DataTable head={["Date", "Plan", "Cycle", "Period", "Status", "Reference"]}>
           {subs.map((s) => (
             <Tr key={s.id}>
               <Td>{s.createdAt.toISOString().slice(0, 10)}</Td>
               <Td className="capitalize">{s.planKey}</Td>
+              <Td className="capitalize">{s.cycle}</Td>
               <Td>{s.periodStart.toISOString().slice(0, 10)} → {s.periodEnd.toISOString().slice(0, 10)}</Td>
               <Td className="capitalize">{s.status}</Td>
               <Td className="font-mono text-xs">{s.paystackSubscriptionCode}</Td>

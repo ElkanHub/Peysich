@@ -1,37 +1,22 @@
-"use client";
-import { use, useActionState } from "react";
-import { importStudents } from "../../actions";
-import { Card, PageHeader, btnCls, inputCls } from "@/ui/kit";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { classes } from "@/db/schema";
+import { requireSchool } from "@/core/school-context";
+import { PageHeader } from "@/ui/kit";
+import { ExcelImport } from "./excel";
 
-export default function ImportStudents({ params }: { params: Promise<{ school: string }> }) {
-  const { school: slug } = use(params);
-  const [state, action, pending] = useActionState(
-    (prev: unknown, f: FormData) => importStudents(slug, prev, f), null);
-
+/** Installation import: download the Excel collection sheet, gather the data
+ *  at the school, upload the filled sheet — the roster lands in one pass. */
+export default async function ImportStudents({ params }: { params: Promise<{ school: string }> }) {
+  const { school: slug } = await params;
+  const { school } = await requireSchool(slug, ["admin"]);
+  const cls = await db.select({ name: classes.name }).from(classes)
+    .where(eq(classes.schoolId, school.id));
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader title="Import students"
-        sub="Columns: firstName, lastName, sex, className, guardianName, guardianPhone" />
-      <Card>
-        {state && "imported" in state && (
-          <div className="mb-3 text-sm">
-            <p className="text-success">Imported {state.imported} students.</p>
-            {(state.errors ?? []).length > 0 && (
-              <ul className="mt-2 list-inside list-disc text-danger">
-                {(state.errors ?? []).map((e: string, i: number) => <li key={i}>{e}</li>)}
-              </ul>
-            )}
-          </div>
-        )}
-        {state && "error" in state && <p className="mb-3 text-sm text-danger">{state.error}</p>}
-        <form action={action}>
-          <textarea name="csv" rows={12} className={inputCls + " font-mono text-xs"}
-            placeholder={`firstName,lastName,sex,className,guardianName,guardianPhone\nAma,Mensah,female,Basic 4 A,Akosua Mensah,0241234567`} />
-          <button disabled={pending} className={btnCls + " mt-3"}>
-            {pending ? "Importing…" : "Import"}
-          </button>
-        </form>
-      </Card>
+        sub="For first installation: collect the roster on the Excel sheet, then upload it here." />
+      <ExcelImport slug={slug} schoolName={school.name} classNames={cls.map((c) => c.name)} />
     </div>
   );
 }

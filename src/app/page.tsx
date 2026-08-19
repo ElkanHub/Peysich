@@ -13,9 +13,9 @@ const FEATURES = [
 ];
 
 const PLANS = [
-  ["Starter", "375", "Records, attendance, report cards & announcements", false],
-  ["Standard", "975", "Everything in Starter + timetable, homework, fees (MoMo) & SMS", true],
-  ["Premium", "2,000", "Everything + admissions, library, transport, HR & analytics", false],
+  ["Starter", "99", "Records, attendance, report cards & announcements", false],
+  ["Standard", "249", "Everything in Starter + timetable, homework, fees (MoMo) & SMS", true],
+  ["Premium", "499", "Everything + admissions, library, transport, HR & analytics", false],
 ] as const;
 
 export default function Home() {
@@ -46,7 +46,7 @@ export default function Home() {
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-[16px] leading-relaxed text-muted-foreground">
             Attendance, report cards, fees and parent communication — in one place,
-            on your school&apos;s own subdomain, at a price that makes sense per term.
+            on your school&apos;s own subdomain, at a price that makes sense every month.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link href="/signup" className="rounded-md bg-primary px-6 py-3 text-[15px] font-medium text-primary-foreground shadow-[var(--shadow-md)] transition-all hover:bg-brand-strong">
@@ -77,9 +77,9 @@ export default function Home() {
 
       {/* pricing */}
       <section className="mx-auto max-w-5xl px-6 pb-20">
-        <h2 className="text-center text-[28px] font-semibold tracking-tight">Simple pricing, per term</h2>
+        <h2 className="text-center text-[28px] font-semibold tracking-tight">Simple pricing, per month</h2>
         <p className="mt-2 text-center text-[14px] text-muted-foreground">
-          Because schools budget by term — not by month.
+          Pay monthly, or yearly with two months free. Cancel any time.
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {PLANS.map(([name, price, desc, popular]) => (
@@ -92,7 +92,7 @@ export default function Home() {
               )}
               <p className="font-semibold">{name}</p>
               <p className="mt-2 text-[30px] font-semibold tracking-tight" data-nums="">
-                GHS {price}<span className="text-[13px] font-normal text-muted-foreground">/term</span>
+                GHS {price}<span className="text-[13px] font-normal text-muted-foreground">/month</span>
               </p>
               <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">{desc}</p>
               <Link href="/signup"

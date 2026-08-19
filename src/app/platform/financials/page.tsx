@@ -19,9 +19,9 @@ export default async function Financials() {
     db.select({ n: sql<number>`coalesce(sum(amount_pesewas),0)` }).from(feePayments),
     db.select({ n: sql<number>`coalesce(sum(cost_pesewas),0)` }).from(smsLog),
   ]);
-  const price = new Map(allPlans.map((p) => [p.key, p.pricePerTermPesewas]));
+  const price = new Map(allPlans.map((p) => [p.key, p.pricePerMonthPesewas]));
   const active = allSchools.filter((s) => s.status === "active");
-  const runRate = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
+  const mrr = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
   const collected = subs.reduce((a, s) => a + s.amount, 0);
 
   const byPlan = new Map<string, { n: number; amount: number }>();
@@ -41,7 +41,7 @@ export default async function Financials() {
     <div className="space-y-6">
       <PageHeader title="Financials" sub="Subscription revenue and platform money flow" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Run-rate / term" value={ghs(runRate)} tone="success" />
+        <Stat label="MRR" value={ghs(mrr)} tone="success" />
         <Stat label="Collected all-time" value={ghs(collected)} />
         <Stat label="School fees processed" value={ghs(Number(gmv.n))} />
         <Stat label="SMS cost (re-billable)" value={ghs(Number(smsCost.n))} />

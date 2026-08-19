@@ -3,8 +3,10 @@ import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { students, classes } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
-import { DataTable, Empty, PageHeader, Tr, Td, Badge, btnGhostCls } from "@/ui/kit";
-import { Pagination, SearchBox, FilterSelect, PER_PAGE } from "@/ui/list-controls";
+import { r2Enabled, presignDownload } from "@/lib/r2";
+import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "@/ui/kit";
+import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
+import { PER_PAGE } from "@/lib/utils";
 import { discardAdmission } from "./new/wizard-actions";
 
 export default async function Students({ params, searchParams }: {
@@ -27,11 +29,11 @@ export default async function Students({ params, searchParams }: {
     sp.sex === "male" || sp.sex === "female" ? eq(students.sex, sp.sex) : undefined,
   );
 
-  const [rows, [{ n: count }], cls, drafts] = await Promise.all([
+  const [rows, [{ n: count }], cls, drafts, mix] = await Promise.all([
     db.select({
       id: students.id, admissionNo: students.admissionNo, firstName: students.firstName,
       lastName: students.lastName, sex: students.sex, className: classes.name,
-      boarding: students.boarding,
+      boarding: students.boarding, photoUrl: students.photoUrl,
     }).from(students).leftJoin(classes, eq(students.classId, classes.id))
       .where(where).orderBy(students.lastName, students.firstName)
       .limit(PER_PAGE).offset((page - 1) * PER_PAGE),
@@ -45,12 +47,41 @@ export default async function Students({ params, searchParams }: {
         }).from(students)
           .where(and(eq(students.schoolId, school.id), eq(students.status, "draft")))
       : [],
+    // one grouped query feeds every KPI tile — no N stat queries
+    db.select({ status: students.status, boarding: students.boarding, n: sql<number>`count(*)` })
+      .from(students).where(eq(students.schoolId, school.id))
+      .groupBy(students.status, students.boarding),
   ]);
+
+  const tally = (st: string) => mix.filter((m) => m.status === st).reduce((a, m) => a + Number(m.n), 0);
+  const activeN = tally("active");
+  const boarderN = mix.filter((m) => m.status === "active" && m.boarding).reduce((a, m) => a + Number(m.n), 0);
+
+  // photo thumbnails: presigned straight from R2 (no Vercel egress), lazy-loaded
+  const photo = new Map<string, string>();
+  if (r2Enabled)
+    await Promise.all(rows.filter((r) => r.photoUrl).map(async (r) =>
+      photo.set(r.id, await presignDownload(r.photoUrl!))));
 
   return (
     <div>
       <PageHeader title="Students" sub={`${count} ${status}`}
         action={{ href: "/students/new", label: "Admit student" }} />
+
+      {/* data at a glance + the actions an office actually reaches for */}
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Active students" value={String(activeN)} />
+        <Stat label="Boarders / day" value={`${boarderN} / ${activeN - boarderN}`} />
+        <Stat label="Admissions in progress" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
+        <Stat label="Alumni" value={String(tally("alumni"))} />
+      </div>
+      {isAdmin && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Link href="/students/import" className={btnGhostCls}>Import from Excel</Link>
+          <Link href="/settings/promotion" className={btnGhostCls}>Year-end promotion</Link>
+          <Link href="/settings" className={btnGhostCls}>Classes & rooms</Link>
+        </div>
+      )}
 
       {drafts.length > 0 && (
         <div className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
@@ -81,19 +112,28 @@ export default async function Students({ params, searchParams }: {
           options={[{ value: "alumni", label: "Alumni" }, { value: "left", label: "Left" }]} />
         <FilterSelect name="sex" allLabel="All"
           options={[{ value: "male", label: "Male" }, { value: "female", label: "Female" }]} />
-        <span className="flex-1" />
-        <Link href="/students/import" className={btnGhostCls}>Import CSV</Link>
       </div>
 
       {rows.length === 0 ? (
         <Empty title="No students found"
-          hint="Adjust the filters, admit your first student, or import your roster from CSV." />
+          hint="Adjust the filters, admit your first student, or import your roster from Excel." />
       ) : (
-        <DataTable head={["Adm. No", "Name", "Sex", "Class", "Type", ""]}>
+        <DataTable head={["Student", "Adm. No", "Sex", "Class", "Type", ""]}>
           {rows.map((s) => (
             <Tr key={s.id}>
+              <Td className="font-medium">
+                <span className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
+                    {photo.has(s.id)
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={photo.get(s.id)} alt="" width={32} height={32}
+                          loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                      : `${s.firstName[0]}${s.lastName[0]}`}
+                  </span>
+                  {s.lastName}, {s.firstName}
+                </span>
+              </Td>
               <Td className="font-mono text-xs">{s.admissionNo}</Td>
-              <Td className="font-medium">{s.lastName}, {s.firstName}</Td>
               <Td className="capitalize">{s.sex}</Td>
               <Td>{s.className ?? "—"}</Td>
               <Td>{s.boarding ? <Badge tone="brand">boarder</Badge> : <span className="text-xs text-muted-foreground">day</span>}</Td>

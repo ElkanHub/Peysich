@@ -1,5 +1,5 @@
 "use server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -12,7 +12,15 @@ const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim() || null;
 /** Update the student's full profile (the Student File's Profile tab). */
 export async function updateStudent(slug: string, id: string, f: FormData) {
   const { school } = await requireSchool(slug, ["admin"]);
+  const admissionNo = str(f, "admissionNo");
+  if (admissionNo) {
+    const [dup] = await db.select({ id: students.id }).from(students).where(and(
+      eq(students.schoolId, school.id), eq(students.admissionNo, admissionNo), ne(students.id, id)));
+    if (dup) redirect(`/students/${id}/edit?err=admno`);
+  }
   await db.update(students).set({
+    ...(admissionNo ? { admissionNo } : {}),
+    idNumber: str(f, "idNumber"),
     firstName: String(f.get("firstName")), lastName: String(f.get("lastName")),
     otherNames: str(f, "otherNames"), sex: String(f.get("sex")) as "male" | "female",
     dob: str(f, "dob"), placeOfBirth: str(f, "placeOfBirth"),

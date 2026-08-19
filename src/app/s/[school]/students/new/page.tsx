@@ -113,6 +113,7 @@ function IdentityStage({ slug, s }: { slug: string; s: S | null }) {
           </select>
         </Field>
         <Field label="Date of birth"><input name="dob" type="date" defaultValue={s?.dob ?? ""} className={inputCls} /></Field>
+        <Field label="National ID / birth cert no"><input name="idNumber" defaultValue={s?.idNumber ?? ""} placeholder="GHA-XXXXXXXXX-X" className={inputCls} /></Field>
         <Field label="Place of birth"><input name="placeOfBirth" defaultValue={s?.placeOfBirth ?? ""} className={inputCls} /></Field>
         <Field label="Nationality"><input name="nationality" defaultValue={s?.nationality ?? ""} placeholder="Ghanaian" className={inputCls} /></Field>
         <Field label="Hometown"><input name="hometown" defaultValue={s?.hometown ?? ""} className={inputCls} /></Field>
@@ -194,6 +195,7 @@ async function GuardiansStage({ slug, s }: { slug: string; s: S }) {
                 .map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
+          <Field label="Occupation"><input name="occupation" className={inputCls} /></Field>
           <Field label="Email (optional)"><input name="email" type="email" className={inputCls} /></Field>
           <label className="col-span-2 flex items-center gap-2 text-sm">
             <input type="checkbox" name="isPrimary" defaultChecked={gs.length === 0} /> Primary contact (billing & pickups)

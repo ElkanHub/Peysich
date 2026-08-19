@@ -62,9 +62,9 @@ export default function Signup() {
             <Field label="Plan">
               <select name="planKey" defaultValue="trial" className={inputCls}>
                 <option value="trial">Free 14-day trial (50 students)</option>
-                <option value="starter">Starter — GHS 375/term</option>
-                <option value="standard">Standard — GHS 975/term</option>
-                <option value="premium">Premium — GHS 2,000/term</option>
+                <option value="starter">Starter — GHS 99/month</option>
+                <option value="standard">Standard — GHS 249/month</option>
+                <option value="premium">Premium — GHS 499/month</option>
               </select>
             </Field>
             <button disabled={pending} className={btnCls + " w-full"}>{pending ? "…" : "Create my school"}</button>

@@ -4,7 +4,8 @@ import { guardians } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { DataTable, PageHeader, Tr, Td } from "@/ui/kit";
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
-import { Pagination, SearchBox, PER_PAGE } from "@/ui/list-controls";
+import { Pagination, SearchBox } from "@/ui/list-controls";
+import { PER_PAGE } from "@/lib/utils";
 
 export default async function Guardians({ params, searchParams }: {
   params: Promise<{ school: string }>;

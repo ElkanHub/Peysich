@@ -4,7 +4,8 @@ import { feeStructures, feeInvoices, levels, students, classes } from "@/db/sche
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { addFeeItem, generateInvoices, recordPayment, sendFeeReminders } from "./actions";
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
-import { Pagination, PER_PAGE } from "@/ui/list-controls";
+import { Pagination } from "@/ui/list-controls";
+import { PER_PAGE } from "@/lib/utils";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 

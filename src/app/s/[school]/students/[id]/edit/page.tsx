@@ -5,14 +5,18 @@ import { db } from "@/db";
 import { students, classes } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { r2Enabled } from "@/lib/r2";
+import { PhotoUploader } from "../uploaders";
 import { updateStudent } from "../actions";
 
 /** Edit the Student File — every field the office keeps on a child, grouped
  *  the same way the file displays them. Save returns to the file. */
-export default async function EditStudent({ params }: {
+export default async function EditStudent({ params, searchParams }: {
   params: Promise<{ school: string; id: string }>;
+  searchParams: Promise<{ err?: string }>;
 }) {
   const { school: slug, id } = await params;
+  const { err } = await searchParams;
   const { school } = await requireSchool(slug, ["admin"]);
   const [s] = await db.select().from(students)
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
@@ -22,6 +26,15 @@ export default async function EditStudent({ params }: {
   return (
     <div className="max-w-3xl">
       <PageHeader title={`Edit — ${s.firstName} ${s.lastName}`} sub={`Student file · ${s.admissionNo}`} />
+      {err === "admno" && (
+        <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">
+          That admission number is already taken by another student — nothing was saved.
+        </p>
+      )}
+      <Card className="mb-5">
+        <h2 className="font-semibold">Profile photo</h2>
+        <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} /></div>
+      </Card>
       <form action={updateStudent.bind(null, slug, id)} className="space-y-5">
         <Card>
           <h2 className="font-semibold">Identity</h2>
@@ -41,6 +54,8 @@ export default async function EditStudent({ params }: {
                 {cls.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
+            <Field label="Admission number"><input name="admissionNo" defaultValue={s.admissionNo} className={inputCls} /></Field>
+            <Field label="National ID / birth cert no"><input name="idNumber" defaultValue={s.idNumber ?? ""} className={inputCls} /></Field>
             <Field label="Admission date"><input name="admittedOn" type="date" defaultValue={s.admittedOn ?? ""} className={inputCls} /></Field>
             <Field label="Attendance type">
               <label className="flex h-10 items-center gap-2 text-sm">

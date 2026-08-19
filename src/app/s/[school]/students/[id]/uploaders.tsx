@@ -3,6 +3,23 @@ import { useRef, useState } from "react";
 import { inputCls, btnGhostCls } from "@/ui/kit";
 import { setStudentPhoto, addStudentFile } from "./actions";
 
+/** Client-side photo optimization: downscale to ≤512px JPEG before upload.
+ *  Keeps R2 storage tiny and page loads fast — a phone photo of 4MB becomes
+ *  a ~40KB passport-sized image. Falls back to the original on any failure. */
+async function optimizePhoto(file: File): Promise<File> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.82));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+  } catch { return file; }
+}
+
 /** Browser → /api/upload (presign) → PUT to R2. Returns the object key. */
 async function uploadToR2(kind: string, file: File): Promise<string | null> {
   const res = await fetch("/api/upload", {
@@ -26,8 +43,10 @@ export function PhotoUploader({ slug, studentId, enabled }: {
       <label className="mb-1 block text-xs font-medium text-muted-foreground">Profile photo</label>
       <input type="file" accept="image/*" className="text-sm"
         onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
+          const raw = e.target.files?.[0];
+          if (!raw) return;
+          setStatus("Optimizing…");
+          const file = await optimizePhoto(raw);
           setStatus("Uploading…");
           const key = await uploadToR2("photo", file);
           if (!key) return setStatus("Upload failed — try again.");

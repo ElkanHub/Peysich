@@ -142,8 +142,8 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
           ))}
         </div>
         <div className="mt-3 flex items-end gap-3 text-sm">
-          <label>Price GHS/term<br />
-            <input name="priceGhs" type="number" step="0.01" defaultValue={(plan?.pricePerTermPesewas ?? 0) / 100}
+          <label>Price GHS/month<br />
+            <input name="priceGhs" type="number" step="0.01" defaultValue={(plan?.pricePerMonthPesewas ?? 0) / 100}
               className="mt-1 w-32 rounded-md border border-border px-2 py-1" /></label>
           <label>Student cap (blank = unlimited)<br />
             <input name="studentCap" type="number" defaultValue={plan?.studentCap ?? ""}

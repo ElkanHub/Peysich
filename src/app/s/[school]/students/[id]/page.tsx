@@ -44,7 +44,10 @@ export default async function StudentFile({ params, searchParams }: {
         .from(userTable).where(eq(userTable.id, s.userId))
     : [null];
 
-  const gs = await db.select({ name: guardians.name, phone: guardians.phone, relation: guardians.relation })
+  const gs = await db.select({
+    name: guardians.name, phone: guardians.phone, relation: guardians.relation,
+    occupation: guardians.occupation,
+  })
     .from(studentGuardians)
     .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
     .where(eq(studentGuardians.studentId, id));
@@ -94,7 +97,8 @@ export default async function StudentFile({ params, searchParams }: {
           <Card>
             <h2 className="font-semibold">Personal</h2>
             <dl className="mt-2.5 space-y-1.5 text-sm">
-              {[["Date of birth", s.dob], ["Place of birth", s.placeOfBirth],
+              {[["Date of birth", s.dob], ["ID / birth cert no", s.idNumber],
+                ["Place of birth", s.placeOfBirth],
                 ["Nationality", s.nationality], ["Hometown", s.hometown],
                 ["Religion", s.religion], ["Residential address", s.address],
                 ["Previous school", s.previousSchool],
@@ -127,7 +131,8 @@ export default async function StudentFile({ params, searchParams }: {
             <ul className="mt-2 space-y-1.5 text-sm">
               {gs.map((g, i) => (
                 <li key={i} className="flex justify-between">
-                  <span className="font-medium">{g.name}</span>
+                  <span className="font-medium">{g.name}
+                    {g.occupation && <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">({g.occupation})</span>}</span>
                   <span className="text-muted-foreground">{g.phone} · {g.relation}</span>
                 </li>
               ))}

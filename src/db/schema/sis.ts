@@ -55,6 +55,7 @@ export const students = pgTable("students", {
   firstName: text("first_name").notNull(), lastName: text("last_name").notNull(),
   otherNames: text("other_names"), sex: sexEnum("sex").notNull(),
   dob: date("dob"), photoUrl: text("photo_url"), // R2 key of profile photo
+  idNumber: text("id_number"), // national ID / birth-certificate number
   placeOfBirth: text("place_of_birth"), nationality: text("nationality"),
   hometown: text("hometown"), religion: text("religion"), address: text("address"),
   previousSchool: text("previous_school"),
@@ -82,6 +83,7 @@ export const guardians = pgTable("guardians", {
   userId: text("user_id"),
   name: text("name").notNull(), phone: text("phone").notNull(), email: text("email"),
   relation: text("relation").notNull().default("parent"),
+  occupation: text("occupation"),
 }, (t) => [index("guardians_school_phone").on(t.schoolId, t.phone)]);
 
 export const studentGuardians = pgTable("student_guardians", {
