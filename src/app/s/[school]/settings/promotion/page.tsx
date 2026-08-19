@@ -53,6 +53,8 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
             <p className="max-w-sm text-[12px] text-muted-foreground">
               Submitting creates the new year, moves every class to its destination,
               keeps ticked students back as <em>repeated</em>, and graduates the top level to alumni.
+              Students who are leaving should be <b>exited from their Student File first</b> —
+              exited students are not carried into the new year.
             </p>
           </div>
         </Card>

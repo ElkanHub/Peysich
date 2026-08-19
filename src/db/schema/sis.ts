@@ -70,6 +70,12 @@ export const students = pgTable("students", {
   classId: text("class_id"), // current class (denormalized; history in enrollments)
   userId: text("user_id"), // optional JHS login
   status: text("status").notNull().default("active"), // draft|active|alumni|left
+  /** Offboarding record — the exit is a status transition, NEVER a delete:
+   *  history (attendance, reports, ledger) stays intact under this id. */
+  exitDate: date("exit_date"),
+  exitReason: text("exit_reason"), // transferred|withdrawn|completed|expelled|other
+  exitDestination: text("exit_destination"), // school transferred to (for the TC)
+  exitNote: text("exit_note"),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [

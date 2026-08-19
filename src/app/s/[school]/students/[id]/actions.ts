@@ -1,9 +1,12 @@
 "use server";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { students, studentFiles, studentItems, enrollments, academicYears } from "@/db/schema";
+import {
+  students, studentFiles, studentItems, enrollments, academicYears,
+  routeStudents, feeInvoices,
+} from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { uid } from "@/lib/utils";
 
@@ -57,13 +60,89 @@ export async function enrollStudent(slug: string, id: string, f: FormData) {
       set: { classId, status },
     });
   if (year.isCurrent) {
+    const readmit = s.status === "left" || s.status === "alumni";
     await db.update(students).set({
       classId, boarding: f.get("boarding") === "on",
-      ...(s.status === "left" || s.status === "alumni" ? { status: "active" } : {}),
+      // re-admission: same file, same history — status flips back and the
+      // old exit record clears (it lives on in the closed enrolment rows)
+      ...(readmit ? { status: "active", exitDate: null, exitReason: null,
+        exitDestination: null, exitNote: null } : {}),
     }).where(eq(students.id, id));
   }
   revalidatePath(`/students/${id}`);
   redirect(`/students/${id}?tab=academics`);
+}
+
+const EXIT_REASONS = ["transferred", "withdrawn", "completed", "expelled", "other"] as const;
+
+/** OFFBOARDING — a status transition, never a delete. History (attendance,
+ *  reports, ledger, documents) stays intact under the same student id.
+ *  Side effects: current-year enrolment closed with the exit reason,
+ *  transport assignment released, drops off every active roster (all of
+ *  them filter status = "active"), and the student portal goes read-only. */
+export async function exitStudent(slug: string, id: string, f: FormData) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [s] = await db.select().from(students)
+    .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
+  if (!s || s.status !== "active") redirect(`/students/${id}`);
+
+  const reason = String(f.get("reason") ?? "");
+  if (!(EXIT_REASONS as readonly string[]).includes(reason))
+    redirect(`/students/${id}/exit?err=reason`);
+
+  // clearance gate: outstanding fees / custody items need an explicit
+  // acknowledgement — schools DO force-exit, but never silently
+  const [[{ bal }], custody] = await Promise.all([
+    db.select({ bal: sql<number>`coalesce(sum(total_pesewas - paid_pesewas), 0)` })
+      .from(feeInvoices).where(and(
+        eq(feeInvoices.schoolId, school.id), eq(feeInvoices.studentId, id))),
+    db.select({ id: studentItems.id }).from(studentItems).where(and(
+      eq(studentItems.studentId, id), isNull(studentItems.returnedAt))),
+  ]);
+  const hasIssues = Number(bal) > 0 || custody.length > 0;
+  if (hasIssues && f.get("override") !== "on")
+    redirect(`/students/${id}/exit?err=clearance`);
+
+  const exitDate = String(f.get("exitDate") || "") || new Date().toISOString().slice(0, 10);
+  await db.update(students).set({
+    status: reason === "completed" ? "alumni" : "left",
+    exitDate, exitReason: reason,
+    exitDestination: str(f, "exitDestination"), exitNote: str(f, "exitNote"),
+  }).where(and(eq(students.id, id), eq(students.schoolId, school.id)));
+
+  // close the current year's enrolment with the reason (history, not deletion)
+  const [year] = await db.select().from(academicYears).where(and(
+    eq(academicYears.schoolId, school.id), eq(academicYears.isCurrent, true)));
+  if (year) await db.update(enrollments)
+    .set({ status: reason === "completed" ? "graduated" : reason })
+    .where(and(eq(enrollments.studentId, id), eq(enrollments.yearId, year.id)));
+
+  // release operational resources (assignments, not history)
+  await db.delete(routeStudents).where(and(
+    eq(routeStudents.studentId, id), eq(routeStudents.schoolId, school.id)));
+
+  revalidatePath("/students");
+  revalidatePath(`/students/${id}`);
+  redirect(`/students/${id}?exited=1`);
+}
+
+/** Undo an exit recorded in error (distinct from re-admission, which is the
+ *  Enrol flow and creates a fresh enrolment). */
+export async function cancelExit(slug: string, id: string) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [s] = await db.select().from(students)
+    .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
+  if (!s || (s.status !== "left" && s.status !== "alumni") || !s.exitReason) return;
+  await db.update(students).set({
+    status: "active", exitDate: null, exitReason: null,
+    exitDestination: null, exitNote: null,
+  }).where(eq(students.id, id));
+  const [year] = await db.select().from(academicYears).where(and(
+    eq(academicYears.schoolId, school.id), eq(academicYears.isCurrent, true)));
+  if (year) await db.update(enrollments).set({ status: "enrolled" })
+    .where(and(eq(enrollments.studentId, id), eq(enrollments.yearId, year.id)));
+  revalidatePath("/students");
+  revalidatePath(`/students/${id}`);
 }
 
 export async function savePaymentNote(slug: string, id: string, f: FormData) {

@@ -12,7 +12,7 @@ import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Card, DataTable, Field, PageHeader, Tr, Td, Badge, Empty, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { PhotoUploader, DocumentUploader } from "./uploaders";
-import { addStudentItem, returnStudentItem, savePaymentNote } from "./actions";
+import { addStudentItem, returnStudentItem, savePaymentNote, cancelExit } from "./actions";
 import { cn } from "@/lib/utils";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -75,11 +75,39 @@ export default async function StudentFile({ params, searchParams }: {
         </div>
         {isAdmin && (
           <div className="flex shrink-0 gap-2">
+            {s.status === "active" && (
+              <Link href={`/students/${id}/exit`}
+                className={btnGhostCls + " text-danger hover:bg-danger/10"}>Exit</Link>
+            )}
             <Link href={`/students/${id}/enroll`} className={btnGhostCls}>Enrol</Link>
             <Link href={`/students/${id}/edit`} className={btnCls}>Edit profile</Link>
           </div>
         )}
       </div>
+
+      {/* offboarded file: the exit record, its documents, and the way back */}
+      {s.exitReason && s.status !== "active" && (
+        <div className="mb-5 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
+          <p className="font-medium">
+            Left the school on {s.exitDate} — <span className="capitalize">{s.exitReason}</span>
+            {s.exitDestination ? ` → ${s.exitDestination}` : ""}
+          </p>
+          {s.exitNote && <p className="mt-0.5 text-[13px] text-muted-foreground">{s.exitNote}</p>}
+          <p className="mt-1.5 flex flex-wrap items-center gap-3 text-[13px]">
+            <Link href={`/students/${id}/leaving-certificate`} className="font-medium text-primary">
+              Leaving certificate & final statement ↗
+            </Link>
+            {isAdmin && (
+              <>
+                <span className="text-muted-foreground">Returning? <b>Enrol</b> re-activates this same file.</span>
+                <form action={cancelExit.bind(null, slug, id)} className="inline">
+                  <button className="text-danger underline-offset-2 hover:underline">Undo exit (recorded in error)</button>
+                </form>
+              </>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* tabs — URL state, stable order */}
       <div className="mb-5 flex gap-1 border-b border-border">

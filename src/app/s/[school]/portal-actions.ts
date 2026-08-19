@@ -33,6 +33,8 @@ export async function submitHomework(slug: string, assignmentId: string, f: Form
   const { school, user } = await requireModule(slug, "homework", ["student"]);
   const me = await getStudentSelf(school.id, user.id);
   if (!me) return { error: "No student profile linked" };
+  if (me.status !== "active")
+    return { error: "This account is read-only — the student has left the school" };
   const [a] = await db.select().from(assignments)
     .where(and(eq(assignments.id, assignmentId), eq(assignments.schoolId, school.id)));
   if (!a || a.classId !== me.classId) return { error: "Not your assignment" };
