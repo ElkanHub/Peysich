@@ -99,6 +99,13 @@
       "when": 1787152928445,
       "tag": "0013_supreme_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787159124195,
+      "tag": "0014_huge_hercules",
+      "breakpoints": true
     }
   ]
 }

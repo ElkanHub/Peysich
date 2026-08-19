@@ -14,6 +14,7 @@ const LABELS: Record<string, string> = {
   onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
   financials: "Financials", broadcast: "Broadcast", users: "All users",
   edit: "Edit", enroll: "Enrol", promotion: "Promotion", exit: "Exit",
+  allocations: "Teaching & allocations",
   "leaving-certificate": "Leaving certificate",
 };
 

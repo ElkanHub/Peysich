@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, date, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, date, jsonb, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { schools } from "./platform";
 
 // ── Core SIS: every table carries school_id (tenant dimension) ──
@@ -44,9 +44,44 @@ export const staff = pgTable("staff", {
   id: text("id").primaryKey(), schoolId: sid(),
   userId: text("user_id"), // links to auth user once invited
   name: text("name").notNull(), email: text("email"), phone: text("phone"),
-  staffRole: text("staff_role").notNull().default("teacher"), // teacher|admin|bursar
+  staffRole: text("staff_role").notNull().default("teacher"), // portal role: teacher|admin|bursar
+  // ── the Staff File (onboarding wizard fills these, stage by stage) ──
+  staffNo: text("staff_no"), // employee id, STF0001…
+  staffType: text("staff_type").notNull().default("teaching"), // teaching|admin|support
+  designation: text("designation"), // "Lead Teacher", "Head Cook", "Driver"
+  dob: date("dob"), nationality: text("nationality"),
+  idNumber: text("id_number"), address: text("address"),
+  emergencyName: text("emergency_name"), emergencyPhone: text("emergency_phone"),
+  photoUrl: text("photo_url"), // R2 key
+  employmentType: text("employment_type").notNull().default("full_time"), // full_time|part_time|contract
+  joinedOn: date("joined_on"), probationEnd: date("probation_end"),
+  // teachers only
+  qualification: text("qualification"), institution: text("institution"),
+  licenseNo: text("license_no"), // GES / NTC registration
+  competencies: jsonb("competencies").$type<string[]>().notNull().default([]), // subject names
+  // payroll & statutory — rendered for admins only
+  bankName: text("bank_name"), bankBranch: text("bank_branch"),
+  accountNo: text("account_no"), ssnitNo: text("ssnit_no"), tinNo: text("tin_no"),
+  salaryPesewas: integer("salary_pesewas"),
+  /** Onboarding wizard progress: 1..6 while a draft, null once completed. */
+  onboardingStep: integer("onboarding_step"),
+  status: text("status").notNull().default("active"), // draft|active|left
+  exitDate: date("exit_date"), exitNote: text("exit_note"),
   deletedAt: timestamp("deleted_at"),
 }, (t) => [index("staff_school").on(t.schoolId)]);
+
+/** Subject teaching: teacher → class + subject. The source of truth for who
+ *  teaches what — the timetable and score-sheet access derive from it.
+ *  (Class-teacher / form-master lives on classes.classTeacherId.) */
+export const teachingAssignments = pgTable("teaching_assignments", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  teacherId: text("teacher_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
+  classId: text("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
+  subjectId: text("subject_id").notNull().references(() => subjects.id, { onDelete: "cascade" }),
+}, (t) => [
+  uniqueIndex("ta_class_subject").on(t.classId, t.subjectId), // one teacher per class-subject
+  index("ta_school_teacher").on(t.schoolId, t.teacherId),
+]);
 
 export const sexEnum = pgEnum("sex", ["male", "female"]);
 export const students = pgTable("students", {

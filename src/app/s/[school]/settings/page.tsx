@@ -4,7 +4,6 @@ import { academicYears, terms, levels, classes, subjects, staff, gradingSchemes,
 import { requireSchool } from "@/core/school-context";
 import { LEVEL_TEMPLATE } from "@/lib/levels";
 import { createYear, setCurrentTerm, setupLevels, addClass, saveBranding } from "../actions";
-import { setClassTeacher } from "../accounts-actions";
 import { addRoom, deleteRoom, setClassRoom } from "../actions-rooms";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { GradingEditor } from "./grading";
@@ -74,14 +73,9 @@ export default async function Settings({ params }: { params: Promise<{ school: s
               <div key={c.id} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium">{c.name}</span>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <form action={setClassTeacher.bind(null, slug, c.id)} className="flex items-center gap-1">
-                    <select name="staffId" defaultValue={c.classTeacherId ?? ""}
-                      className="rounded-md border border-border px-2 py-1 text-xs">
-                      <option value="">No class teacher</option>
-                      {tchs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                    <button className="rounded border border-border px-2 py-1 text-xs hover:bg-muted">Set</button>
-                  </form>
+                  <span className="text-xs text-muted-foreground">
+                    {tchs.find((t) => t.id === c.classTeacherId)?.name ?? "No class teacher"}
+                  </span>
                   <form action={setClassRoom.bind(null, slug, c.id)} className="flex items-center gap-1">
                     <select name="roomId" defaultValue={c.roomId ?? ""}
                       className="rounded-md border border-border px-2 py-1 text-xs">
@@ -103,6 +97,11 @@ export default async function Settings({ params }: { params: Promise<{ school: s
               <SubmitButton className={btnCls}>Add class</SubmitButton>
             </form>
             <p className="mt-2 text-muted-foreground">Subjects: {subs.map((s) => s.name).join(", ")}</p>
+            <p className="mt-1.5">
+              <a href="/staff/allocations" className="text-[13px] font-medium text-primary">
+                Assign class teachers & subject teachers → Teaching &amp; allocations
+              </a>
+            </p>
           </div>
         )}
       </Card>

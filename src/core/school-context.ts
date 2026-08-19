@@ -5,7 +5,7 @@ import { getSchoolBySlug } from "./tenant";
 import { getSession } from "./session";
 import { getEnabledModules } from "./entitlements";
 import { db } from "@/db";
-import { terms, academicYears, staff, classes, lessons } from "@/db/schema";
+import { terms, academicYears, staff, classes, lessons, teachingAssignments } from "@/db/schema";
 
 export type Ctx = {
   school: NonNullable<Awaited<ReturnType<typeof getSchoolBySlug>>>;
@@ -46,11 +46,13 @@ export async function getTeacherClassIds(schoolId: string, userId: string): Prom
   const [me] = await db.select().from(staff)
     .where(and(eq(staff.schoolId, schoolId), eq(staff.userId, userId)));
   if (!me) return null; // unlinked account → caller decides (usually show none + hint)
-  const [own, taught] = await Promise.all([
+  const [own, taught, assigned] = await Promise.all([
     db.select({ id: classes.id }).from(classes)
       .where(and(eq(classes.schoolId, schoolId), eq(classes.classTeacherId, me.id))),
     db.select({ id: lessons.classId }).from(lessons)
       .where(and(eq(lessons.schoolId, schoolId), eq(lessons.teacherId, me.id))),
+    db.select({ id: teachingAssignments.classId }).from(teachingAssignments)
+      .where(and(eq(teachingAssignments.schoolId, schoolId), eq(teachingAssignments.teacherId, me.id))),
   ]);
-  return new Set([...own.map((r) => r.id), ...taught.map((r) => r.id)]);
+  return new Set([...own.map((r) => r.id), ...taught.map((r) => r.id), ...assigned.map((r) => r.id)]);
 }
