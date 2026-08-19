@@ -13,6 +13,7 @@ import { Card, DataTable, Field, PageHeader, Tr, Td, Badge, Empty, inputCls, btn
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { PhotoUploader, DocumentUploader } from "./uploaders";
 import { addStudentItem, returnStudentItem, savePaymentNote, cancelExit } from "./actions";
+import { addGuardianToStudent, unlinkChild } from "../../guardians/actions";
 import { cn } from "@/lib/utils";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -45,8 +46,9 @@ export default async function StudentFile({ params, searchParams }: {
     : [null];
 
   const gs = await db.select({
-    name: guardians.name, phone: guardians.phone, relation: guardians.relation,
-    occupation: guardians.occupation,
+    id: guardians.id, name: guardians.name, phone: guardians.phone,
+    relation: guardians.relation, occupation: guardians.occupation,
+    contactPref: guardians.contactPref, isPrimary: studentGuardians.isPrimary,
   })
     .from(studentGuardians)
     .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
@@ -157,14 +159,54 @@ export default async function StudentFile({ params, searchParams }: {
             <h2 className="font-semibold">Guardians</h2>
             {gs.length === 0 && <p className="mt-2 text-sm text-muted-foreground">None linked.</p>}
             <ul className="mt-2 space-y-1.5 text-sm">
-              {gs.map((g, i) => (
-                <li key={i} className="flex justify-between">
-                  <span className="font-medium">{g.name}
-                    {g.occupation && <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">({g.occupation})</span>}</span>
-                  <span className="text-muted-foreground">{g.phone} · {g.relation}</span>
+              {gs.map((g) => (
+                <li key={g.id} className="flex items-start justify-between gap-2">
+                  <span>
+                    <Link href={`/guardians/${g.id}`} className="font-medium text-primary">{g.name}</Link>
+                    {g.isPrimary && <span className="ml-1.5"><Badge tone="brand">primary</Badge></span>}
+                    {g.contactPref !== "portal" &&
+                      <span className="ml-1.5 text-[11.5px] text-warning">📞 {g.contactPref === "sms" ? "SMS" : "phone"}-only</span>}
+                    <span className="block text-[12px] text-muted-foreground">
+                      {g.relation}{g.occupation ? ` · ${g.occupation}` : ""}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="whitespace-nowrap text-muted-foreground">{g.phone}</span>
+                    {isAdmin && (
+                      <form action={unlinkChild.bind(null, slug, g.id, id)}>
+                        <button className="rounded border border-border px-1.5 py-0.5 text-[11px] text-danger hover:bg-muted">Unlink</button>
+                      </form>
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>
+            {isAdmin && (
+              <details className="mt-3 border-t border-border pt-3">
+                <summary className="cursor-pointer text-[13px] font-medium text-primary">Add a guardian</summary>
+                <form action={addGuardianToStudent.bind(null, slug, id)} className="mt-2 grid grid-cols-2 gap-2.5">
+                  <Field label="Full name"><input name="name" required className={inputCls} /></Field>
+                  <Field label="Phone (reuses an existing parent)"><input name="phone" required className={inputCls} /></Field>
+                  <Field label="Relation">
+                    <select name="relation" className={inputCls}>
+                      {["parent", "mother", "father", "grandparent", "aunt", "uncle", "sibling", "other"]
+                        .map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="How to reach them">
+                    <select name="contactPref" className={inputCls}>
+                      <option value="phone">Phone call — not a portal user</option>
+                      <option value="sms">SMS — not a portal user</option>
+                      <option value="portal">Uses the parent portal</option>
+                    </select>
+                  </Field>
+                  <label className="col-span-2 flex items-center gap-2 text-[13px]">
+                    <input type="checkbox" name="isPrimary" /> Primary contact
+                  </label>
+                  <button className={btnGhostCls + " col-span-2"}>Add guardian</button>
+                </form>
+              </details>
+            )}
           </Card>
           <Card>
             <h2 className="font-semibold">Access & photo</h2>

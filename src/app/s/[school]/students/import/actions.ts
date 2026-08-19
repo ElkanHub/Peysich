@@ -13,7 +13,7 @@ export type ImportRow = {
   hometown?: string; religion?: string; address?: string; previousSchool?: string;
   bloodGroup?: string; medicalNotes?: string;
   guardianName?: string; guardianPhone?: string; guardianRelation?: string;
-  guardianOccupation?: string; guardianEmail?: string;
+  guardianOccupation?: string; guardianEmail?: string; guardianContactPref?: string;
   emergencyName?: string; emergencyPhone?: string; paymentNote?: string;
 };
 
@@ -99,6 +99,8 @@ export async function importStudentRows(slug: string, rows: ImportRow[]) {
             id: gid, schoolId: school.id, name: gName, phone: gPhone,
             relation: t(r.guardianRelation) ?? "parent",
             occupation: t(r.guardianOccupation), email: t(r.guardianEmail),
+            contactPref: ["phone", "sms", "portal"].includes((r.guardianContactPref ?? "").trim().toLowerCase())
+              ? (r.guardianContactPref ?? "").trim().toLowerCase() : "phone",
           });
         }
         guardianCache.set(gPhone, gid);

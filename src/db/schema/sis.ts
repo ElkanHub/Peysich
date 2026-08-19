@@ -90,6 +90,11 @@ export const guardians = pgTable("guardians", {
   name: text("name").notNull(), phone: text("phone").notNull(), email: text("email"),
   relation: text("relation").notNull().default("parent"),
   occupation: text("occupation"),
+  /** How the school actually reaches this person. "phone" (default — a call
+   *  works for everyone) | "sms" | "portal". Not-portal guardians get a
+   *  visible "phone them" flag so the desk never waits on an unread email. */
+  contactPref: text("contact_pref").notNull().default("phone"),
+  note: text("note"), // office memory: "call after 4pm — works night shift"
 }, (t) => [index("guardians_school_phone").on(t.schoolId, t.phone)]);
 
 export const studentGuardians = pgTable("student_guardians", {

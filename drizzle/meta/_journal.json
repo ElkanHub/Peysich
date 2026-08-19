@@ -92,6 +92,13 @@
       "when": 1787142873123,
       "tag": "0012_conscious_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787152928445,
+      "tag": "0013_supreme_shotgun",
+      "breakpoints": true
     }
   ]
 }

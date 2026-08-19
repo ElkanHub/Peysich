@@ -197,6 +197,15 @@ async function GuardiansStage({ slug, s }: { slug: string; s: S }) {
           </Field>
           <Field label="Occupation"><input name="occupation" className={inputCls} /></Field>
           <Field label="Email (optional)"><input name="email" type="email" className={inputCls} /></Field>
+          <div className="col-span-2">
+            <Field label="How does the school reach them?">
+              <select name="contactPref" className={inputCls}>
+                <option value="phone">Phone call — not a portal user</option>
+                <option value="sms">SMS — not a portal user</option>
+                <option value="portal">Uses the parent portal</option>
+              </select>
+            </Field>
+          </div>
           <label className="col-span-2 flex items-center gap-2 text-sm">
             <input type="checkbox" name="isPrimary" defaultChecked={gs.length === 0} /> Primary contact (billing & pickups)
           </label>

@@ -92,6 +92,8 @@ export async function addAdmissionGuardian(slug: string, id: string, f: FormData
       id: gid, schoolId: school.id, name, phone,
       email: str(f, "email"), relation: str(f, "relation") ?? "parent",
       occupation: str(f, "occupation"),
+      contactPref: ["phone", "sms", "portal"].includes(String(f.get("contactPref")))
+        ? String(f.get("contactPref")) : "phone",
     });
     [g] = await db.select().from(guardians).where(eq(guardians.id, gid));
   }
