@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
+import { ThemeToggle } from "./theme-toggle";
 import { SignOutButton } from "./signout";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -60,9 +61,9 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
   );
 }
 
-function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "Peysich", accountHref = "/account" }: {
+function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "Peysich", accountHref = "/account", avatarUrl }: {
   schoolName: string; role: string; userName: string; items: NavEntry[]; onNavigate?: () => void;
-  subtitle?: string; accountHref?: string;
+  subtitle?: string; accountHref?: string; avatarUrl?: string | null;
 }) {
   return (
     <div className="flex h-full flex-col bg-ink">
@@ -77,22 +78,25 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
       <div className="border-t border-ink-border p-3">
         <Link href={accountHref} onClick={onNavigate}
           className="flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-ink-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-active text-[11px] font-semibold uppercase text-ink-text-strong">
-            {userName.slice(0, 2)}
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-active text-[11px] font-semibold uppercase text-ink-text-strong">
+            {avatarUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+              : userName.slice(0, 2)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-[13px] font-medium text-ink-text-strong">{userName}</span>
             <span className="block text-[11px] capitalize text-ink-text/60">{role.replace("_", " ")}</span>
           </span>
         </Link>
-        <div className="px-2 pt-1"><SignOutButton /></div>
+        <div className="flex items-center justify-between px-2 pt-1"><SignOutButton /><ThemeToggle /></div>
       </div>
     </div>
   );
 }
 
 /** Responsive chrome: fixed ink sidebar ≥lg, slide-in drawer below. */
-export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[]; subtitle?: string; accountHref?: string }) {
+export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[]; subtitle?: string; accountHref?: string; avatarUrl?: string | null }) {
   const [open, setOpen] = useState(false);
   return (
     <>

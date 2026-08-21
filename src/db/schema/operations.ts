@@ -139,6 +139,15 @@ export const lessons = pgTable("lessons", {
   index("lessons_school_teacher").on(t.schoolId, t.teacherId, t.day),
 ]);
 
+/** Who has seen which announcement — powers the on-open attention modal
+ *  and the unread badge on the Announcements tab. */
+export const announcementAcks = pgTable("announcement_acks", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  announcementId: text("announcement_id").notNull(),
+  userId: text("user_id").notNull(),
+  ackedAt: timestamp("acked_at").notNull().defaultNow(),
+}, (t) => [uniqueIndex("ack_unique").on(t.announcementId, t.userId)]);
+
 // ── homework ──
 export const assignments = pgTable("assignments", {
   id: text("id").primaryKey(), schoolId: sid(),

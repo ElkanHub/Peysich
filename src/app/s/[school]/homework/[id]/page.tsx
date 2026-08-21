@@ -5,6 +5,8 @@ import { assignments, classes, subjects, submissions, students } from "@/db/sche
 import { requireModule } from "@/core/school-context";
 import { getStudentSelf } from "@/core/portal";
 import { markSubmission } from "../../portal-actions";
+import { recordSubmissionReceipt } from "../actions";
+import { getHomeworkConfig } from "@/modules/homework/config";
 import { Card, DataTable, PageHeader, Tr, Td } from "@/ui/kit";
 import { SubmitHomework } from "./submit";
 import { r2Enabled, presignDownload } from "@/lib/r2";
@@ -15,6 +17,7 @@ export default async function HomeworkDetail({ params }: {
 }) {
   const { school: slug, id } = await params;
   const { school, user } = await requireModule(slug, "homework");
+  const cfg = getHomeworkConfig(school.settings);
   const [a] = await db.select({
     id: assignments.id, title: assignments.title, instructions: assignments.instructions,
     dueDate: assignments.dueDate, classId: assignments.classId,
@@ -35,7 +38,7 @@ export default async function HomeworkDetail({ params }: {
       <div className="max-w-lg">
         <PageHeader title={a.title} sub={`${a.subject} · due ${a.dueDate}`} />
         {a.instructions && <Card className="mb-4 text-sm">{a.instructions}</Card>}
-        {mine?.mark != null && (
+        {cfg.recordMarks && mine?.mark != null && (
           <Card className="mb-4">
             <p className="text-sm">Mark: <b>{mine.mark}</b>{mine.feedback && ` — ${mine.feedback}`}</p>
           </Card>
@@ -59,12 +62,25 @@ export default async function HomeworkDetail({ params }: {
   if (r2Enabled)
     for (const s of subs) if (s.fileUrl) fileLinks.set(s.studentId, await presignDownload(s.fileUrl));
 
+  if (!cfg.recordSubmissions) {
+    return (
+      <div className="max-w-lg">
+        <PageHeader title={a.title} sub={`${a.className} · ${a.subject} · due ${a.dueDate}`} />
+        {a.instructions && <Card className="mb-4 text-sm">{a.instructions}</Card>}
+        <p className="text-sm text-muted-foreground">
+          This school keeps homework as reference only — hand-ins aren&apos;t tracked in the app.
+          An admin can turn tracking on from the Homework page.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl">
       <PageHeader title={a.title}
         sub={`${a.className} · ${a.subject} · due ${a.dueDate} · ${subs.length}/${roster.length} submitted`} />
       {a.instructions && <Card className="mb-4 text-sm">{a.instructions}</Card>}
-      <DataTable head={["Student", "Status", "Work", "Mark & feedback"]}>
+      <DataTable head={cfg.recordMarks ? ["Student", "Status", "Work", "Mark & feedback"] : ["Student", "Status", "Work", ""]}>
         {roster.map((r) => {
           const s = byStudent.get(r.id);
           return (
@@ -80,13 +96,19 @@ export default async function HomeworkDetail({ params }: {
                 )}
               </Td>
               <Td>
-                {s && (
+                {cfg.recordMarks && s && (
                   <form action={markSubmission.bind(null, slug, id, r.id)} className="flex items-center gap-1">
                     <input name="mark" type="number" min={0} max={100} defaultValue={s.mark ?? ""}
                       className="w-16 rounded-md border border-border px-2 py-1 text-xs" />
                     <input name="feedback" defaultValue={s.feedback ?? ""} placeholder="feedback"
                       className="w-32 rounded-md border border-border px-2 py-1 text-xs" />
                     <SubmitButton className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">✓</SubmitButton>
+                  </form>
+                )}
+                {!s && (
+                  <form action={recordSubmissionReceipt.bind(null, slug, id, r.id)}>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11px] hover:bg-muted"
+                      pendingText="…">✓ handed in</SubmitButton>
                   </form>
                 )}
               </Td>

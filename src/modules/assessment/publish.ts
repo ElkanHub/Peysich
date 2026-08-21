@@ -109,3 +109,45 @@ export async function publishTermReports(schoolId: string, termId: string) {
   await db.update(terms).set({ scoresLocked: true }).where(eq(terms.id, termId));
   return published;
 }
+
+/** Preschool-only release: skills-based reports for every rated preschool
+ *  child. End-of-term by nature (their whole assessment is the skills grid),
+ *  but it does NOT lock the term — the rest of the school keeps working. */
+export async function publishPreschoolReports(schoolId: string, termId: string) {
+  const [cls, lvs, domains] = await Promise.all([
+    db.select().from(classes).where(eq(classes.schoolId, schoolId)),
+    db.select().from(levels).where(eq(levels.schoolId, schoolId)),
+    db.select().from(skillDomains).where(eq(skillDomains.schoolId, schoolId)),
+  ]);
+  const preschoolClass = new Set(cls
+    .filter((c) => lvs.find((l) => l.id === c.levelId)?.preschool).map((c) => c.id));
+  const domainName = new Map(domains.map((d) => [d.id, d.name]));
+  const roster = (await db.select({ id: students.id, classId: students.classId }).from(students)
+    .where(and(eq(students.schoolId, schoolId), eq(students.status, "active"))))
+    .filter((s) => s.classId && preschoolClass.has(s.classId));
+
+  let published = 0;
+  for (const s of roster) {
+    const rs = await db.select().from(skillRatings).where(and(
+      eq(skillRatings.studentId, s.id), eq(skillRatings.termId, termId)));
+    if (!rs.length) continue; // nothing rated yet — no empty report
+    const [att] = await db.select({
+      present: sql<number>`count(*) filter (where status != 'absent')`,
+      total: sql<number>`count(*)`,
+    }).from(attendanceRecords)
+      .where(and(eq(attendanceRecords.studentId, s.id), eq(attendanceRecords.termId, termId)));
+    const data = {
+      subjects: [],
+      attendance: { present: Number(att?.present ?? 0), total: Number(att?.total ?? 0) },
+      skills: rs.map((r) => ({ domain: domainName.get(r.domainId) ?? "", rating: r.rating })),
+    };
+    await db.insert(reportCards)
+      .values({ id: uid(), schoolId, studentId: s.id, termId, published: true, data, publishedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [reportCards.studentId, reportCards.termId],
+        set: { data, published: true, publishedAt: new Date() },
+      });
+    published++;
+  }
+  return published;
+}

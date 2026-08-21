@@ -1,8 +1,13 @@
 "use client";
-import { use, useState } from "react";
+import { use, useRef, useState } from "react";
+import { Camera } from "lucide-react";
 import { authClient, useSession } from "@/lib/auth-client";
-import { Card, Field, PageHeader, inputCls, btnCls } from "@/ui/kit";
+import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
+import { useR2Upload, UploadProgress } from "@/ui/upload";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const IMAGE_LABEL = "JPG, PNG or WebP";
 
 /** My Account (every role): profile + password change (doc 06 settings spec). */
 export default function Account({ params }: { params: Promise<{ school: string }> }) {
@@ -16,6 +21,7 @@ export default function Account({ params }: { params: Promise<{ school: string }
   return (
     <div className="max-w-md space-y-5">
       <PageHeader title="My Account" />
+      <AvatarCard />
       <Card>
         <h2 className="font-semibold">Profile</h2>
         <form className="mt-3 space-y-3"
@@ -54,5 +60,56 @@ export default function Account({ params }: { params: Promise<{ school: string }
         </form>
       </Card>
     </div>
+  );
+}
+
+/** The user's OWN in-app picture — nothing to do with the photos the school
+ *  collects for documents. Shows in the sidebar next to their name. */
+function AvatarCard() {
+  const [preview, setPreview] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const up = useR2Upload({
+    kind: "photo", accept: IMAGE_TYPES, acceptLabel: IMAGE_LABEL, optimize: true,
+    save: async (key) => { await authClient.updateUser({ image: key }); },
+  });
+
+  return (
+    <Card>
+      <h2 className="font-semibold">Profile picture</h2>
+      <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+        Only shows inside the app (sidebar) — separate from any photo the school keeps on documents.
+      </p>
+      <div className="mt-3 flex items-center gap-4">
+        <span className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft ring-1 ring-border">
+          {preview
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={preview} alt="" className="h-full w-full object-cover" />
+            : <Camera size={20} className="text-primary/60" />}
+          {up.busy && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[11px] font-semibold text-white">
+              {up.state.phase === "uploading" ? `${up.state.pct}%` : "…"}
+            </span>
+          )}
+        </span>
+        <div>
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={up.busy}
+            className={btnGhostCls + " disabled:opacity-50"}>
+            Choose picture
+          </button>
+          <p className="mt-1 text-[11px] text-muted-foreground">{IMAGE_LABEL}, up to 10 MB.</p>
+          <input ref={inputRef} type="file" accept={IMAGE_TYPES.join(",")} className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setPreview(URL.createObjectURL(f));
+              up.run(f);
+            }} />
+        </div>
+      </div>
+      <UploadProgress state={up.state} onRetry={up.retry} />
+      {up.state.phase === "done" && (
+        <p className="mt-1 text-[12px] text-success">Saved ✓ — it appears in your sidebar on the next page load.</p>
+      )}
+    </Card>
   );
 }

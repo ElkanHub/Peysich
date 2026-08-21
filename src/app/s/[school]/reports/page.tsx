@@ -7,7 +7,9 @@ import { getStructure, SECTIONS, SECTION_LABELS, type Section } from "@/core/aca
 import { getReportConfig, REPORT_CONFIG_LABELS, REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/report-config";
 import { Card, PageHeader, Badge, Empty, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
-import { releaseComponent, releaseTermReports, saveReportConfig } from "./actions";
+import { releaseComponent, releaseTermReports, releasePreschoolReports, saveReportConfig } from "./actions";
+import { skillRatings } from "@/db/schema";
+import { inArray } from "drizzle-orm";
 
 const fmtDate = (d: Date) =>
   d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Accra" });
@@ -56,7 +58,33 @@ export default async function Reports({ params, searchParams }: {
     return { done, total: subs.length, ready: subs.length > 0 && done === subs.length };
   };
 
-  const activeClass = testClasses.find((c) => c.id === sp.c) ?? testClasses[0];
+  // preschool: their whole assessment is the skills grid, released end of term
+  const preClasses = S.classes.filter((c) => preschool.has(c.levelId))
+    .sort((a, b) => (S.levelById.get(a.levelId)?.sortOrder ?? 0) - (S.levelById.get(b.levelId)?.sortOrder ?? 0) || a.name.localeCompare(b.name));
+  const preClassIds = preClasses.map((c) => c.id);
+  const preKids = preClassIds.length
+    ? await db.select({ id: students.id }).from(students).where(and(
+        eq(students.schoolId, school.id), eq(students.status, "active"),
+        inArray(students.classId, preClassIds)))
+    : [];
+  const preKidIds = preKids.map((k) => k.id);
+  const [ratedKids, preReleased] = await Promise.all([
+    preKidIds.length
+      ? db.select({ studentId: skillRatings.studentId }).from(skillRatings).where(and(
+          eq(skillRatings.termId, term.id), inArray(skillRatings.studentId, preKidIds)))
+      : [],
+    preKidIds.length
+      ? db.select({ studentId: reportCards.studentId, publishedAt: reportCards.publishedAt })
+          .from(reportCards).where(and(eq(reportCards.termId, term.id),
+            eq(reportCards.published, true), inArray(reportCards.studentId, preKidIds)))
+      : [],
+  ]);
+  const ratedCount = new Set(ratedKids.map((r) => r.studentId)).size;
+  const preReleasedAt = preReleased.map((r) => r.publishedAt).filter((d): d is Date => !!d)
+    .sort((a, b) => +a - +b).at(-1) ?? null;
+
+  const allClasses = [...preClasses, ...testClasses];
+  const activeClass = allClasses.find((c) => c.id === sp.c) ?? testClasses[0] ?? preClasses[0];
   const roster = activeClass
     ? await db.select({ id: students.id, firstName: students.firstName, lastName: students.lastName })
         .from(students).where(and(eq(students.schoolId, school.id),
@@ -127,6 +155,42 @@ export default async function Reports({ params, searchParams }: {
             </div>
           ))}
 
+          {/* preschool — skills-based, so their release IS the end-of-term report */}
+          {preClasses.length > 0 && (
+            <div className="border-t border-border pt-3">
+              <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Preschool</p>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="w-44 shrink-0 font-medium">Skills report (end of term)</span>
+                {preReleased.length > 0 ? (
+                  <>
+                    <Badge tone="success">released ✓</Badge>
+                    <span className="text-[12.5px] text-muted-foreground" data-nums="">
+                      {preReleased.length} of {preKidIds.length} children
+                      {preReleasedAt ? ` · ${fmtDate(preReleasedAt)}` : ""}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Badge tone="default">not released</Badge>
+                    <span className={`text-[12.5px] ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "text-success" : "text-warning"}`} data-nums="">
+                      {ratedCount}/{preKidIds.length} children rated on the skills grid
+                    </span>
+                  </>
+                )}
+                <form action={releasePreschoolReports.bind(null, slug)} className="ml-auto">
+                  <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[12.5px]"} pendingText="Releasing…">
+                    {preReleased.length ? "Re-release skills reports" : "Release skills reports"}
+                  </SubmitButton>
+                </form>
+              </div>
+              <p className="mt-1.5 text-[12px] text-muted-foreground">
+                Preschool is assessed on the skills grid, not tests — this single release sends each
+                child&apos;s Learning &amp; Development record to their family. Children with nothing
+                rated yet are skipped, and the term stays open.
+              </p>
+            </div>
+          )}
+
           {/* terminal report — its own, separate release */}
           <div className="border-t border-border pt-3">
             <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Terminal report</p>
@@ -188,7 +252,7 @@ export default async function Reports({ params, searchParams }: {
           Open any child&apos;s record exactly as it prints. Reading only — marks are edited under Assessment.
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {testClasses.map((c) => (
+          {allClasses.map((c) => (
             <Link key={c.id} href={`?c=${c.id}`}
               className={`rounded-md border px-2.5 py-1 text-[12.5px] font-medium ${c.id === activeClass?.id
                 ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>

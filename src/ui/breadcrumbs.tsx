@@ -10,7 +10,8 @@ const LABELS: Record<string, string> = {
   skills: "Skills", timetable: "Timetable", homework: "Homework", comms: "Announcements",
   fees: "Fees", admissions: "Admissions", library: "Library", transport: "Transport",
   inventory: "Inventory", hr: "Staff HR", analytics: "Analytics", children: "My Children",
-  report: "Report card", platform: "Console", schools: "Schools", audit: "Audit log",
+  report: "Report card", reports: "Reports", performance: "Performance",
+  platform: "Console", schools: "Schools", audit: "Audit log",
   onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
   financials: "Financials", broadcast: "Broadcast", users: "All users",
   edit: "Edit", enroll: "Enrol", promotion: "Promotion", exit: "Exit",
@@ -18,24 +19,39 @@ const LABELS: Record<string, string> = {
   "leaving-certificate": "Leaving certificate",
 };
 
-/** Path-derived breadcrumbs; id-looking segments render as a neutral marker. */
+const isId = (seg: string) => /^[0-9a-f-]{16,}$/i.test(seg) || /^[A-Za-z0-9_-]{20,}$/.test(seg);
+
+/** Path-derived breadcrumbs. Only crumbs that are REAL pages become links:
+ *  the tenant prefix (/s/{slug}) is folded into the root, id segments and
+ *  unknown middles render as plain text — no more 404s from the trail. */
 export function Breadcrumbs({ root = "Home" }: { root?: string }) {
   const pathname = usePathname();
-  const parts = pathname.split("/").filter(Boolean);
+  let parts = pathname.split("/").filter(Boolean);
+  let base = "";
+  // tenant routes live under /s/{slug} — that prefix IS the root crumb
+  if (parts[0] === "s" && parts.length >= 2) {
+    base = `/${parts[0]}/${parts[1]}`;
+    parts = parts.slice(2);
+  }
   const crumbs = parts.map((seg, i) => ({
-    label: LABELS[seg] ?? (/^[0-9a-f-]{16,}$/i.test(seg) ? "Detail" : seg),
-    href: "/" + parts.slice(0, i + 1).join("/"),
+    label: LABELS[seg] ?? (isId(seg) ? "Detail" : seg),
+    href: base + "/" + parts.slice(0, i + 1).join("/"),
+    // link only the module root (first segment) — deeper paths need params
+    // the trail can't know, so they stay text instead of risking a 404
+    linkable: i === 0 && !!LABELS[seg],
     last: i === parts.length - 1,
   }));
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[13px]">
-      <Link href="/" className="shrink-0 text-muted-foreground transition-colors hover:text-foreground">{root}</Link>
+      <Link href={base || "/"} className="shrink-0 text-muted-foreground transition-colors hover:text-foreground">{root}</Link>
       {crumbs.map((c) => (
         <span key={c.href} className="flex min-w-0 items-center gap-1">
           <ChevronRight size={13} className="shrink-0 text-faint" />
           {c.last
             ? <span className="truncate font-medium text-foreground">{c.label}</span>
-            : <Link href={c.href} className="truncate text-muted-foreground transition-colors hover:text-foreground">{c.label}</Link>}
+            : c.linkable
+              ? <Link href={c.href} className="truncate text-muted-foreground transition-colors hover:text-foreground">{c.label}</Link>
+              : <span className="truncate text-muted-foreground">{c.label}</span>}
         </span>
       ))}
     </nav>

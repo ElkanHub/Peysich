@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { schools, scorePublications } from "@/db/schema";
-import { publishTermReports } from "@/modules/assessment/publish";
+import { publishTermReports, publishPreschoolReports } from "@/modules/assessment/publish";
 import { REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/report-config";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { uid } from "@/lib/utils";
@@ -30,6 +30,17 @@ export async function releaseTermReports(slug: string) {
   await publishTermReports(school.id, term.id);
   revalidatePath("/reports"); revalidatePath("/assessment");
   redirect("/reports?flash=done");
+}
+
+/** Release the preschool skills reports (their end-of-term report — the
+ *  skills grid IS their assessment). Does not lock the term. */
+export async function releasePreschoolReports(slug: string) {
+  const { school } = await requireModule(slug, "assessment", ["admin"]);
+  const term = await getCurrentTerm(school.id);
+  if (!term) redirect("/reports");
+  const n = await publishPreschoolReports(school.id, term.id);
+  revalidatePath("/reports");
+  redirect(`/reports?flash=${n > 0 ? "done" : "error"}`);
 }
 
 /** What appears on the report paper — checkbox per element. */

@@ -1,6 +1,7 @@
 /** What appears on the printed report/record papers — the school decides.
  *  Stored in schools.settings.reportConfig; every paper page reads this. */
 export type ReportConfig = {
+  logo: boolean;          // school logo top-left
   studentPhoto: boolean;  // child's photo top-right
   schoolName: boolean;    // the big heading
   motto: boolean;
@@ -11,11 +12,12 @@ export type ReportConfig = {
 };
 
 export const REPORT_CONFIG_DEFAULTS: ReportConfig = {
-  studentPhoto: true, schoolName: true, motto: true, addressLine: true,
+  logo: true, studentPhoto: true, schoolName: true, motto: true, addressLine: true,
   attendance: true, gradeRemarks: true, signatures: true,
 };
 
 export const REPORT_CONFIG_LABELS: Record<keyof ReportConfig, string> = {
+  logo: "School logo",
   studentPhoto: "Student's photo",
   schoolName: "School name heading",
   motto: "Motto",

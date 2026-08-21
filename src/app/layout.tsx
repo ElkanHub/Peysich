@@ -11,7 +11,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* apply the saved theme before first paint — no light flash */}
+        <script dangerouslySetInnerHTML={{ __html:
+          `try{if(localStorage.getItem("peysich-theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}` }} />
+      </head>
       <body className={`${geist.variable} font-sans antialiased`}>{children}</body>
     </html>
   );

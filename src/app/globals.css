@@ -45,6 +45,27 @@
   --shadow-lg: 0 12px 32px -8px rgb(22 24 29 / 0.18);
 }
 
+/* ── dark mode: conventional near-black/grey canvas; the wine ACCENTS and
+   the ink sidebar stay exactly as they are ── */
+.dark {
+  --background: #101114;
+  --foreground: #e7e9ee;
+  --card: #17181c;
+  --card-foreground: #e7e9ee;
+  --muted: #1f2126;
+  --muted-foreground: #9aa1ab;
+  --faint: #6b7280;
+  --border: #26282e;
+  --border-strong: #33363d;
+  --brand-soft: #33202b;
+  --success-soft: #12291f;
+  --warning-soft: #2d2212;
+  --danger-soft: #2e1716;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 2px 8px -2px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

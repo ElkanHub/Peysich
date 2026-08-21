@@ -30,9 +30,15 @@ export default async function ReportCard({ params }: {
   const cfg = getReportConfig(school.settings);
   const photoUrl = cfg.studentPhoto && s?.photoUrl && r2Enabled
     ? await presignDownload(s.photoUrl) : null;
+  const logoUrl = cfg.logo && b.logoUrl && r2Enabled
+    ? await presignDownload(b.logoUrl) : null;
   return (
     <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">
       <div className="relative border-b-4 pb-4 text-center" style={{ borderColor: color }}>
+        {logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="" className="absolute left-0 top-0 h-16 w-16 object-contain" />
+        )}
         {cfg.schoolName && <h1 className="text-2xl font-bold" style={{ color }}>{school.name}</h1>}
         {cfg.motto && b.motto && <p className="text-sm italic">{b.motto}</p>}
         {cfg.addressLine && (
