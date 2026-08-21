@@ -1,32 +1,43 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  assessments, scores, gradingSchemes, reportCards, students, subjects,
-  attendanceRecords, terms, classes, levels, skillDomains, skillRatings,
+  componentScores, scoreSheets, assessmentComponents, gradingSchemes, reportCards,
+  students, subjects, attendanceRecords, terms, classes, levels, skillDomains, skillRatings,
 } from "@/db/schema";
 import { uid } from "@/lib/utils";
 
 type Scheme = { caWeight: number; examWeight: number; bands: { min: number; grade: string; remark: string }[] };
 
+/** Totals from the configurable scheme: each raw mark converts to its
+ *  component's weight (raw ÷ marked-over × weight); CA = the tests, exam =
+ *  the exam component — together they land on /100 by construction. */
 async function computeStudent(schoolId: string, studentId: string, termId: string, scheme: Scheme) {
   const rows = await db.select({
-    subjectId: assessments.subjectId, kind: assessments.kind,
-    maxScore: assessments.maxScore, score: scores.score, subjectName: subjects.name,
-  }).from(scores)
-    .innerJoin(assessments, eq(scores.assessmentId, assessments.id))
-    .innerJoin(subjects, eq(assessments.subjectId, subjects.id))
-    .where(and(eq(scores.schoolId, schoolId), eq(scores.studentId, studentId),
-      eq(assessments.termId, termId)));
-  const bySubject = new Map<string, { name: string; ca: number[]; exam: number[] }>();
+    subjectId: componentScores.subjectId, raw: componentScores.raw,
+    classId: componentScores.classId, componentId: componentScores.componentId,
+    weight: assessmentComponents.weight, isExam: assessmentComponents.isExam,
+    subjectName: subjects.name,
+  }).from(componentScores)
+    .innerJoin(assessmentComponents, eq(componentScores.componentId, assessmentComponents.id))
+    .innerJoin(subjects, eq(componentScores.subjectId, subjects.id))
+    .where(and(eq(componentScores.schoolId, schoolId),
+      eq(componentScores.studentId, studentId), eq(componentScores.termId, termId)));
+  if (!rows.length) return [];
+  const sheets = await db.select().from(scoreSheets)
+    .where(and(eq(scoreSheets.schoolId, schoolId), eq(scoreSheets.termId, termId)));
+  const outOfBy = new Map(sheets.map((s) => [`${s.classId}:${s.subjectId}:${s.componentId}`, s.outOf]));
+
+  const bySubject = new Map<string, { name: string; ca: number; exam: number }>();
   for (const r of rows) {
-    const s = bySubject.get(r.subjectId) ?? { name: r.subjectName, ca: [], exam: [] };
-    (r.kind === "exam" ? s.exam : s.ca).push((r.score / r.maxScore) * 100);
+    const s = bySubject.get(r.subjectId) ?? { name: r.subjectName, ca: 0, exam: 0 };
+    const outOf = outOfBy.get(`${r.classId}:${r.subjectId}:${r.componentId}`) ?? 100;
+    const conv = (r.raw / outOf) * r.weight;
+    if (r.isExam) s.exam += conv; else s.ca += conv;
     bySubject.set(r.subjectId, s);
   }
-  const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
   return [...bySubject.values()].map((s) => {
-    const ca = Math.round(avg(s.ca) * (scheme.caWeight / 100));
-    const exam = Math.round(avg(s.exam) * (scheme.examWeight / 100));
+    const ca = Math.round(s.ca);
+    const exam = Math.round(s.exam);
     const total = ca + exam;
     const band = scheme.bands.find((b) => total >= b.min) ?? scheme.bands.at(-1)!;
     return { name: s.name, ca, exam, total, grade: band.grade, remark: band.remark };

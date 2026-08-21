@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 import { SubmitButton } from "@/ui/feedback";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-const TABS = ["profile", "academics", "documents", "fees"] as const;
-const TAB_LABEL = { profile: "Profile", academics: "Academics", documents: "Documents & Items", fees: "Fees & Payments" };
+const TABS = ["profile", "academics", "performance", "documents", "fees"] as const;
+const TAB_LABEL = { profile: "Profile", academics: "Academics", performance: "Performance", documents: "Documents & Items", fees: "Fees & Payments" };
 
 /** THE STUDENT FILE — everything the office knows about one child, in one
  *  place: profile, academic history, digital documents + physical custody
@@ -33,7 +33,7 @@ export default async function StudentFile({ params, searchParams }: {
   const { school, user } = await requireSchool(slug, ["admin", "teacher"]);
   const isAdmin = ["admin", "platform_admin"].includes(user.role);
   // money and custody are office business — teachers get profile + academics
-  const visibleTabs = isAdmin ? TABS : (["profile", "academics"] as const);
+  const visibleTabs = isAdmin ? TABS : (["profile", "academics", "performance"] as const);
   const tab = (visibleTabs as readonly string[]).includes(sp.tab ?? "") ? sp.tab as typeof TABS[number] : "profile";
 
   const [s] = await db.select().from(students)
@@ -241,6 +241,10 @@ export default async function StudentFile({ params, searchParams }: {
 
       {tab === "academics" && <AcademicsTab schoolId={school.id} studentId={id} termId={term?.id} />}
 
+      {tab === "performance" && (
+        <PerformanceTab schoolId={school.id} studentId={id} classId={s.classId} termId={term?.id} />
+      )}
+
       {tab === "documents" && (
         <DocumentsTab slug={slug} schoolId={school.id} studentId={id} isAdmin={isAdmin} />
       )}
@@ -250,6 +254,106 @@ export default async function StudentFile({ params, searchParams }: {
           paymentNote={s.paymentNote} isAdmin={isAdmin} />
       )}
     </div>
+  );
+}
+
+/** All configured tests + exam for the current term, converted to their
+ *  weights — the at-a-glance version of the printable record. */
+async function PerformanceTab({ schoolId, studentId, classId, termId }: {
+  schoolId: string; studentId: string; classId: string | null; termId?: string;
+}) {
+  const { getStructure } = await import("@/core/academics");
+  const { componentScores, scoreSheets, gradingSchemes, skillRatings, skillDomains } = await import("@/db/schema");
+  const S = await getStructure(schoolId);
+  const cls = classId ? S.classById.get(classId) : null;
+  if (!cls || !termId) {
+    return <Card><p className="text-sm text-muted-foreground">No current class or term — nothing to show yet.</p></Card>;
+  }
+  const preschool = !!S.levelById.get(cls.levelId)?.preschool;
+  const printable = `/students/${studentId}/performance/${termId}`;
+
+  if (preschool) {
+    const [rs, doms] = await Promise.all([
+      db.select().from(skillRatings).where(and(
+        eq(skillRatings.studentId, studentId), eq(skillRatings.termId, termId))),
+      db.select().from(skillDomains).where(eq(skillDomains.schoolId, schoolId)),
+    ]);
+    const rateBy = new Map(rs.map((r) => [r.domainId, r.rating]));
+    return (
+      <Card>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold">Skills this term</h2>
+          <Link href={printable} className="text-[13px] font-medium text-primary">Open printable record →</Link>
+        </div>
+        <ul className="mt-2 divide-y divide-border text-sm">
+          {doms.sort((a, b) => a.sortOrder - b.sortOrder).map((d) => (
+            <li key={d.id} className="flex justify-between py-1.5">
+              <span>{d.name}</span>
+              <span className="font-medium capitalize">{rateBy.get(d.id) ?? "—"}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    );
+  }
+
+  const comps = S.componentsFor(S.sectionOfClass(cls));
+  const [marks, sheets, [scheme]] = await Promise.all([
+    db.select().from(componentScores).where(and(
+      eq(componentScores.studentId, studentId), eq(componentScores.termId, termId))),
+    db.select().from(scoreSheets).where(and(
+      eq(scoreSheets.schoolId, schoolId), eq(scoreSheets.termId, termId), eq(scoreSheets.classId, cls.id))),
+    db.select().from(gradingSchemes).where(eq(gradingSchemes.schoolId, schoolId)),
+  ]);
+  const bands = scheme?.bands ?? [{ min: 0, grade: "—", remark: "" }];
+  const outOfBy = new Map(sheets.map((sh) => [`${sh.subjectId}:${sh.componentId}`, sh.outOf]));
+  const rawBy = new Map(marks.map((m) => [`${m.subjectId}:${m.componentId}`, m.raw]));
+  const rows = S.effectiveSubjectIds(cls.id).map((sid2) => {
+    const cells = comps.map((c) => {
+      const raw = rawBy.get(`${sid2}:${c.id}`);
+      if (raw === undefined) return null;
+      return Math.round((raw / (outOfBy.get(`${sid2}:${c.id}`) ?? 100)) * c.weight * 10) / 10;
+    });
+    const total = Math.round(cells.reduce<number>((a, v) => a + (v ?? 0), 0) * 10) / 10;
+    return { name: S.subjectById.get(sid2)?.name ?? "", cells, total, hasAny: cells.some((v) => v !== null) };
+  }).filter((r) => r.hasAny).sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">This term, across every assessment</h2>
+        <Link href={printable} className="text-[13px] font-medium text-primary">Open printable record →</Link>
+      </div>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">No marks recorded yet this term.</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-[13px]" data-nums="">
+            <thead>
+              <tr className="border-b border-border text-left text-[11.5px] uppercase tracking-wide text-muted-foreground">
+                <th className="py-1.5 pr-2">Subject</th>
+                {comps.map((c) => <th key={c.id} className="px-2 py-1.5 text-center">{c.name} <span className="font-normal">/{c.weight}</span></th>)}
+                <th className="px-2 py-1.5 text-center">Total</th>
+                <th className="px-2 py-1.5 text-center">Grade</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r, i) => {
+                const band = bands.find((b) => r.total >= b.min) ?? bands.at(-1)!;
+                return (
+                  <tr key={i}>
+                    <td className="py-1.5 pr-2 font-medium">{r.name}</td>
+                    {r.cells.map((v, j) => <td key={j} className="px-2 py-1.5 text-center">{v ?? "–"}</td>)}
+                    <td className="px-2 py-1.5 text-center font-semibold">{r.total}</td>
+                    <td className="px-2 py-1.5 text-center">{band.grade}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
   );
 }
 

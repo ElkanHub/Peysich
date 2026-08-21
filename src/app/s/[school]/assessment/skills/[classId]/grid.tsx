@@ -4,22 +4,34 @@ import { saveSkillRatings } from "../../skills-actions";
 import { btnCls } from "@/ui/kit";
 import { cn } from "@/lib/utils";
 
-const CYCLE: Record<string, string> = { "": "emerging", emerging: "developing", developing: "secure", secure: "" };
-const STYLE: Record<string, string> = {
-  emerging: "bg-warning/15 text-warning",
-  developing: "bg-primary/10 text-primary",
-  secure: "bg-success/15 text-success",
-};
+// fixed tone ramp; the LABELS come from the school's configurable scale
+const TONES = [
+  "bg-warning/15 text-warning",
+  "bg-primary/10 text-primary",
+  "bg-success/15 text-success",
+  "bg-brand-soft text-primary",
+  "bg-muted text-foreground",
+];
 
-export function SkillsGrid({ slug, classId, domains, roster, initial }: {
+export function SkillsGrid({ slug, classId, domains, roster, initial, scale }: {
   slug: string; classId: string;
   domains: { id: string; name: string }[];
   roster: { id: string; firstName: string; lastName: string }[];
   initial: Record<string, string>;
+  scale: string[];
 }) {
   const [cells, setCells] = useState<Record<string, string>>(initial);
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
+
+  const next = (v: string) => {
+    const i = scale.indexOf(v);
+    return i === -1 ? scale[0] : i === scale.length - 1 ? "" : scale[i + 1];
+  };
+  const tone = (v: string) => {
+    const i = scale.indexOf(v);
+    return i === -1 ? "bg-muted text-muted-foreground" : TONES[i % TONES.length];
+  };
 
   return (
     <div>
@@ -41,9 +53,8 @@ export function SkillsGrid({ slug, classId, domains, roster, initial }: {
                   return (
                     <td key={d.id} className="px-1 py-1 text-center">
                       <button type="button"
-                        onClick={() => { setCells({ ...cells, [k]: CYCLE[v] }); setSaved(false); }}
-                        className={cn("w-24 rounded py-1 text-xs",
-                          v ? STYLE[v] : "bg-muted text-muted-foreground")}>
+                        onClick={() => { setCells({ ...cells, [k]: next(v) }); setSaved(false); }}
+                        className={cn("w-24 rounded py-1 text-xs", tone(v))}>
                         {v || "—"}
                       </button>
                     </td>

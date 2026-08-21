@@ -25,6 +25,9 @@ export default async function SkillsPage({ params }: {
   if (!lv?.preschool) notFound();
 
   await ensureSkillDomains(slug); // seed default domains on first visit
+  const { getStructure } = await import("@/core/academics");
+  const S = await getStructure(school.id);
+  const scale = S.skillScaleFor("preschool");
   const [domains, roster] = await Promise.all([
     db.select().from(skillDomains).where(eq(skillDomains.schoolId, school.id))
       .orderBy(skillDomains.sortOrder),
@@ -42,8 +45,8 @@ export default async function SkillsPage({ params }: {
   return (
     <div>
       <PageHeader title={`${cls.name} · Skills assessment`}
-        sub={`${term.name} · tap a cell to cycle emerging → developing → secure`} />
-      <SkillsGrid slug={slug} classId={classId}
+        sub={`${term.name} · tap a cell to cycle ${scale.join(" → ")}`} />
+      <SkillsGrid slug={slug} classId={classId} scale={scale}
         domains={domains.map((d) => ({ id: d.id, name: d.name }))}
         roster={roster}
         initial={Object.fromEntries(existing.map((r) => [`${r.studentId}:${r.domainId}`, r.rating]))} />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { classes, subjects, students, assessments, scores, reportCards } from "@/db/schema";
+import { classes, subjects, students, componentScores, reportCards } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { publishReports } from "../actions";
 import { PageHeader, btnCls } from "@/ui/kit";
@@ -22,12 +22,11 @@ export default async function Matrix({ params }: { params: Promise<{ school: str
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active")))
       .groupBy(students.classId),
     db.select({
-      classId: assessments.classId, subjectId: assessments.subjectId,
-      n: sql<number>`count(distinct ${scores.studentId})`,
-    }).from(scores)
-      .innerJoin(assessments, eq(scores.assessmentId, assessments.id))
-      .where(and(eq(assessments.schoolId, school.id), eq(assessments.termId, term.id)))
-      .groupBy(assessments.classId, assessments.subjectId),
+      classId: componentScores.classId, subjectId: componentScores.subjectId,
+      n: sql<number>`count(distinct ${componentScores.studentId})`,
+    }).from(componentScores)
+      .where(and(eq(componentScores.schoolId, school.id), eq(componentScores.termId, term.id)))
+      .groupBy(componentScores.classId, componentScores.subjectId),
     db.select({ n: sql<number>`count(*)` }).from(reportCards)
       .where(and(eq(reportCards.schoolId, school.id), eq(reportCards.termId, term.id),
         eq(reportCards.published, true))),

@@ -305,6 +305,17 @@ export default async function Settings({ params, searchParams }: {
         <a href="/settings/timetable" className={btnCls + " mt-3 inline-block"}>Open day plan</a>
       </Card>
 
+      {/* ── Assessment scheme: what counts toward the terminal 100% ── */}
+      <Card>
+        <h2 className="font-semibold">Assessment scheme</h2>
+        <p className="text-sm text-muted-foreground">
+          Per section: name your class tests and set their weights (they must total 100 with
+          the exam), or configure the preschool skills list and its rating scale. Score
+          sheets, publishing and report cards all follow this.
+        </p>
+        <a href="/settings/assessment" className={btnCls + " mt-3 inline-block"}>Open assessment scheme</a>
+      </Card>
+
       {/* ── Rooms: fully editable — seats change, amenities change ── */}
       <Card>
         <h2 className="font-semibold">Rooms & facilities</h2>

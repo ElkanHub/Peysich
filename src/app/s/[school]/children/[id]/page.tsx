@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import {
   students, classes, reportCards, terms, feeInvoices, feePayments,
-  attendanceRecords, scores, assessments, subjects,
+  attendanceRecords, subjects, componentScores, assessmentComponents,
+  scorePublications, scoreSheets,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm } from "@/core/school-context";
 import { assertParentOf } from "@/core/portal";
@@ -33,13 +34,19 @@ export default async function ChildDetail({ params }: {
       : [],
     term
       ? db.select({
-          subject: subjects.name, title: assessments.title,
-          score: scores.score, max: assessments.maxScore,
-        }).from(scores)
-          .innerJoin(assessments, eq(scores.assessmentId, assessments.id))
-          .innerJoin(subjects, eq(assessments.subjectId, subjects.id))
-          .where(and(eq(scores.studentId, id), eq(assessments.termId, term.id)))
-          .orderBy(desc(scores.updatedAt)).limit(8)
+          subject: subjects.name, title: assessmentComponents.name,
+          weight: assessmentComponents.weight, raw: componentScores.raw,
+          componentId: componentScores.componentId, subjectId: componentScores.subjectId,
+          classId: componentScores.classId,
+        }).from(componentScores)
+          .innerJoin(assessmentComponents, eq(componentScores.componentId, assessmentComponents.id))
+          .innerJoin(subjects, eq(componentScores.subjectId, subjects.id))
+          // families only see what the school has published
+          .innerJoin(scorePublications, and(
+            eq(scorePublications.componentId, componentScores.componentId),
+            eq(scorePublications.termId, componentScores.termId)))
+          .where(and(eq(componentScores.studentId, id), eq(componentScores.termId, term.id)))
+          .orderBy(desc(componentScores.updatedAt)).limit(12)
       : [],
     db.select().from(feeInvoices).where(and(
       eq(feeInvoices.studentId, id), eq(feeInvoices.schoolId, school.id)))
@@ -53,6 +60,11 @@ export default async function ChildDetail({ params }: {
         .where(eq(feePayments.invoiceId, invoices[0].id)).orderBy(desc(feePayments.createdAt))
     : [];
   const present = att.filter((a) => a.status !== "absent").length;
+  const sheetRows = term && s.classId
+    ? await db.select().from(scoreSheets).where(and(
+        eq(scoreSheets.termId, term.id), eq(scoreSheets.classId, s.classId)))
+    : [];
+  const sheetOutOf = new Map(sheetRows.map((sh) => [`${sh.subjectId}:${sh.componentId}`, sh.outOf]));
 
   return (
     <div className="max-w-2xl space-y-5">
@@ -80,17 +92,27 @@ export default async function ChildDetail({ params }: {
       </div>
 
       <Card>
-        <h2 className="font-semibold">Recent results {term && `(${term.name})`}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold">Released results {term && `(${term.name})`}</h2>
+          {term && latestScores.length > 0 && (
+            <Link href={`/students/${id}/performance/${term.id}`}
+              className="text-[13px] font-medium text-primary">Full record →</Link>
+          )}
+        </div>
         {latestScores.length === 0
-          ? <p className="mt-2 text-sm text-muted-foreground">No scores entered yet.</p>
+          ? <p className="mt-2 text-sm text-muted-foreground">Nothing released yet — results appear here as the school publishes each test.</p>
           : (
             <ul className="mt-2 space-y-1 text-sm">
-              {latestScores.map((r, i) => (
-                <li key={i} className="flex justify-between">
-                  <span>{r.subject} · {r.title}</span>
-                  <span className="font-medium">{r.score}/{r.max}</span>
-                </li>
-              ))}
+              {latestScores.map((r, i) => {
+                const outOf = sheetOutOf.get(`${r.subjectId}:${r.componentId}`) ?? 100;
+                const conv = Math.round((r.raw / outOf) * r.weight * 10) / 10;
+                return (
+                  <li key={i} className="flex justify-between">
+                    <span>{r.subject} · {r.title}</span>
+                    <span className="font-medium" data-nums="">{conv}/{r.weight}</span>
+                  </li>
+                );
+              })}
             </ul>
           )}
       </Card>

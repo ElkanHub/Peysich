@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   students, staff, classes, subjects, staffNudges, timetableEntries, periodSlots,
   assignments, submissions, announcements, events, attendanceRecords, feeInvoices,
+  scorePublications,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getStructure } from "@/core/academics";
@@ -105,6 +106,12 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
           inArray(submissions.assignmentId, due.map((d) => d.id))))
       : [];
     const submitted = new Set(subm.map((s) => s.assignmentId));
+    // show "My results" only once the school has released something this term
+    const releasedResults = term
+      ? (await db.select({ id: scorePublications.id }).from(scorePublications)
+          .where(and(eq(scorePublications.schoolId, school.id),
+            eq(scorePublications.termId, term.id))).limit(1)).length > 0
+      : false;
     const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
     const todayStr = new Date().toISOString().slice(0, 10);
     return (
@@ -135,6 +142,18 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
             ))}
           </ul>
         </Card>
+        {releasedResults && term && (
+          <Card>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold">My results</h2>
+              <Link href={`/students/${me.id}/performance/${term.id}`}
+                className="text-[13px] font-medium text-primary">Full record →</Link>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Your released test results for {term.name} — read-only, exactly as recorded.
+            </p>
+          </Card>
+        )}
         <Card>
           <h2 className="font-semibold">Announcements</h2>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">

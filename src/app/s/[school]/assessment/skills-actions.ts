@@ -5,14 +5,16 @@ import { db } from "@/db";
 import { skillRatings, students } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 
-const VALID = new Set(["emerging", "developing", "secure"]);
-
 export async function saveSkillRatings(
   slug: string, classId: string, cells: Record<string, string>,
 ) {
   const { school, user } = await requireModule(slug, "assessment", ["admin", "teacher"]);
   const term = await getCurrentTerm(school.id);
   if (!term || term.scoresLocked) return;
+  // labels come from the school's configurable scale
+  const { getStructure } = await import("@/core/academics");
+  const S = await getStructure(school.id);
+  const VALID = new Set(S.skillScaleFor("preschool"));
   const roster = new Set((await db.select({ id: students.id }).from(students)
     .where(and(eq(students.schoolId, school.id), eq(students.classId, classId))))
     .map((r) => r.id));

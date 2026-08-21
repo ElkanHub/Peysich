@@ -3,6 +3,7 @@ import { db } from "@/db";
 import {
   levels, classes, subjects, staff, teachingAssignments,
   sectionConfig, periodSlots, sectionSubjects, classSubjectOverrides, timetableEntries,
+  assessmentComponents, skillDomains,
 } from "@/db/schema";
 import { uid } from "@/lib/utils";
 
@@ -82,15 +83,39 @@ const DEFAULT_SKELETONS: Record<Section, Array<{ name: string; kind: string; sta
  *  class-teacher), a day skeleton, and section subject sets drawn from the
  *  school's own subject catalogue. Admins edit from there. */
 export async function ensureAcademicDefaults(schoolId: string) {
-  const [confs, slots, secSubs, subs] = await Promise.all([
+  const [confs, slots, secSubs, subs, comps, domains] = await Promise.all([
     db.select().from(sectionConfig).where(eq(sectionConfig.schoolId, schoolId)),
     db.select({ section: periodSlots.section }).from(periodSlots).where(eq(periodSlots.schoolId, schoolId)),
     db.select({ section: sectionSubjects.section }).from(sectionSubjects).where(eq(sectionSubjects.schoolId, schoolId)),
     db.select().from(subjects).where(eq(subjects.schoolId, schoolId)),
+    db.select({ section: assessmentComponents.section }).from(assessmentComponents)
+      .where(eq(assessmentComponents.schoolId, schoolId)),
+    db.select({ id: skillDomains.id }).from(skillDomains).where(eq(skillDomains.schoolId, schoolId)),
   ]);
   const hasConf = new Set(confs.map((c) => c.section));
   const hasSlots = new Set(slots.map((s) => s.section));
   const hasSubs = new Set(secSubs.map((s) => s.section));
+  const hasComps = new Set(comps.map((c) => c.section));
+
+  // test sections start with a classic GES split: 3 class tests + exam = 100
+  for (const section of ["primary", "jhs"] as Section[]) {
+    if (!hasComps.has(section)) {
+      await db.insert(assessmentComponents).values([
+        { id: uid(), schoolId, section, name: "Class Test 1", weight: 10, sortOrder: 0, isExam: false },
+        { id: uid(), schoolId, section, name: "Class Test 2", weight: 10, sortOrder: 1, isExam: false },
+        { id: uid(), schoolId, section, name: "Class Test 3", weight: 20, sortOrder: 2, isExam: false },
+        { id: uid(), schoolId, section, name: "End of Term Exam", weight: 60, sortOrder: 3, isExam: true },
+      ]).onConflictDoNothing();
+    }
+  }
+  // skills sections need areas to rate — seed the standard early-years set
+  if (domains.length === 0) {
+    const names = ["Language & Literacy", "Numeracy", "Motor Skills",
+      "Social & Emotional", "Creative Arts", "Independence"];
+    await db.insert(skillDomains).values(names.map((name, i) => ({
+      id: uid(), schoolId, name, sortOrder: i,
+    })));
+  }
 
   for (const section of SECTIONS) {
     if (!hasConf.has(section)) {
@@ -125,7 +150,7 @@ export type Structure = Awaited<ReturnType<typeof getStructure>>;
 /** Everything the timetable and its sibling screens need, resolved once. */
 export async function getStructure(schoolId: string) {
   await ensureAcademicDefaults(schoolId);
-  const [lvls, cls, subs, confs, slots, secSubs, ovr, tas, tchs, entries] = await Promise.all([
+  const [lvls, cls, subs, confs, slots, secSubs, ovr, tas, tchs, entries, comps, domains] = await Promise.all([
     db.select().from(levels).where(eq(levels.schoolId, schoolId)),
     db.select().from(classes).where(eq(classes.schoolId, schoolId)),
     db.select().from(subjects).where(eq(subjects.schoolId, schoolId)),
@@ -136,6 +161,8 @@ export async function getStructure(schoolId: string) {
     db.select().from(teachingAssignments).where(eq(teachingAssignments.schoolId, schoolId)),
     db.select().from(staff).where(and(eq(staff.schoolId, schoolId))),
     db.select().from(timetableEntries).where(eq(timetableEntries.schoolId, schoolId)),
+    db.select().from(assessmentComponents).where(eq(assessmentComponents.schoolId, schoolId)),
+    db.select().from(skillDomains).where(eq(skillDomains.schoolId, schoolId)),
   ]);
 
   const levelById = new Map(lvls.map((l) => [l.id, l]));
@@ -203,10 +230,19 @@ export async function getStructure(schoolId: string) {
     return clashes;
   };
 
+  /** The section's marking scheme, tests first, exam last. */
+  const componentsFor = (section: Section) =>
+    comps.filter((c) => c.section === section)
+      .sort((a, b) => Number(a.isExam) - Number(b.isExam) || a.sortOrder - b.sortOrder);
+  const skillScaleFor = (section: Section) =>
+    confs.find((c) => c.section === section)?.skillScale ?? ["Emerging", "Developing", "Secure"];
+
   return {
     levels: lvls, classes: cls, subjects: subs, staff: tchs, entries,
     levelById, classById, subjectById, staffById, slotById,
     sectionOfClass, modeBySection, slotsBySection, subsBySection, overrides: ovr,
     effectiveSubjectIds, teacherFor, findClashes,
+    components: comps, componentsFor, skillScaleFor,
+    skillDomains: domains.sort((a, b) => a.sortOrder - b.sortOrder),
   };
 }

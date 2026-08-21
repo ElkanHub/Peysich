@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, boolean, date, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, date, jsonb, real, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { schools } from "./platform";
 
 const sid = () => text("school_id").notNull().references(() => schools.id, { onDelete: "cascade" });
@@ -18,7 +18,66 @@ export const sectionConfig = pgTable("section_config", {
   id: text("id").primaryKey(), schoolId: sid(),
   section: text("section").notNull(), // preschool | primary | jhs
   mode: text("mode").notNull().default("subject_teaching"), // class_teacher | subject_teaching
+  /** Rating labels for skills-based (preschool) assessment, in ascending order. */
+  skillScale: jsonb("skill_scale").$type<string[]>().notNull()
+    .default(["Emerging", "Developing", "Secure"]),
 }, (t) => [uniqueIndex("secconf_school_section").on(t.schoolId, t.section)]);
+
+/* ── assessment scheme: WHAT counts toward the terminal 100%, per section.
+ *    Named by the school ("Class Test 1" vs "Class Assessment 1"), weighted,
+ *    exactly one exam component; weights must total 100. ── */
+export const assessmentComponents = pgTable("assessment_components", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  section: text("section").notNull(),
+  name: text("name").notNull(),
+  weight: integer("weight").notNull(), // marks out of 100 this component carries
+  sortOrder: integer("sort_order").notNull().default(0),
+  isExam: boolean("is_exam").notNull().default(false),
+}, (t) => [uniqueIndex("acomp_unique").on(t.schoolId, t.section, t.name)]);
+
+/** One sheet = class × subject × term × component: what it was marked over
+ *  and whether the teacher has submitted (submitted → teacher read-only). */
+export const scoreSheets = pgTable("score_sheets", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  termId: text("term_id").notNull(),
+  classId: text("class_id").notNull(),
+  subjectId: text("subject_id").notNull(),
+  componentId: text("component_id").notNull()
+    .references(() => assessmentComponents.id, { onDelete: "cascade" }),
+  outOf: integer("out_of").notNull().default(100), // teacher marked over this
+  submitted: boolean("submitted").notNull().default(false),
+  submittedBy: text("submitted_by"),
+  submittedAt: timestamp("submitted_at"),
+}, (t) => [uniqueIndex("sheet_unique").on(t.termId, t.classId, t.subjectId, t.componentId)]);
+
+/** Raw marks as the teacher gave them (over the sheet's outOf); conversion
+ *  to the component's weight happens at read time so the maths always tallies. */
+export const componentScores = pgTable("component_scores", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  termId: text("term_id").notNull(),
+  classId: text("class_id").notNull(),
+  subjectId: text("subject_id").notNull(),
+  componentId: text("component_id").notNull()
+    .references(() => assessmentComponents.id, { onDelete: "cascade" }),
+  studentId: text("student_id").notNull(),
+  raw: real("raw").notNull(),
+  enteredBy: text("entered_by").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("cscore_unique").on(t.studentId, t.termId, t.subjectId, t.componentId),
+  index("cscore_school_term").on(t.schoolId, t.termId, t.classId, t.subjectId),
+  index("cscore_student").on(t.schoolId, t.studentId, t.termId),
+]);
+
+/** Families see a component's marks only once the admin publishes it. */
+export const scorePublications = pgTable("score_publications", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  termId: text("term_id").notNull(),
+  componentId: text("component_id").notNull()
+    .references(() => assessmentComponents.id, { onDelete: "cascade" }),
+  publishedBy: text("published_by").notNull(),
+  publishedAt: timestamp("published_at").notNull().defaultNow(),
+}, (t) => [uniqueIndex("spub_unique").on(t.termId, t.componentId)]);
 
 /** The day skeleton per section: assembly, teaching periods, breaks, lunch.
  *  Every timetable grid renders from these — the X-axis single source. */
