@@ -1,5 +1,5 @@
 "use server";
-import { and, eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, gte, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -58,13 +58,16 @@ export async function saveRegister(slug: string, classId: string, f: FormData) {
 /** Admin nudge: "the register isn't marked yet" — SMS/email to the class
  *  teacher (real once Arkesel/Resend keys exist, queued meanwhile) AND a
  *  banner on their dashboard until the register is saved. */
-export async function remindClassTeacher(slug: string, classId: string) {
+export async function remindClassTeacher(slug: string, classId: string, f?: FormData) {
   const { school, user } = await requireModule(slug, "attendance", ["admin"]);
+  // the overview wall and the class page both host this button — return the
+  // admin to wherever they pressed it
+  const back = f?.get("from") === "wall" ? `/attendance` : `/attendance/${classId}`;
   const [cls] = await db.select().from(classes)
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
-  if (!cls?.classTeacherId) redirect(`/attendance/${classId}?err=noteacher`);
+  if (!cls?.classTeacherId) redirect(`${back}?err=noteacher`);
   const [t] = await db.select().from(staff).where(eq(staff.id, cls.classTeacherId!));
-  if (!t) redirect(`/attendance/${classId}?err=noteacher`);
+  if (!t) redirect(`${back}?err=noteacher`);
 
   const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} register for today hasn't been marked yet. Please mark it in Peysich. — ${school.name}`;
   await db.insert(staffNudges).values({
@@ -78,7 +81,20 @@ export async function remindClassTeacher(slug: string, classId: string) {
   }]);
   revalidatePath(`/attendance/${classId}`);
   revalidatePath(`/attendance`);
-  redirect(`/attendance/${classId}?flash=done`);
+  redirect(`${back}?flash=done`);
+}
+
+/** All attendance nudges sent today, latest per class — powers the
+ *  "reminded 10:42" chips on the monitoring wall in one query. */
+export async function nudgesTodayByClass(schoolId: string) {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const rows = await db.select().from(staffNudges)
+    .where(and(eq(staffNudges.schoolId, schoolId), eq(staffNudges.kind, "attendance"),
+      gte(staffNudges.sentAt, start)))
+    .orderBy(desc(staffNudges.sentAt));
+  const latest = new Map<string, Date>();
+  for (const n of rows) if (n.refId && !latest.has(n.refId)) latest.set(n.refId, n.sentAt);
+  return latest;
 }
 
 /** Latest nudge sent today for a class register (shows "reminded 10:42"). */
