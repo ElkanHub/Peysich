@@ -1,6 +1,7 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { leaveRequests } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
@@ -14,6 +15,7 @@ export async function addLeave(slug: string, f: FormData) {
     reason: String(f.get("reason") || "") || null,
   });
   revalidatePath(`/hr`);
+  redirect(`/hr?flash=saved`);
 }
 
 export async function setLeaveStatus(slug: string, id: string, status: string) {
@@ -21,4 +23,5 @@ export async function setLeaveStatus(slug: string, id: string, status: string) {
   await db.update(leaveRequests).set({ status })
     .where(and(eq(leaveRequests.id, id), eq(leaveRequests.schoolId, school.id)));
   revalidatePath(`/hr`);
+  redirect(`/hr?flash=saved`);
 }

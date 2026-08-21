@@ -1,6 +1,7 @@
 "use server";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { inventoryItems } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
@@ -14,6 +15,7 @@ export async function addItem(slug: string, f: FormData) {
     quantity: Number(f.get("quantity")) || 0,
   });
   revalidatePath(`/inventory`);
+  redirect(`/inventory?flash=saved`);
 }
 
 export async function adjustQty(slug: string, id: string, delta: number) {
@@ -22,4 +24,5 @@ export async function adjustQty(slug: string, id: string, delta: number) {
     .set({ quantity: sql`greatest(0, quantity + ${delta})` })
     .where(and(eq(inventoryItems.id, id), eq(inventoryItems.schoolId, school.id)));
   revalidatePath(`/inventory`);
+  redirect(`/inventory?flash=saved`);
 }

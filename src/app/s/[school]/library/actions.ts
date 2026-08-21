@@ -1,6 +1,7 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { books, loans, students } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
@@ -13,6 +14,7 @@ export async function addBook(slug: string, f: FormData) {
     author: String(f.get("author") || "") || null, copies: Number(f.get("copies")) || 1,
   });
   revalidatePath(`/library`);
+  redirect(`/library?flash=saved`);
 }
 
 export async function loanBook(slug: string, bookId: string, f: FormData) {
@@ -26,6 +28,7 @@ export async function loanBook(slug: string, bookId: string, f: FormData) {
     loanedAt: new Date().toISOString().slice(0, 10),
   });
   revalidatePath(`/library`);
+  redirect(`/library?flash=saved`);
 }
 
 export async function returnLoan(slug: string, loanId: string) {
@@ -33,4 +36,5 @@ export async function returnLoan(slug: string, loanId: string) {
   await db.update(loans).set({ returnedAt: new Date().toISOString().slice(0, 10) })
     .where(and(eq(loans.id, loanId), eq(loans.schoolId, school.id)));
   revalidatePath(`/library`);
+  redirect(`/library?flash=saved`);
 }

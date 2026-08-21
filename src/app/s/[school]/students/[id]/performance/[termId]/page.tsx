@@ -80,19 +80,24 @@ export default async function PerformanceSheet({ params }: {
   if (!preschool && famView && comps.length === 0) notFound(); // nothing published yet
 
   const outOfBy = new Map(sheets.map((sh) => [`${sh.subjectId}:${sh.componentId}`, sh.outOf]));
-  const rawBy = new Map(marks.map((m) => [`${m.subjectId}:${m.componentId}`, m.raw]));
+  const cellMap = new Map(marks.map((m) => [`${m.subjectId}:${m.componentId}`, m]));
   const subjectIds = cls ? S.effectiveSubjectIds(cls.id) : [];
   const rows = subjectIds
     .map((sid2) => {
       const cells = comps.map((c) => {
-        const raw = rawBy.get(`${sid2}:${c.id}`);
-        if (raw === undefined) return null;
+        const m = cellMap.get(`${sid2}:${c.id}`);
+        if (!m) return null;
+        if (m.absent) return { display: "–", value: 0 }; // did not write
         const outOf = outOfBy.get(`${sid2}:${c.id}`) ?? 100;
-        return Math.round((raw / outOf) * c.weight * 10) / 10;
+        const v = Math.round((m.raw / outOf) * c.weight * 10) / 10;
+        return { display: String(v), value: v };
       });
-      const total = Math.round(cells.reduce<number>((a, v) => a + (v ?? 0), 0) * 10) / 10;
+      // a subject's total forms only once every column is in
+      const complete = comps.length > 0 && cells.every((v) => v !== null);
+      const total = complete
+        ? Math.round(cells.reduce<number>((a, v) => a + (v?.value ?? 0), 0) * 10) / 10 : null;
       const hasAny = cells.some((v) => v !== null);
-      const band = bands.find((bd) => total >= bd.min) ?? bands.at(-1)!;
+      const band = total !== null ? (bands.find((bd) => total >= bd.min) ?? bands.at(-1)!) : null;
       return { name: S.subjectById.get(sid2)?.name ?? "", cells, total, hasAny, band };
     })
     .filter((r) => r.hasAny)
@@ -164,11 +169,11 @@ export default async function PerformanceSheet({ params }: {
                 <tr key={i}>
                   <td className="border border-neutral-400 px-2 py-1.5 font-medium">{r.name}</td>
                   {r.cells.map((v, j) => (
-                    <td key={j} className="border border-neutral-400 px-2 py-1.5 text-center">{v ?? "–"}</td>
+                    <td key={j} className="border border-neutral-400 px-2 py-1.5 text-center">{v ? v.display : "…"}</td>
                   ))}
-                  <td className="border border-neutral-400 px-2 py-1.5 text-center font-semibold">{r.total}</td>
-                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band.grade}</td>}
-                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band.remark}</td>}
+                  <td className="border border-neutral-400 px-2 py-1.5 text-center font-semibold">{r.total ?? "…"}</td>
+                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band?.grade ?? "…"}</td>}
+                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band?.remark ?? "awaiting marks"}</td>}
                 </tr>
               ))}
               {rows.length === 0 && (

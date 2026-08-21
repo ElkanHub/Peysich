@@ -4,6 +4,7 @@ import { leaveRequests, staff } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { addLeave, setLeaveStatus } from "./actions";
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function HR({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -33,10 +34,10 @@ export default async function HR({ params }: { params: Promise<{ school: string 
               {r.status === "pending" && (
                 <div className="flex gap-1">
                   <form action={setLeaveStatus.bind(null, slug, r.id, "approved")}>
-                    <button className="rounded bg-success px-2 py-1 text-xs text-white">Approve</button>
+                    <SubmitButton className="rounded bg-success px-2 py-1 text-xs text-white">Approve</SubmitButton>
                   </form>
                   <form action={setLeaveStatus.bind(null, slug, r.id, "declined")}>
-                    <button className="rounded border border-border px-2 py-1 text-xs text-danger">Decline</button>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-xs text-danger">Decline</SubmitButton>
                   </form>
                 </div>
               )}
@@ -53,7 +54,7 @@ export default async function HR({ params }: { params: Promise<{ school: string 
           <Field label="From"><input name="fromDate" type="date" required className={inputCls} /></Field>
           <Field label="To"><input name="toDate" type="date" required className={inputCls} /></Field>
           <Field label="Reason"><input name="reason" className={inputCls} /></Field>
-          <button className={btnCls + " col-span-4"}>Record</button>
+          <SubmitButton className={btnCls + " col-span-4"}>Record</SubmitButton>
         </form>
       </Card>
     </div>

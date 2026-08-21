@@ -207,7 +207,7 @@ export default async function GuardianProfile({ params, searchParams }: {
             <Field label="Link a child (search name or admission no)">
               <input name="find" defaultValue={find ?? ""} placeholder="Ama / ADM0012…" className={inputCls} />
             </Field>
-            <button className={btnGhostCls}>Search</button>
+            <SubmitButton className={btnGhostCls}>Search</SubmitButton>
           </form>
           {find && (
             <ul className="mt-2 space-y-1 text-sm">

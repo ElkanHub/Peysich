@@ -6,6 +6,7 @@ import { addFeeItem, generateInvoices, recordPayment, sendFeeReminders } from ".
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { Pagination } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
+import { SubmitButton } from "@/ui/feedback";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -55,7 +56,7 @@ export default async function Fees({ params, searchParams }: {
       <PageHeader title="Fees" sub={`${term.name} · ${t.n} invoices`}
         action={
           <form action={sendFeeReminders.bind(null, slug)}>
-            <button className={btnCls}>SMS defaulters</button>
+            <SubmitButton className={btnCls}>SMS defaulters</SubmitButton>
           </form>
         } />
       <div className="mb-5 grid grid-cols-3 gap-4">
@@ -75,10 +76,10 @@ export default async function Fees({ params, searchParams }: {
           </Field>
           <Field label="Item"><input name="name" placeholder="Tuition" required className={inputCls} /></Field>
           <Field label="Amount (GHS)"><input name="amountGhs" type="number" step="0.01" required className={inputCls + " w-28"} /></Field>
-          <button className={btnGhostCls}>Add item</button>
+          <SubmitButton className={btnGhostCls}>Add item</SubmitButton>
         </form>
         <form action={generateInvoices.bind(null, slug)} className="mt-3">
-          <button className={btnCls}>Generate invoices for all students</button>
+          <SubmitButton className={btnCls}>Generate invoices for all students</SubmitButton>
         </form>
       </Card>
 
@@ -101,7 +102,7 @@ export default async function Fees({ params, searchParams }: {
                   <select name="method" className="rounded-md border border-border px-1 py-1 text-xs">
                     <option value="cash">cash</option><option value="momo">momo</option>
                   </select>
-                  <button className="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground">✓</button>
+                  <SubmitButton className="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground">✓</SubmitButton>
                 </form>
               )}
             </Td>

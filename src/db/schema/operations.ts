@@ -61,6 +61,8 @@ export const componentScores = pgTable("component_scores", {
     .references(() => assessmentComponents.id, { onDelete: "cascade" }),
   studentId: text("student_id").notNull(),
   raw: real("raw").notNull(),
+  /** Child did not write this test — entered as “–”, prints as “–”, counts 0. */
+  absent: boolean("absent").notNull().default(false),
   enteredBy: text("entered_by").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [

@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { assignments } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
@@ -14,4 +15,5 @@ export async function createHomework(slug: string, f: FormData) {
     dueDate: String(f.get("dueDate")), createdBy: user.id,
   });
   revalidatePath(`/homework`);
+  redirect(`/homework?flash=saved`);
 }

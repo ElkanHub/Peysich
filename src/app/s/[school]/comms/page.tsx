@@ -5,6 +5,7 @@ import { requireModule } from "@/core/school-context";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { postAnnouncement, createEvent, sendBlast } from "./actions";
 import { Card, Field, PageHeader, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function Comms({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -56,7 +57,7 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
                   {cls.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </Field>
-              <button className={btnCls}>Post</button>
+              <SubmitButton className={btnCls}>Post</SubmitButton>
             </form>
           </Card>
         )}
@@ -79,7 +80,7 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
               <form action={createEvent.bind(null, slug)} className="space-y-2">
                 <Field label="Event title"><input name="title" required className={inputCls} /></Field>
                 <Field label="Starts"><input name="startsAt" type="datetime-local" required className={inputCls} /></Field>
-                <button className={btnCls}>Add event</button>
+                <SubmitButton className={btnCls}>Add event</SubmitButton>
               </form>
             </Card>
             <Card className="mt-4">
@@ -91,7 +92,7 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
                 <Field label="Message (to all guardians)">
                   <textarea name="body" rows={2} maxLength={160} required className={inputCls} />
                 </Field>
-                <button className={btnCls}>Send to all guardians</button>
+                <SubmitButton className={btnCls}>Send to all guardians</SubmitButton>
               </form>
             </Card>
           </>

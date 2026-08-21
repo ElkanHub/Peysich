@@ -1,6 +1,7 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { applicants, classes, students, enrollments, academicYears, guardians, studentGuardians } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
@@ -14,6 +15,7 @@ export async function addApplicant(slug: string, f: FormData) {
     guardianPhone: String(f.get("guardianPhone")), levelId: String(f.get("levelId")),
   });
   revalidatePath(`/admissions`);
+  redirect(`/admissions?flash=saved`);
 }
 
 export async function setApplicantStatus(slug: string, id: string, status: string) {
@@ -21,6 +23,7 @@ export async function setApplicantStatus(slug: string, id: string, status: strin
   await db.update(applicants).set({ status })
     .where(and(eq(applicants.id, id), eq(applicants.schoolId, school.id)));
   revalidatePath(`/admissions`);
+  redirect(`/admissions?flash=saved`);
 }
 
 /** Convert applicant → enrolled student (doc 03: convert is the point). */
@@ -54,4 +57,5 @@ export async function admitApplicant(slug: string, id: string) {
   }
   await db.update(applicants).set({ status: "admitted" }).where(eq(applicants.id, id));
   revalidatePath(`/admissions`);
+  redirect(`/admissions?flash=saved`);
 }

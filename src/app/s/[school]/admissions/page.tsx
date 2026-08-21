@@ -4,6 +4,7 @@ import { applicants, levels } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { addApplicant, setApplicantStatus, admitApplicant } from "./actions";
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function Admissions({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -29,13 +30,13 @@ export default async function Admissions({ params }: { params: Promise<{ school:
               {a.status !== "admitted" && a.status !== "rejected" && (
                 <div className="flex gap-1">
                   <form action={admitApplicant.bind(null, slug, a.id)}>
-                    <button className="rounded bg-success px-2 py-1 text-xs text-white">Admit → student</button>
+                    <SubmitButton className="rounded bg-success px-2 py-1 text-xs text-white">Admit → student</SubmitButton>
                   </form>
                   <form action={setApplicantStatus.bind(null, slug, a.id, "interview")}>
-                    <button className="rounded border border-border px-2 py-1 text-xs">Interview</button>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-xs">Interview</SubmitButton>
                   </form>
                   <form action={setApplicantStatus.bind(null, slug, a.id, "rejected")}>
-                    <button className="rounded border border-border px-2 py-1 text-xs text-danger">Reject</button>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-xs text-danger">Reject</SubmitButton>
                   </form>
                 </div>
               )}
@@ -52,7 +53,7 @@ export default async function Admissions({ params }: { params: Promise<{ school:
           </Field>
           <Field label="Guardian name"><input name="guardianName" className={inputCls} /></Field>
           <Field label="Guardian phone"><input name="guardianPhone" required className={inputCls} /></Field>
-          <button className={btnCls + " col-span-2"}>Add applicant</button>
+          <SubmitButton className={btnCls + " col-span-2"}>Add applicant</SubmitButton>
         </form>
       </Card>
     </div>

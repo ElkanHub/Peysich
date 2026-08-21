@@ -180,7 +180,7 @@ async function GuardiansStage({ slug, s }: { slug: string; s: S }) {
                   <span className="ml-2 text-muted-foreground">{g.phone} · {g.relation}</span>
                   {g.isPrimary && <Badge tone="brand">primary</Badge>}</span>
                 <form action={removeAdmissionGuardian.bind(null, slug, s.id, g.id)}>
-                  <button className="rounded border border-border px-2 py-1 text-xs text-danger hover:bg-muted">Unlink</button>
+                  <SubmitButton className="rounded border border-border px-2 py-1 text-xs text-danger hover:bg-muted">Unlink</SubmitButton>
                 </form>
               </li>
             ))}
@@ -403,7 +403,7 @@ async function ReviewStage({ slug, s, schoolId }: { slug: string; s: S; schoolId
           </div>
         </form>
         <form action={discardAdmission.bind(null, slug, s.id)} className="mt-3 text-right">
-          <button className="text-xs text-danger underline-offset-2 hover:underline">Discard this draft admission</button>
+          <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard this draft admission</SubmitButton>
         </form>
       </Card>
     </div>

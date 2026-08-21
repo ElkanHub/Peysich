@@ -36,6 +36,7 @@ export default async function ChildDetail({ params }: {
       ? db.select({
           subject: subjects.name, title: assessmentComponents.name,
           weight: assessmentComponents.weight, raw: componentScores.raw,
+          absent: componentScores.absent,
           componentId: componentScores.componentId, subjectId: componentScores.subjectId,
           classId: componentScores.classId,
         }).from(componentScores)
@@ -109,7 +110,9 @@ export default async function ChildDetail({ params }: {
                 return (
                   <li key={i} className="flex justify-between">
                     <span>{r.subject} · {r.title}</span>
-                    <span className="font-medium" data-nums="">{conv}/{r.weight}</span>
+                    <span className="font-medium" data-nums="">
+                      {r.absent ? <span className="text-muted-foreground" title="Did not write">–</span> : `${conv}/${r.weight}`}
+                    </span>
                   </li>
                 );
               })}

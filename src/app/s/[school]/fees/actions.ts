@@ -1,6 +1,7 @@
 "use server";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { feeStructures, feeInvoices, feePayments, students, classes, guardians, studentGuardians } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
@@ -16,6 +17,7 @@ export async function addFeeItem(slug: string, f: FormData) {
     amountPesewas: Math.round(Number(f.get("amountGhs")) * 100),
   });
   revalidatePath(`/fees`);
+  redirect(`/fees?flash=saved`);
 }
 
 /** Generate invoices for every active student from the term's fee structure. */
@@ -42,6 +44,7 @@ export async function generateInvoices(slug: string) {
       .onConflictDoNothing(); // never double-bill a student for a term
   }
   revalidatePath(`/fees`);
+  redirect(`/fees?flash=saved`);
 }
 
 /** Record a payment (bursar cash entry or MoMo fulfillment). Partial is normal. */
@@ -61,6 +64,7 @@ export async function recordPayment(slug: string, invoiceId: string, f: FormData
     paidPesewas: paid, status: paid >= inv.totalPesewas ? "paid" : "part_paid",
   }).where(eq(feeInvoices.id, invoiceId));
   revalidatePath(`/fees`);
+  redirect(`/fees?flash=saved`);
 }
 
 /** Reminder SMS to guardians of unpaid/part-paid invoices (defaulters sweep). */
@@ -83,4 +87,5 @@ export async function sendFeeReminders(slug: string) {
     body: `${school.name}: outstanding fees of GHS ${((balance.get(g.sid) ?? 0) / 100).toFixed(2)} for this term. Please settle at the office or via MoMo.`,
   })));
   revalidatePath(`/fees`);
+  redirect(`/fees?flash=saved`);
 }

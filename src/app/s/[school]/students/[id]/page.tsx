@@ -110,7 +110,7 @@ export default async function StudentFile({ params, searchParams }: {
               <>
                 <span className="text-muted-foreground">Returning? <b>Enrol</b> re-activates this same file.</span>
                 <form action={cancelExit.bind(null, slug, id)} className="inline">
-                  <button className="text-danger underline-offset-2 hover:underline">Undo exit (recorded in error)</button>
+                  <SubmitButton className="text-danger underline-offset-2 hover:underline">Undo exit (recorded in error)</SubmitButton>
                 </form>
               </>
             )}
@@ -181,7 +181,7 @@ export default async function StudentFile({ params, searchParams }: {
                     <span className="whitespace-nowrap text-muted-foreground">{g.phone}</span>
                     {isAdmin && (
                       <form action={unlinkChild.bind(null, slug, g.id, id)}>
-                        <button className="rounded border border-border px-1.5 py-0.5 text-[11px] text-danger hover:bg-muted">Unlink</button>
+                        <SubmitButton className="rounded border border-border px-1.5 py-0.5 text-[11px] text-danger hover:bg-muted">Unlink</SubmitButton>
                       </form>
                     )}
                   </span>
@@ -263,7 +263,7 @@ async function PerformanceTab({ schoolId, studentId, classId, termId }: {
   schoolId: string; studentId: string; classId: string | null; termId?: string;
 }) {
   const { getStructure } = await import("@/core/academics");
-  const { componentScores, scoreSheets, gradingSchemes, skillRatings, skillDomains } = await import("@/db/schema");
+  const { skillRatings, skillDomains } = await import("@/db/schema");
   const S = await getStructure(schoolId);
   const cls = classId ? S.classById.get(classId) : null;
   if (!cls || !termId) {
@@ -297,62 +297,16 @@ async function PerformanceTab({ schoolId, studentId, classId, termId }: {
     );
   }
 
-  const comps = S.componentsFor(S.sectionOfClass(cls));
-  const [marks, sheets, [scheme]] = await Promise.all([
-    db.select().from(componentScores).where(and(
-      eq(componentScores.studentId, studentId), eq(componentScores.termId, termId))),
-    db.select().from(scoreSheets).where(and(
-      eq(scoreSheets.schoolId, schoolId), eq(scoreSheets.termId, termId), eq(scoreSheets.classId, cls.id))),
-    db.select().from(gradingSchemes).where(eq(gradingSchemes.schoolId, schoolId)),
-  ]);
-  const bands = scheme?.bands ?? [{ min: 0, grade: "—", remark: "" }];
-  const outOfBy = new Map(sheets.map((sh) => [`${sh.subjectId}:${sh.componentId}`, sh.outOf]));
-  const rawBy = new Map(marks.map((m) => [`${m.subjectId}:${m.componentId}`, m.raw]));
-  const rows = S.effectiveSubjectIds(cls.id).map((sid2) => {
-    const cells = comps.map((c) => {
-      const raw = rawBy.get(`${sid2}:${c.id}`);
-      if (raw === undefined) return null;
-      return Math.round((raw / (outOfBy.get(`${sid2}:${c.id}`) ?? 100)) * c.weight * 10) / 10;
-    });
-    const total = Math.round(cells.reduce<number>((a, v) => a + (v ?? 0), 0) * 10) / 10;
-    return { name: S.subjectById.get(sid2)?.name ?? "", cells, total, hasAny: cells.some((v) => v !== null) };
-  }).filter((r) => r.hasAny).sort((a, b) => a.name.localeCompare(b.name));
-
+  const { PerformanceTable } = await import("@/modules/assessment/performance-table");
   return (
     <Card>
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-semibold">This term, across every assessment</h2>
         <Link href={printable} className="text-[13px] font-medium text-primary">Open printable record →</Link>
       </div>
-      {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">No marks recorded yet this term.</p>
-      ) : (
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-[13px]" data-nums="">
-            <thead>
-              <tr className="border-b border-border text-left text-[11.5px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-1.5 pr-2">Subject</th>
-                {comps.map((c) => <th key={c.id} className="px-2 py-1.5 text-center">{c.name} <span className="font-normal">/{c.weight}</span></th>)}
-                <th className="px-2 py-1.5 text-center">Total</th>
-                <th className="px-2 py-1.5 text-center">Grade</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((r, i) => {
-                const band = bands.find((b) => r.total >= b.min) ?? bands.at(-1)!;
-                return (
-                  <tr key={i}>
-                    <td className="py-1.5 pr-2 font-medium">{r.name}</td>
-                    {r.cells.map((v, j) => <td key={j} className="px-2 py-1.5 text-center">{v ?? "–"}</td>)}
-                    <td className="px-2 py-1.5 text-center font-semibold">{r.total}</td>
-                    <td className="px-2 py-1.5 text-center">{band.grade}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="mt-3">
+        <PerformanceTable schoolId={schoolId} studentId={studentId} classId={cls.id} termId={termId} />
+      </div>
     </Card>
   );
 }

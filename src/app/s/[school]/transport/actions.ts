@@ -1,6 +1,7 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { routes, routeStudents, students } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
@@ -14,6 +15,7 @@ export async function addRoute(slug: string, f: FormData) {
     driverPhone: String(f.get("driverPhone") || "") || null,
   });
   revalidatePath(`/transport`);
+  redirect(`/transport?flash=saved`);
 }
 
 export async function assignToRoute(slug: string, routeId: string, f: FormData) {
@@ -24,4 +26,5 @@ export async function assignToRoute(slug: string, routeId: string, f: FormData) 
   if (!s) return;
   await db.insert(routeStudents).values({ routeId, studentId: s.id, schoolId: school.id });
   revalidatePath(`/transport`);
+  redirect(`/transport?flash=saved`);
 }

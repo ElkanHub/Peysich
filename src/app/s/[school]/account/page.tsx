@@ -2,6 +2,7 @@
 import { use, useState } from "react";
 import { authClient, useSession } from "@/lib/auth-client";
 import { Card, Field, PageHeader, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 /** My Account (every role): profile + password change (doc 06 settings spec). */
 export default function Account({ params }: { params: Promise<{ school: string }> }) {
@@ -29,7 +30,7 @@ export default function Account({ params }: { params: Promise<{ school: string }
           <Field label="Email / login">
             <input value={u?.email ?? ""} disabled className={inputCls + " opacity-60"} />
           </Field>
-          <button className={btnCls}>Save</button>
+          <SubmitButton className={btnCls}>Save</SubmitButton>
           {msg && <span className="ml-2 text-sm text-success">{msg}</span>}
         </form>
       </Card>
@@ -48,7 +49,7 @@ export default function Account({ params }: { params: Promise<{ school: string }
           }}>
           <Field label="Current password"><input name="current" type="password" required className={inputCls} /></Field>
           <Field label="New password (min 8)"><input name="next" type="password" minLength={8} required className={inputCls} /></Field>
-          <button className={btnCls}>Change password</button>
+          <SubmitButton className={btnCls}>Change password</SubmitButton>
           {pwMsg && <p className="text-sm text-success">{pwMsg}</p>}
         </form>
       </Card>

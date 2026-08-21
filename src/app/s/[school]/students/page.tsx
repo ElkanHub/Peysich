@@ -8,6 +8,7 @@ import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "
 import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
 import { discardAdmission } from "./new/wizard-actions";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function Students({ params, searchParams }: {
   params: Promise<{ school: string }>;
@@ -113,7 +114,7 @@ export default async function Students({ params, searchParams }: {
                   <Link href={`/students/new?draft=${d.id}`}
                     className="text-[13px] font-medium text-primary">Continue →</Link>
                   <form action={discardAdmission.bind(null, slug, d.id)}>
-                    <button className="text-xs text-danger underline-offset-2 hover:underline">Discard</button>
+                    <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard</SubmitButton>
                   </form>
                 </span>
               </li>

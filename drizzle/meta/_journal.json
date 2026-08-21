@@ -134,6 +134,13 @@
       "when": 1787323448174,
       "tag": "0018_tidy_sauron",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787329081871,
+      "tag": "0019_ancient_sphinx",
+      "breakpoints": true
     }
   ]
 }

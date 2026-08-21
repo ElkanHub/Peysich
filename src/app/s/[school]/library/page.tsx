@@ -4,6 +4,7 @@ import { books, loans, students } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { addBook, loanBook, returnLoan } from "./actions";
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function LibraryPage({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -39,7 +40,7 @@ export default async function LibraryPage({ params }: { params: Promise<{ school
                   <form action={loanBook.bind(null, slug, b.id)} className="flex gap-1">
                     <input name="admissionNo" placeholder="ADM0001"
                       className="w-24 rounded-md border border-border px-2 py-1 text-xs" />
-                    <button className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Loan</button>
+                    <SubmitButton className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Loan</SubmitButton>
                   </form>
                 )}
               </Td>
@@ -55,7 +56,7 @@ export default async function LibraryPage({ params }: { params: Promise<{ school
               <Td>{l.title}</Td><Td>{l.lastName}, {l.firstName}</Td><Td>{l.loanedAt}</Td>
               <Td>
                 <form action={returnLoan.bind(null, slug, l.id)}>
-                  <button className="rounded border border-border px-2 py-1 text-xs">Return</button>
+                  <SubmitButton className="rounded border border-border px-2 py-1 text-xs">Return</SubmitButton>
                 </form>
               </Td>
             </Tr>
@@ -67,7 +68,7 @@ export default async function LibraryPage({ params }: { params: Promise<{ school
           <Field label="Title"><input name="title" required className={inputCls} /></Field>
           <Field label="Author"><input name="author" className={inputCls} /></Field>
           <Field label="Copies"><input name="copies" type="number" defaultValue={1} className={inputCls + " w-20"} /></Field>
-          <button className={btnCls}>Add book</button>
+          <SubmitButton className={btnCls}>Add book</SubmitButton>
         </form>
       </Card>
     </div>

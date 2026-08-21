@@ -6,6 +6,7 @@ import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { publishReports } from "../actions";
 import { PageHeader, btnCls } from "@/ui/kit";
 import { cn } from "@/lib/utils";
+import { SubmitButton } from "@/ui/feedback";
 
 /** Term-closing completeness matrix (doc 10, the killer admin screen):
  *  class × subject cells green/amber/red by % of scores entered. */
@@ -39,7 +40,7 @@ export default async function Matrix({ params }: { params: Promise<{ school: str
       <PageHeader title="Term closing" sub={`${term.name} · score entry completeness`}
         action={
           <form action={publishReports.bind(null, slug)}>
-            <button className={btnCls}>{term.scoresLocked ? "Re-publish report cards" : "Publish report cards"}</button>
+            <SubmitButton className={btnCls}>{term.scoresLocked ? "Re-publish report cards" : "Publish report cards"}</SubmitButton>
           </form>
         } />
       {Number(published[0]?.n) > 0 && (

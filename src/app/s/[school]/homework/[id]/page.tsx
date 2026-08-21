@@ -8,6 +8,7 @@ import { markSubmission } from "../../portal-actions";
 import { Card, DataTable, PageHeader, Tr, Td } from "@/ui/kit";
 import { SubmitHomework } from "./submit";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function HomeworkDetail({ params }: {
   params: Promise<{ school: string; id: string }>;
@@ -85,7 +86,7 @@ export default async function HomeworkDetail({ params }: {
                       className="w-16 rounded-md border border-border px-2 py-1 text-xs" />
                     <input name="feedback" defaultValue={s.feedback ?? ""} placeholder="feedback"
                       className="w-32 rounded-md border border-border px-2 py-1 text-xs" />
-                    <button className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">✓</button>
+                    <SubmitButton className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">✓</SubmitButton>
                   </form>
                 )}
               </Td>

@@ -4,6 +4,7 @@ import { routes, routeStudents, students } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { addRoute, assignToRoute } from "./actions";
 import { Card, Field, PageHeader, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function Transport({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -34,7 +35,7 @@ export default async function Transport({ params }: { params: Promise<{ school: 
               <form action={assignToRoute.bind(null, slug, r.id)} className="mt-2 flex gap-1">
                 <input name="admissionNo" placeholder="ADM0001"
                   className="w-24 rounded-md border border-border px-2 py-1 text-xs" />
-                <button className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Assign</button>
+                <SubmitButton className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Assign</SubmitButton>
               </form>
             </Card>
           );
@@ -45,7 +46,7 @@ export default async function Transport({ params }: { params: Promise<{ school: 
           <Field label="Route name"><input name="name" placeholder="Route 1 — Adenta" required className={inputCls} /></Field>
           <Field label="Driver"><input name="driverName" className={inputCls} /></Field>
           <Field label="Driver phone"><input name="driverPhone" className={inputCls} /></Field>
-          <button className={btnCls}>Add route</button>
+          <SubmitButton className={btnCls}>Add route</SubmitButton>
         </form>
       </Card>
     </div>

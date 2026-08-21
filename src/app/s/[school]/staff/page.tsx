@@ -8,6 +8,7 @@ import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "
 import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
 import { discardOnboarding } from "./staff-actions";
+import { SubmitButton } from "@/ui/feedback";
 
 const TYPE_LABEL: Record<string, string> = { teaching: "Teaching", admin: "Administrative", support: "Support" };
 
@@ -74,7 +75,7 @@ export default async function Staff({ params, searchParams }: {
                 <span className="flex items-center gap-2">
                   <Link href={`/staff/new?draft=${d.id}`} className="text-[13px] font-medium text-primary">Continue →</Link>
                   <form action={discardOnboarding.bind(null, slug, d.id)}>
-                    <button className="text-xs text-danger underline-offset-2 hover:underline">Discard</button>
+                    <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard</SubmitButton>
                   </form>
                 </span>
               </li>

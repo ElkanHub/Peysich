@@ -1,0 +1,1 @@
+ALTER TABLE "component_scores" ADD COLUMN "absent" boolean DEFAULT false NOT NULL;

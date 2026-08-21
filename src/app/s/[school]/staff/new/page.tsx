@@ -282,7 +282,7 @@ async function ReviewStage({ slug, s, portalNone }: { slug: string; s: S; portal
           </div>
         </form>
         <form action={discardOnboarding.bind(null, slug, s.id)} className="mt-3 text-right">
-          <button className="text-xs text-danger underline-offset-2 hover:underline">Discard this draft</button>
+          <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard this draft</SubmitButton>
         </form>
       </Card>
     </div>

@@ -5,6 +5,7 @@ import { requireModule } from "@/core/school-context";
 import Link from "next/link";
 import { createHomework } from "./actions";
 import { Card, DataTable, Field, PageHeader, Tr, Td, inputCls, btnCls } from "@/ui/kit";
+import { SubmitButton } from "@/ui/feedback";
 
 export default async function Homework({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
@@ -55,7 +56,7 @@ export default async function Homework({ params }: { params: Promise<{ school: s
             <div className="col-span-2">
               <Field label="Instructions"><textarea name="instructions" rows={3} className={inputCls} /></Field>
             </div>
-            <button className={btnCls + " col-span-2"}>Assign</button>
+            <SubmitButton className={btnCls + " col-span-2"}>Assign</SubmitButton>
           </form>
         </Card>
       )}

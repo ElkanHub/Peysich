@@ -53,14 +53,17 @@ async function writeSheet(slug: string, classId: string, subjectId: string, f: F
     for (const r of roster) {
       const v = f.get(`sc_${comp.id}_${r.id}`);
       if (v === null || String(v).trim() === "") continue;
-      const raw = Math.max(0, Math.min(outOf, Number(v) || 0));
+      const text = String(v).trim();
+      // “-” records “did not write”: prints as a dash, counts 0 in totals
+      const absent = text === "-" || text === "–";
+      const raw = absent ? 0 : Math.max(0, Math.min(outOf, Number(text) || 0));
       await db.insert(componentScores).values({
         id: uid(), schoolId: school.id, termId: term.id, classId, subjectId,
-        componentId: comp.id, studentId: r.id, raw, enteredBy: user.id,
+        componentId: comp.id, studentId: r.id, raw, absent, enteredBy: user.id,
       }).onConflictDoUpdate({
         target: [componentScores.studentId, componentScores.termId,
           componentScores.subjectId, componentScores.componentId],
-        set: { raw, enteredBy: user.id, updatedAt: new Date() },
+        set: { raw, absent, enteredBy: user.id, updatedAt: new Date() },
       });
     }
   }
