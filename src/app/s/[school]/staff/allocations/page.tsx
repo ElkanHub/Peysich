@@ -1,7 +1,8 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { staff, classes, subjects, levels, teachingAssignments, lessons } from "@/db/schema";
+import { staff, levels, teachingAssignments } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
+import { getStructure, SECTION_LABELS } from "@/core/academics";
 import { Card, DataTable, PageHeader, Tr, Td } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { setClassTeacher } from "../../accounts-actions";
@@ -19,23 +20,26 @@ export default async function Allocations({ params, searchParams }: {
   const { school: slug } = await params;
   const { err } = await searchParams;
   const { school } = await requireSchool(slug, ["admin"]);
-  const [lvs, cls, subs, teachers, allocs, load] = await Promise.all([
+  const S = await getStructure(school.id);
+  const [lvs, teachers, allocs] = await Promise.all([
     db.select().from(levels).where(eq(levels.schoolId, school.id)).orderBy(levels.sortOrder),
-    db.select().from(classes).where(eq(classes.schoolId, school.id)),
-    db.select().from(subjects).where(eq(subjects.schoolId, school.id)).orderBy(subjects.name),
     db.select().from(staff).where(and(
       eq(staff.schoolId, school.id), eq(staff.staffType, "teaching"), eq(staff.status, "active")))
       .orderBy(staff.name),
     db.select().from(teachingAssignments).where(eq(teachingAssignments.schoolId, school.id)),
-    db.select({ teacherId: lessons.teacherId, n: sql<number>`count(*)` }).from(lessons)
-      .where(eq(lessons.schoolId, school.id)).groupBy(lessons.teacherId),
   ]);
+  const cls = S.classes;
   const levelOrder = new Map(lvs.map((l, i) => [l.id, i]));
   const ordered = [...cls].sort((a, b) =>
     (levelOrder.get(a.levelId) ?? 99) - (levelOrder.get(b.levelId) ?? 99) || a.name.localeCompare(b.name));
   const byCell = new Map(allocs.map((a) => [`${a.classId}:${a.subjectId}`, a.teacherId]));
   const teacherById = new Map(teachers.map((t) => [t.id, t]));
-  const periodsOf = new Map(load.filter((l) => l.teacherId).map((l) => [l.teacherId!, Number(l.n)]));
+  // periods/week from the timetable, via the SAME teacher derivation it uses
+  const periodsOf = new Map<string, number>();
+  for (const e of S.entries) {
+    const tid = S.teacherFor(e.classId, e.subjectId);
+    if (tid) periodsOf.set(tid, (periodsOf.get(tid) ?? 0) + 1);
+  }
 
   // per-teacher workload summary
   const workload = teachers.map((t) => ({
@@ -79,11 +83,22 @@ export default async function Allocations({ params, searchParams }: {
         )}
       </Card>
 
-      {ordered.map((c) => (
+      {ordered.map((c) => {
+        const classTeacherMode = S.modeBySection.get(S.sectionOfClass(c)) === "class_teacher";
+        const effSubs = S.effectiveSubjectIds(c.id)
+          .map((id) => S.subjectById.get(id)!).filter(Boolean)
+          .sort((a, b) => a.name.localeCompare(b.name));
+        return (
         <div key={c.id} id={`class-${c.id}`} className="mb-4">
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="font-semibold">{c.name}</p>
+            <p className="font-semibold">{c.name}
+              {classTeacherMode && (
+                <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+                  {SECTION_LABELS[S.sectionOfClass(c)]} · class-teacher mode
+                </span>
+              )}
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <form action={setClassTeacher.bind(null, slug, c.id)} className="flex items-center gap-1.5">
                 <span className="text-[13px] text-muted-foreground">Class teacher</span>
@@ -94,7 +109,7 @@ export default async function Allocations({ params, searchParams }: {
                 </select>
                 <SubmitButton className="rounded border border-border px-2.5 py-1.5 text-xs hover:bg-muted">Set</SubmitButton>
               </form>
-              {c.classTeacherId && (
+              {c.classTeacherId && !classTeacherMode && (
                 <form action={fillClassWithTeacher.bind(null, slug, c.id)}>
                   <SubmitButton className="rounded-md bg-brand-soft px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-brand-soft/70"
                     pendingText="Filling…">
@@ -104,8 +119,15 @@ export default async function Allocations({ params, searchParams }: {
               )}
             </div>
           </div>
+          {classTeacherMode ? (
+            <p className="mt-2.5 rounded-md bg-muted/60 px-3 py-2 text-[12.5px] text-muted-foreground">
+              The class teacher automatically teaches all {effSubs.length} subjects — no per-subject
+              assignments needed. Change the mode under{" "}
+              <a href="/settings/timetable" className="font-medium text-primary">Settings → Day plan &amp; subjects</a>.
+            </p>
+          ) : (
           <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
-            {subs.map((sub) => {
+            {effSubs.map((sub) => {
               const tid = byCell.get(`${c.id}:${sub.id}`) ?? "";
               const t = tid ? teacherById.get(tid) : null;
               const outside = t && t.competencies.length > 0 && !t.competencies.includes(sub.name);
@@ -133,9 +155,11 @@ export default async function Allocations({ params, searchParams }: {
               );
             })}
           </div>
+          )}
         </Card>
         </div>
-      ))}
+        );
+      })}
 
       {ordered.length === 0 && (
         <Card>

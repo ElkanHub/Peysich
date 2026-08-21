@@ -2,7 +2,7 @@ import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { staff, classes, subjects, teachingAssignments, lessons } from "@/db/schema";
+import { staff, classes, subjects, teachingAssignments, timetableEntries } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Card, Field, PageHeader, Badge, inputCls, btnGhostCls } from "@/ui/kit";
@@ -37,8 +37,12 @@ export default async function StaffFile({ params }: {
           .where(eq(teachingAssignments.teacherId, id))
           .orderBy(classes.name, subjects.name)
       : [],
-    db.select({ n: sql<number>`count(*)` }).from(lessons)
-      .where(and(eq(lessons.schoolId, school.id), eq(lessons.teacherId, id))),
+    db.select({ n: sql<number>`count(*)` }).from(timetableEntries)
+      .innerJoin(teachingAssignments, and(
+        eq(teachingAssignments.classId, timetableEntries.classId),
+        eq(teachingAssignments.subjectId, timetableEntries.subjectId),
+        eq(teachingAssignments.teacherId, id)))
+      .where(eq(timetableEntries.schoolId, school.id)),
     teaching ? db.select().from(subjects).where(eq(subjects.schoolId, school.id)).orderBy(subjects.name) : [],
   ]);
   const photoUrl = s.photoUrl && r2Enabled ? await presignDownload(s.photoUrl) : null;

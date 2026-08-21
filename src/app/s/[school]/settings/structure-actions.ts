@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   levels, classes, subjects, students, enrollments, staff,
-  teachingAssignments, lessons, assessments, scores, feeStructures, rooms,
+  teachingAssignments, assessments, scores, feeStructures, rooms,
+  timetableEntries, sectionSubjects, classSubjectOverrides,
 } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { uid } from "@/lib/utils";
@@ -67,8 +68,8 @@ export async function deleteSubject(slug: string, subjectId: string, f: FormData
       .where(and(eq(assessments.schoolId, school.id), eq(assessments.subjectId, subjectId))),
     db.select({ n: sql<number>`count(*)` }).from(teachingAssignments)
       .where(eq(teachingAssignments.subjectId, subjectId)),
-    db.select({ n: sql<number>`count(*)` }).from(lessons)
-      .where(and(eq(lessons.schoolId, school.id), eq(lessons.subjectId, subjectId))),
+    db.select({ n: sql<number>`count(*)` }).from(timetableEntries)
+      .where(and(eq(timetableEntries.schoolId, school.id), eq(timetableEntries.subjectId, subjectId))),
   ]);
   const used = assess.length + Number(allocN) + Number(lessonN) > 0;
   if (used && f.get("confirm") !== "on") redirect("/settings?err=subjinuse");
@@ -76,8 +77,13 @@ export async function deleteSubject(slug: string, subjectId: string, f: FormData
     await db.delete(scores).where(inArray(scores.assessmentId, assess.map((a) => a.id)));
     await db.delete(assessments).where(inArray(assessments.id, assess.map((a) => a.id)));
   }
-  await db.delete(lessons).where(and(
-    eq(lessons.schoolId, school.id), eq(lessons.subjectId, subjectId)));
+  // sweep the subject out of every config that references it
+  await db.delete(timetableEntries).where(and(
+    eq(timetableEntries.schoolId, school.id), eq(timetableEntries.subjectId, subjectId)));
+  await db.delete(sectionSubjects).where(and(
+    eq(sectionSubjects.schoolId, school.id), eq(sectionSubjects.subjectId, subjectId)));
+  await db.delete(classSubjectOverrides).where(and(
+    eq(classSubjectOverrides.schoolId, school.id), eq(classSubjectOverrides.subjectId, subjectId)));
   await db.delete(subjects).where(eq(subjects.id, subjectId)); // allocations cascade
   const teachers = await db.select().from(staff)
     .where(and(eq(staff.schoolId, school.id), eq(staff.staffType, "teaching")));
@@ -170,8 +176,10 @@ export async function deleteClass(slug: string, classId: string) {
       .where(and(eq(students.schoolId, school.id), eq(students.classId, classId))),
   ]);
   if (Number(enrolN) > 0 || Number(kidsN) > 0) redirect("/settings?err=classinuse");
-  await db.delete(lessons).where(and(
-    eq(lessons.schoolId, school.id), eq(lessons.classId, classId)));
+  await db.delete(timetableEntries).where(and(
+    eq(timetableEntries.schoolId, school.id), eq(timetableEntries.classId, classId)));
+  await db.delete(classSubjectOverrides).where(and(
+    eq(classSubjectOverrides.schoolId, school.id), eq(classSubjectOverrides.classId, classId)));
   await db.delete(classes).where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
   touch();
   redirect("/settings?flash=done");

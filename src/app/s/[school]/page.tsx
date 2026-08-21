@@ -2,10 +2,11 @@ import Link from "next/link";
 import { and, eq, desc, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  students, staff, classes, lessons, subjects, staffNudges,
+  students, staff, classes, subjects, staffNudges, timetableEntries, periodSlots,
   assignments, submissions, announcements, events, attendanceRecords, feeInvoices,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
+import { getStructure } from "@/core/academics";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { Card, PageHeader, Stat } from "@/ui/kit";
 import { PayFeesButton } from "@/ui/pay-fees";
@@ -82,10 +83,13 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     const dayKey = (["", "mon", "tue", "wed", "thu", "fri", ""] as const)[dayIdx] || null;
     const [today, due, anns] = await Promise.all([
       dayKey && me.classId
-        ? db.select({ startMin: lessons.startMin, endMin: lessons.endMin, subject: subjects.name })
-            .from(lessons).leftJoin(subjects, eq(lessons.subjectId, subjects.id))
-            .where(and(eq(lessons.schoolId, school.id), eq(lessons.classId, me.classId),
-              eq(lessons.day, dayKey))).orderBy(lessons.startMin)
+        ? db.select({ startMin: periodSlots.startMin, endMin: periodSlots.endMin, subject: subjects.name })
+            .from(timetableEntries)
+            .innerJoin(periodSlots, eq(timetableEntries.slotId, periodSlots.id))
+            .leftJoin(subjects, eq(timetableEntries.subjectId, subjects.id))
+            .where(and(eq(timetableEntries.schoolId, school.id),
+              eq(timetableEntries.classId, me.classId), eq(timetableEntries.day, dayKey)))
+            .orderBy(periodSlots.startMin)
         : [],
       me.classId
         ? db.select().from(assignments)
@@ -152,17 +156,24 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     const homerooms = allCls.filter((c) => scope?.homeroomIds.has(c.id));
     const myClassIds = scope ? [...scope.allClassIds] : [];
 
-    const [markedRows, myLessons, myAssignments, anns, nudges] = await Promise.all([
+    // today's lessons come from the timetable, teacher DERIVED the same way
+    // the timetable derives it (allocations / class-teacher mode)
+    const S = await getStructure(school.id);
+    const myLessons = scope && dayKey
+      ? S.entries
+          .filter((e) => e.day === dayKey && S.teacherFor(e.classId, e.subjectId) === scope.staffId)
+          .map((e) => {
+            const sl = S.slotById.get(e.slotId)!;
+            return {
+              startMin: sl.startMin, endMin: sl.endMin, classId: e.classId,
+              subject: S.subjectById.get(e.subjectId)?.name ?? "",
+            };
+          })
+          .sort((a, b) => a.startMin - b.startMin)
+      : [];
+    const [markedRows, myAssignments, anns, nudges] = await Promise.all([
       db.select({ classId: attendanceRecords.classId }).from(attendanceRecords)
         .where(and(eq(attendanceRecords.schoolId, school.id), eq(attendanceRecords.date, today))),
-      scope && dayKey
-        ? db.select({
-            startMin: lessons.startMin, endMin: lessons.endMin,
-            classId: lessons.classId, subject: subjects.name,
-          }).from(lessons).leftJoin(subjects, eq(lessons.subjectId, subjects.id))
-            .where(and(eq(lessons.schoolId, school.id), eq(lessons.teacherId, scope.staffId),
-              eq(lessons.day, dayKey))).orderBy(lessons.startMin)
-        : [],
       myClassIds.length
         ? db.select().from(assignments)
             .where(and(eq(assignments.schoolId, school.id), inArray(assignments.classId, myClassIds)))

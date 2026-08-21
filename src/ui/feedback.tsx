@@ -10,12 +10,12 @@ import { cn } from "@/lib/utils";
 
 /** Drop-in replacement for a submit <button> inside a <form action={…}>:
  *  disables itself and shows a spinner while the server action runs. */
-export function SubmitButton({ children, className, pendingText }: {
+export function SubmitButton({ children, className, pendingText, ...rest }: {
   children: React.ReactNode; className?: string; pendingText?: string;
-}) {
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const { pending } = useFormStatus();
   return (
-    <button disabled={pending} aria-busy={pending}
+    <button disabled={pending} aria-busy={pending} {...rest}
       className={cn(className, "inline-flex items-center justify-center gap-1.5 disabled:opacity-60")}>
       {pending && <Loader2 size={13} className="shrink-0 animate-spin" />}
       {pending && pendingText ? pendingText : children}

@@ -5,6 +5,66 @@ const sid = () => text("school_id").notNull().references(() => schools.id, { onD
 
 // ── timetable ──
 export const dayEnum = pgEnum("weekday", ["mon", "tue", "wed", "thu", "fri"]);
+
+/* Sections group levels the way Ghanaian schools reason about them:
+ * preschool (creche→KG2), primary (B1–B6), jhs (B7–B9). Day shape, teaching
+ * mode and subject sets are all decided per section — the ONE place these
+ * live. Derived from levels.code, no extra column needed. */
+
+/** Per-section teaching mode: class_teacher = one teacher owns the whole
+ *  class's week (no subject teachers walk in); subject_teaching = subject
+ *  teachers rotate per the allocations grid. */
+export const sectionConfig = pgTable("section_config", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  section: text("section").notNull(), // preschool | primary | jhs
+  mode: text("mode").notNull().default("subject_teaching"), // class_teacher | subject_teaching
+}, (t) => [uniqueIndex("secconf_school_section").on(t.schoolId, t.section)]);
+
+/** The day skeleton per section: assembly, teaching periods, breaks, lunch.
+ *  Every timetable grid renders from these — the X-axis single source. */
+export const periodSlots = pgTable("period_slots", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  section: text("section").notNull(),
+  name: text("name").notNull(), // "Period 1", "Assembly", "Lunch"
+  kind: text("kind").notNull().default("teaching"), // teaching | assembly | break | lunch
+  startMin: integer("start_min").notNull(),
+  endMin: integer("end_min").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, (t) => [index("pslots_school_section").on(t.schoolId, t.section, t.sortOrder)]);
+
+/** Which subjects a section takes — classes inherit this list. */
+export const sectionSubjects = pgTable("section_subjects", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  section: text("section").notNull(),
+  subjectId: text("subject_id").notNull(),
+}, (t) => [uniqueIndex("secsub_unique").on(t.schoolId, t.section, t.subjectId)]);
+
+/** A single class deviating from its section's subject list (add or remove
+ *  one subject) — the exception, never the rule. */
+export const classSubjectOverrides = pgTable("class_subject_overrides", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  classId: text("class_id").notNull(),
+  subjectId: text("subject_id").notNull(),
+  action: text("action").notNull(), // add | remove
+}, (t) => [uniqueIndex("csov_unique").on(t.classId, t.subjectId)]);
+
+/** One placed lesson: class × day × slot → subject. NO teacher column —
+ *  WHO teaches is derived from Teaching & allocations (or the class teacher
+ *  in class_teacher mode), so it can never contradict the allocations grid. */
+export const timetableEntries = pgTable("timetable_entries", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  classId: text("class_id").notNull(),
+  subjectId: text("subject_id").notNull(),
+  slotId: text("slot_id").notNull().references(() => periodSlots.id, { onDelete: "cascade" }),
+  day: dayEnum("day").notNull(),
+}, (t) => [
+  uniqueIndex("tte_class_day_slot").on(t.classId, t.day, t.slotId),
+  index("tte_school_class").on(t.schoolId, t.classId),
+  index("tte_school_subject").on(t.schoolId, t.subjectId),
+]);
+
+/** @deprecated replaced by timetableEntries + periodSlots; kept only so old
+ *  rows survive until the column is dropped in a later migration. */
 export const lessons = pgTable("lessons", {
   id: text("id").primaryKey(), schoolId: sid(),
   classId: text("class_id").notNull(),

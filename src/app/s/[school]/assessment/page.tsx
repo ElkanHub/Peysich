@@ -1,28 +1,32 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { classes, subjects, levels } from "@/db/schema";
+import { levels } from "@/db/schema";
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
+import { getStructure } from "@/core/academics";
 import { Card, PageHeader } from "@/ui/kit";
 
-/** Pick class → subject → score sheet. */
+/** Pick class → subject → score sheet. Subject chips come from the class's
+ *  EFFECTIVE list (section set ± deviations, Settings → Day plan & subjects). */
 export default async function Assessment({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
   const { school, user } = await requireModule(slug, "assessment", ["admin", "teacher"]);
   const scope = user.role === "teacher" ? await getTeacherScope(school.id, user.id) : undefined;
   const term = await getCurrentTerm(school.id);
-  let [cls, subs] = await Promise.all([
-    db.select().from(classes).where(eq(classes.schoolId, school.id)),
-    db.select().from(subjects).where(eq(subjects.schoolId, school.id)),
-  ]);
+  const S = await getStructure(school.id);
+  let cls = S.classes;
   const lvs = await db.select().from(levels).where(eq(levels.schoolId, school.id));
   const preschool = new Set(lvs.filter((l) => l.preschool).map((l) => l.id));
   if (scope !== undefined) cls = cls.filter((c) => scope?.allClassIds.has(c.id));
-  // homeroom → every subject of the class; subject teacher → only their cells
-  const subjectsFor = (classId: string) =>
-    !scope || scope.homeroomIds.has(classId)
-      ? subs
-      : subs.filter((su) => scope.cells.some((ce) => ce.classId === classId && ce.subjectId === su.id));
+  // effective subjects of the class; subject teachers see only their cells within it
+  const subjectsFor = (classId: string) => {
+    const eff = S.effectiveSubjectIds(classId)
+      .map((id) => S.subjectById.get(id)!).filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return !scope || scope.homeroomIds.has(classId)
+      ? eff
+      : eff.filter((su) => scope.cells.some((ce) => ce.classId === classId && ce.subjectId === su.id));
+  };
   return (
     <div>
       <PageHeader title="Assessment"

@@ -294,6 +294,17 @@ export default async function Settings({ params, searchParams }: {
         </p>
       </Card>
 
+      {/* ── Day plan: the timetable's single source of truth ── */}
+      <Card>
+        <h2 className="font-semibold">Day plan & subjects by section</h2>
+        <p className="text-sm text-muted-foreground">
+          Per section (Preschool · Primary · JHS): class-teacher vs subject-teaching mode, the
+          school day&apos;s skeleton — assembly, periods, breaks, lunch — and which subjects the
+          section takes. Every timetable, score sheet and allocation grid reads from here.
+        </p>
+        <a href="/settings/timetable" className={btnCls + " mt-3 inline-block"}>Open day plan</a>
+      </Card>
+
       {/* ── Rooms: fully editable — seats change, amenities change ── */}
       <Card>
         <h2 className="font-semibold">Rooms & facilities</h2>
