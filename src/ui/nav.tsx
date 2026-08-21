@@ -25,7 +25,7 @@ const ICONS: Record<string, LucideIcon> = {
   "All users": Users, "Audit log": ScrollText, "My Account": Users,
 };
 
-export type NavEntry = { label: string; href: string };
+export type NavEntry = { label: string; href: string; badge?: number };
 
 function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -47,6 +47,12 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
             <Icon size={16} strokeWidth={active ? 2.2 : 1.8}
               className={cn("shrink-0", active ? "text-ink-text-strong" : "text-ink-text/70 group-hover:text-ink-text-strong")} />
             {n.label}
+            {typeof n.badge === "number" && n.badge > 0 && (
+              <span className="ml-auto rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-bold leading-none text-ink"
+                data-nums="" aria-label={`${n.badge} needing attention`}>
+                {n.badge > 99 ? "99+" : n.badge}
+              </span>
+            )}
           </Link>
         );
       })}

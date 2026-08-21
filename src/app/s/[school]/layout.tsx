@@ -1,5 +1,7 @@
 import { requireSchool } from "@/core/school-context";
+import { getNavBadges } from "@/core/badges";
 import { Flash } from "@/ui/feedback";
+import { LiveSync } from "@/ui/live-sync";
 import { Shell } from "@/ui/shell";
 
 export default async function SchoolLayout({ children, params }: {
@@ -24,9 +26,11 @@ export default async function SchoolLayout({ children, params }: {
 
   const trialDays = school.status === "trial" && school.trialEndsAt
     ? Math.max(0, Math.ceil((+school.trialEndsAt - Date.now()) / 86400000)) : null;
+  const badges = await getNavBadges(school.id, user.role, user.id);
 
   return (
-    <Shell schoolName={school.name} role={user.role} userName={user.name} modules={modules}>
+    <Shell schoolName={school.name} role={user.role} userName={user.name} modules={modules}
+      badges={badges}>
       {trialDays !== null && user.role === "admin" && (
         <div className="mb-5 flex items-center justify-between rounded-lg border border-primary/30 bg-brand-soft px-4 py-2.5 text-[13px]">
           <span><b>Free trial</b> — {trialDays} day{trialDays === 1 ? "" : "s"} left. Your data stays safe either way.</span>
@@ -37,6 +41,7 @@ export default async function SchoolLayout({ children, params }: {
       )}
       {children}
       <Flash />
+      <LiveSync slug={slug} />
     </Shell>
   );
 }

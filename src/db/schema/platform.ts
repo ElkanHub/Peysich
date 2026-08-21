@@ -8,6 +8,15 @@ export const schoolStatus = pgEnum("school_status", [
   "trial", "active", "past_due", "suspended", "expired", "archived",
 ]);
 
+/** One row per school, bumped by DB triggers on every tenant-data write.
+ *  Clients poll its version and refresh open pages when it moves — this is
+ *  what makes a teacher's saved register appear on the admin's screen live. */
+export const schoolPulse = pgTable("school_pulse", {
+  schoolId: text("school_id").primaryKey(),
+  version: integer("version").notNull().default(0),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const schools = pgTable("schools", {
   id: text("id").primaryKey(), // uuidv7, generated in app code
   name: text("name").notNull(),

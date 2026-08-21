@@ -14,9 +14,9 @@ const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
 
 /** App shell: ink sidebar (nav composed from core + enabled modules — off means
  *  ABSENT), breadcrumb topbar, mobile drawer. Nothing ever moves. */
-export function Shell({ schoolName, role, userName, modules, children }: {
+export function Shell({ schoolName, role, userName, modules, badges, children }: {
   schoolName: string; role: string; userName: string;
-  modules: Set<string>; children: React.ReactNode;
+  modules: Set<string>; badges?: Record<string, number>; children: React.ReactNode;
 }) {
   const moduleNav: NavEntry[] = [...registry.values()]
     .filter((m) => modules.has(m.key))
@@ -24,7 +24,7 @@ export function Shell({ schoolName, role, userName, modules, children }: {
   const items: NavEntry[] = [
     ...CORE_NAV.filter((n) => n.roles.includes(role as Role)),
     ...moduleNav,
-  ];
+  ].map((n) => ({ ...n, badge: badges?.[n.href] }));
 
   return (
     <div className="flex min-h-screen">
