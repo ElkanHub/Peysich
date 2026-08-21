@@ -16,7 +16,7 @@ import { SignOutButton } from "./signout";
 const ICONS: Record<string, LucideIcon> = {
   Dashboard: LayoutDashboard, Students: Users, Guardians: HeartHandshake,
   Staff: BriefcaseBusiness, Settings, Billing: CreditCard,
-  Attendance: CalendarCheck, Assessment: GraduationCap, "Term closing": ClipboardList,
+  Attendance: CalendarCheck, Assessment: GraduationCap, Reports: ClipboardList,
   Timetable: CalendarDays, Homework: BookOpen, Announcements: Megaphone, Fees: Wallet,
   Admissions: UserPlus, Library, Transport: Bus, Inventory: Boxes,
   "Staff HR": Briefcase, Analytics: BarChart3,

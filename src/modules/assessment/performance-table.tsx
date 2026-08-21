@@ -52,10 +52,10 @@ export async function PerformanceTable({ schoolId, studentId, classId, termId, p
     const total = complete
       ? Math.round(cells.reduce((a, c) => a + (c?.value ?? 0), 0) * 10) / 10 : null;
     const band = total !== null ? (bands.find((b) => total >= b.min) ?? bands.at(-1)!) : null;
-    return { name: S.subjectById.get(sid)?.name ?? "", cells, total, band,
-      hasAny: cells.some((c) => c !== null) };
-  }).filter((r) => r.hasAny || !publishedOnly)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    return { name: S.subjectById.get(sid)?.name ?? "", cells, total, band };
+    // every subject the class studies stays on the record — an empty row is
+    // honest information (nothing entered yet), never silently dropped
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   if (comps.length === 0)
     return <p className="text-sm text-muted-foreground">Nothing released yet.</p>;
@@ -84,7 +84,7 @@ export async function PerformanceTable({ schoolId, studentId, classId, termId, p
               <td className="py-1.5 pr-2 font-medium">{r.name}</td>
               {r.cells.map((c, j) => (
                 <td key={j} className="px-2 py-1.5 text-center">
-                  {c === null ? <span className="text-faint">·</span> : c.display}
+                  {c === null ? <span className="text-faint" title="Nothing entered yet"></span> : c.display}
                 </td>
               ))}
               <td className="px-2 py-1.5 text-center font-semibold">

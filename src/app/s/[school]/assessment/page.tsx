@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { levels, students, scorePublications, scoreSheets, componentScores } from "@/db/schema";
+import { levels, students, scoreSheets, componentScores } from "@/db/schema";
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
-import { getStructure, SECTIONS, SECTION_LABELS, type Section } from "@/core/academics";
+import { getStructure } from "@/core/academics";
 import { PerformanceTable } from "@/modules/assessment/performance-table";
-import { Card, PageHeader, Badge, Empty, btnGhostCls } from "@/ui/kit";
-import { SubmitButton } from "@/ui/feedback";
-import { publishComponent } from "./actions";
+import { Card, PageHeader, Empty } from "@/ui/kit";
 
 /** Assessment home. Teachers: their classes → subject sheets (entry).
  *  Admin: everything revolves around the STUDENT — a Students view (class →
@@ -85,92 +83,33 @@ export default async function Assessment({ params, searchParams }: {
   const preClasses = S.classes.filter((c) => preschool.has(c.levelId)).sort(byLevel);
   const activeClass = testClasses.find((c) => c.id === sp.c) ?? testClasses[0];
 
-  const [pubs, sheets, rosterCounts] = await Promise.all([
-    db.select().from(scorePublications).where(and(
-      eq(scorePublications.schoolId, school.id), eq(scorePublications.termId, term.id))),
+  const [sheets, rosterCounts] = await Promise.all([
     db.select().from(scoreSheets).where(and(
       eq(scoreSheets.schoolId, school.id), eq(scoreSheets.termId, term.id))),
     db.select({ classId: students.classId, n: sql<number>`count(*)` }).from(students)
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active")))
       .groupBy(students.classId),
   ]);
-  const pubBy = new Map(pubs.map((p) => [p.componentId, p]));
   const submittedBy = new Set(sheets.filter((s) => s.submitted)
     .map((s) => `${s.classId}:${s.subjectId}:${s.componentId}`));
   const sheetBy = new Map(sheets.map((s) => [`${s.classId}:${s.subjectId}:${s.componentId}`, s]));
   const rosterN = new Map(rosterCounts.map((r) => [r.classId, Number(r.n)]));
-  const testSections = SECTIONS.filter((s2) =>
-    s2 !== "preschool" && testClasses.some((c) => S.sectionOfClass(c) === s2));
-
-  // a class is READY for a test when every effective subject has submitted it
-  const classReady = (classId: string, compId: string) => {
-    const subs = S.effectiveSubjectIds(classId);
-    const done = subs.filter((sid) => submittedBy.has(`${classId}:${sid}:${compId}`)).length;
-    return { done, total: subs.length, ready: subs.length > 0 && done === subs.length };
-  };
 
   return (
     <div>
       <PageHeader title="Assessment"
         sub={`${term.name}${term.scoresLocked ? " · closed" : ""} · everything here revolves around the student`} />
 
-      {/* ── publish, completeness-aware ── */}
-      <Card className="mb-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-semibold">Publish to families</h2>
-          <Link href="/settings/assessment" className="text-[12.5px] font-medium text-primary">
-            Configure the scheme →
-          </Link>
-        </div>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
-          Families see nothing until you publish. Each release sends the child&apos;s FULL record —
-          every subject at once. Check readiness below, preview any student, then publish.
-        </p>
-        <div className="mt-3 space-y-3">
-          {testSections.map((sec) => (
-            <div key={sec}>
-              <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{SECTION_LABELS[sec as Section]}</p>
-              <div className="space-y-1.5">
-                {S.componentsFor(sec as Section).map((c2) => {
-                  if (c2.isExam) return (
-                    <div key={c2.id} className="flex items-center gap-2 text-sm">
-                      <span className="w-40 shrink-0">{c2.name}</span>
-                      <Badge tone="default">goes out with the terminal report</Badge>
-                    </div>
-                  );
-                  const secClasses = testClasses.filter((c) => S.sectionOfClass(c) === sec);
-                  const readiness = secClasses.map((c) => ({ c, ...classReady(c.id, c2.id) }));
-                  const readyCount = readiness.filter((r) => r.ready).length;
-                  const gaps = readiness.filter((r) => !r.ready);
-                  const p = pubBy.get(c2.id);
-                  return (
-                    <div key={c2.id} className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="w-40 shrink-0">{c2.name}</span>
-                      <span className={`text-[12.5px] ${readyCount === secClasses.length ? "text-success" : "text-warning"}`} data-nums="">
-                        {readyCount}/{secClasses.length} classes fully submitted
-                      </span>
-                      {p ? (
-                        <Badge tone="success">published ✓</Badge>
-                      ) : (
-                        <form action={publishComponent.bind(null, slug, c2.id)}>
-                          <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[12.5px]"} pendingText="Publishing…">
-                            Publish {c2.name}
-                          </SubmitButton>
-                        </form>
-                      )}
-                      {!p && gaps.length > 0 && (
-                        <span className="text-[11.5px] text-muted-foreground" title={gaps.map((g) => `${g.c.name}: ${g.done}/${g.total} subjects`).join(" · ")}>
-                          waiting on: {gaps.slice(0, 3).map((g) => g.c.name).join(", ")}{gaps.length > 3 ? ` +${gaps.length - 3}` : ""}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* releasing to families lives on Reports — this page is for the marks */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-[13px]">
+        <span className="text-muted-foreground">
+          Releasing results to families — per test, with readiness — happens on the <b className="text-foreground">Reports</b> tab.
+        </span>
+        <span className="flex gap-3 font-medium">
+          <Link href="/reports" className="text-primary">Open Reports →</Link>
+          <Link href="/settings/assessment" className="text-primary">Configure the scheme →</Link>
+        </span>
+      </div>
 
       {/* ── view tabs ── */}
       <div className="mb-4 flex gap-2">

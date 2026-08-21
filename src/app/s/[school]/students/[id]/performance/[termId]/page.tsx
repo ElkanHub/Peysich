@@ -8,6 +8,8 @@ import {
 import { requireSchool, getTeacherScope } from "@/core/school-context";
 import { assertParentOf, getStudentSelf } from "@/core/portal";
 import { getStructure } from "@/core/academics";
+import { getReportConfig } from "@/modules/assessment/report-config";
+import { r2Enabled, presignDownload } from "@/lib/r2";
 
 const DEFAULT_BANDS = [
   { min: 80, grade: "1", remark: "Excellent" }, { min: 70, grade: "2", remark: "Very Good" },
@@ -100,20 +102,31 @@ export default async function PerformanceSheet({ params }: {
       const band = total !== null ? (bands.find((bd) => total >= bd.min) ?? bands.at(-1)!) : null;
       return { name: S.subjectById.get(sid2)?.name ?? "", cells, total, hasAny, band };
     })
-    .filter((r) => r.hasAny)
+    // every subject the class studies stays on the paper — empty rows are
+    // honest (nothing entered yet), never silently dropped
     .sort((a, b2) => a.name.localeCompare(b2.name));
   const fullScheme = comps.length === allComps.length;
 
+  const cfg = getReportConfig(school.settings);
+  const photoUrl = cfg.studentPhoto && s.photoUrl && r2Enabled
+    ? await presignDownload(s.photoUrl) : null;
+
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 text-black print:p-0">
-      <div className="border-b-4 pb-4 text-center" style={{ borderColor: color }}>
-        <h1 className="text-2xl font-bold" style={{ color }}>{school.name}</h1>
-        {b.motto && <p className="text-sm italic">{b.motto}</p>}
-        <p className="text-xs text-neutral-600">{[b.address, b.phone, b.email].filter(Boolean).join(" · ")}</p>
+      <div className="relative border-b-4 pb-4 text-center" style={{ borderColor: color }}>
+        {cfg.schoolName && <h1 className="text-2xl font-bold" style={{ color }}>{school.name}</h1>}
+        {cfg.motto && b.motto && <p className="text-sm italic">{b.motto}</p>}
+        {cfg.addressLine && (
+          <p className="text-xs text-neutral-600">{[b.address, b.phone, b.email].filter(Boolean).join(" · ")}</p>
+        )}
         <p className="mt-2 font-semibold uppercase tracking-wide">
           {preschool ? "Learning & Development Record" : "Academic Performance Record"}
         </p>
         <p className="text-sm">{y?.name} — {t.name}</p>
+        {photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="absolute right-0 top-0 h-20 w-20 rounded border border-neutral-300 object-cover" />
+        )}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
@@ -161,7 +174,7 @@ export default async function PerformanceSheet({ params }: {
                   {fullScheme ? "Total /100" : "Total so far"}
                 </th>
                 {fullScheme && <th className="border border-neutral-400 px-2 py-1.5 text-center" style={{ background: `${color}12` }}>Grade</th>}
-                {fullScheme && <th className="border border-neutral-400 px-2 py-1.5 text-center" style={{ background: `${color}12` }}>Remark</th>}
+                {fullScheme && cfg.gradeRemarks && <th className="border border-neutral-400 px-2 py-1.5 text-center" style={{ background: `${color}12` }}>Remark</th>}
               </tr>
             </thead>
             <tbody>
@@ -169,16 +182,16 @@ export default async function PerformanceSheet({ params }: {
                 <tr key={i}>
                   <td className="border border-neutral-400 px-2 py-1.5 font-medium">{r.name}</td>
                   {r.cells.map((v, j) => (
-                    <td key={j} className="border border-neutral-400 px-2 py-1.5 text-center">{v ? v.display : "…"}</td>
+                    <td key={j} className="border border-neutral-400 px-2 py-1.5 text-center">{v ? v.display : ""}</td>
                   ))}
-                  <td className="border border-neutral-400 px-2 py-1.5 text-center font-semibold">{r.total ?? "…"}</td>
-                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band?.grade ?? "…"}</td>}
-                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band?.remark ?? "awaiting marks"}</td>}
+                  <td className="border border-neutral-400 px-2 py-1.5 text-center font-semibold">{r.total ?? ""}</td>
+                  {fullScheme && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band?.grade ?? ""}</td>}
+                  {fullScheme && cfg.gradeRemarks && <td className="border border-neutral-400 px-2 py-1.5 text-center">{r.band?.remark ?? ""}</td>}
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr><td colSpan={comps.length + 4} className="border border-neutral-400 px-3 py-2 text-neutral-500">
-                  No marks recorded {famView ? "or published " : ""}yet.
+                  No subjects configured for this class yet.
                 </td></tr>
               )}
             </tbody>
@@ -191,10 +204,12 @@ export default async function PerformanceSheet({ params }: {
         </>
       )}
 
-      <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
-        <div className="border-t border-neutral-400 pt-1 text-center text-neutral-600">Class Teacher</div>
-        <div className="border-t border-neutral-400 pt-1 text-center text-neutral-600">Head Teacher</div>
-      </div>
+      {cfg.signatures && (
+        <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
+          <div className="border-t border-neutral-400 pt-1 text-center text-neutral-600">Class Teacher</div>
+          <div className="border-t border-neutral-400 pt-1 text-center text-neutral-600">Head Teacher</div>
+        </div>
+      )}
       {(b.signatureLines ?? []).map((l, i) => (
         <p key={i} className="mt-2 text-center text-xs text-neutral-500">{l}</p>
       ))}

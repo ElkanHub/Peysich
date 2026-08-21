@@ -11,7 +11,11 @@ type Scheme = { caWeight: number; examWeight: number; bands: { min: number; grad
 /** Totals from the configurable scheme: each raw mark converts to its
  *  component's weight (raw ÷ marked-over × weight); CA = the tests, exam =
  *  the exam component — together they land on /100 by construction. */
-async function computeStudent(schoolId: string, studentId: string, termId: string, scheme: Scheme) {
+async function computeStudent(
+  schoolId: string, studentId: string, termId: string, scheme: Scheme,
+  /** every subject the class studies — empty ones stay on the report as blanks */
+  effectiveSubjects: { id: string; name: string }[],
+) {
   const rows = await db.select({
     subjectId: componentScores.subjectId, raw: componentScores.raw,
     classId: componentScores.classId, componentId: componentScores.componentId,
@@ -22,7 +26,7 @@ async function computeStudent(schoolId: string, studentId: string, termId: strin
     .innerJoin(subjects, eq(componentScores.subjectId, subjects.id))
     .where(and(eq(componentScores.schoolId, schoolId),
       eq(componentScores.studentId, studentId), eq(componentScores.termId, termId)));
-  if (!rows.length) return [];
+  if (!rows.length && !effectiveSubjects.length) return [];
   const sheets = await db.select().from(scoreSheets)
     .where(and(eq(scoreSheets.schoolId, schoolId), eq(scoreSheets.termId, termId)));
   const outOfBy = new Map(sheets.map((s) => [`${s.classId}:${s.subjectId}:${s.componentId}`, s.outOf]));
@@ -35,13 +39,20 @@ async function computeStudent(schoolId: string, studentId: string, termId: strin
     if (r.isExam) s.exam += conv; else s.ca += conv;
     bySubject.set(r.subjectId, s);
   }
-  return [...bySubject.values()].map((s) => {
+  const scored = [...bySubject.entries()].map(([sid, s]) => {
     const ca = Math.round(s.ca);
     const exam = Math.round(s.exam);
     const total = ca + exam;
     const band = scheme.bands.find((b) => total >= b.min) ?? scheme.bands.at(-1)!;
-    return { name: s.name, ca, exam, total, grade: band.grade, remark: band.remark };
+    return { sid, row: { name: s.name, ca, exam, total, grade: band.grade, remark: band.remark } };
   });
+  const scoredBy = new Map(scored.map((s) => [s.sid, s.row]));
+  // full subject list, in name order; unmarked subjects appear empty
+  const all = effectiveSubjects.length ? effectiveSubjects : scored.map((s) => ({ id: s.sid, name: s.row.name }));
+  return all
+    .map((sub) => scoredBy.get(sub.id)
+      ?? { name: sub.name, ca: 0, exam: 0, total: 0, grade: "", remark: "", empty: true })
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Publish all report cards for a term; locks score entry. Idempotent. */
@@ -59,16 +70,24 @@ export async function publishTermReports(schoolId: string, termId: string) {
     .filter((c) => lvs.find((l) => l.id === c.levelId)?.preschool).map((c) => c.id));
   const domains = await db.select().from(skillDomains).where(eq(skillDomains.schoolId, schoolId));
   const domainName = new Map(domains.map((d) => [d.id, d.name]));
+  const { getStructure } = await import("@/core/academics");
+  const S = await getStructure(schoolId);
   let published = 0;
   for (const s of roster) {
-    const subjectRows = await computeStudent(schoolId, s.id, termId, scheme);
+    const isPre = !!(s.classId && preschoolClass.has(s.classId));
+    const effective = s.classId && !isPre
+      ? S.effectiveSubjectIds(s.classId)
+          .map((id) => ({ id, name: S.subjectById.get(id)?.name ?? "" }))
+      : [];
+    const subjectRows = await computeStudent(schoolId, s.id, termId, scheme, effective);
     let skills: { domain: string; rating: string }[] | undefined;
-    if (s.classId && preschoolClass.has(s.classId)) {
+    if (isPre) {
       const rs = await db.select().from(skillRatings).where(and(
         eq(skillRatings.studentId, s.id), eq(skillRatings.termId, termId)));
       skills = rs.map((r) => ({ domain: domainName.get(r.domainId) ?? "", rating: r.rating }));
     }
-    if (!subjectRows.length && !skills?.length) continue;
+    // skip only students with NOTHING at all this term (no marks in any subject)
+    if (!subjectRows.some((r) => !("empty" in r && r.empty)) && !skills?.length) continue;
     const [att] = await db.select({
       present: sql<number>`count(*) filter (where status != 'absent')`,
       total: sql<number>`count(*)`,

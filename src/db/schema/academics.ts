@@ -65,7 +65,7 @@ export const reportCards = pgTable("report_cards", {
   published: boolean("published").notNull().default(false),
   /** Snapshot: subject rows computed at publish time (immutable record). */
   data: jsonb("data").$type<{
-    subjects: { name: string; ca: number; exam: number; total: number; grade: string; remark: string }[];
+    subjects: { name: string; ca: number; exam: number; total: number; grade: string; remark: string; empty?: boolean }[];
     attendance: { present: number; total: number };
     skills?: { domain: string; rating: string }[];
     teacherRemark?: string;

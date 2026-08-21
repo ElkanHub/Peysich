@@ -3,10 +3,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { classes, subjects, students, componentScores, reportCards } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
-import { publishReports } from "../actions";
 import { PageHeader, btnCls } from "@/ui/kit";
 import { cn } from "@/lib/utils";
-import { SubmitButton } from "@/ui/feedback";
 
 /** Term-closing completeness matrix (doc 10, the killer admin screen):
  *  class × subject cells green/amber/red by % of scores entered. */
@@ -37,11 +35,9 @@ export default async function Matrix({ params }: { params: Promise<{ school: str
 
   return (
     <div>
-      <PageHeader title="Term closing" sub={`${term.name} · score entry completeness`}
+      <PageHeader title="Score-entry completeness" sub={`${term.name} · every class × subject at a glance`}
         action={
-          <form action={publishReports.bind(null, slug)}>
-            <SubmitButton className={btnCls}>{term.scoresLocked ? "Re-publish report cards" : "Publish report cards"}</SubmitButton>
-          </form>
+          <Link href="/reports" className={btnCls}>Release results → Reports</Link>
         } />
       {Number(published[0]?.n) > 0 && (
         <p className="mb-3 text-sm text-success">{String(published[0].n)} report cards published — parents can view them. Scores are locked.</p>

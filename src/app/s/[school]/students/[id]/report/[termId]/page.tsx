@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { reportCards, students, classes, terms, academicYears } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { assertParentOf, getStudentSelf } from "@/core/portal";
+import { getReportConfig } from "@/modules/assessment/report-config";
+import { r2Enabled, presignDownload } from "@/lib/r2";
 
 /** School-branded digital report card — print-optimized (browser print → PDF).
  *  Server PDF→R2 pipeline swaps in at deploy without changing this template. */
@@ -25,20 +27,31 @@ export default async function ReportCard({ params }: {
   const b = school.branding;
   const color = b.primaryColor || "#5E1D3E";
 
+  const cfg = getReportConfig(school.settings);
+  const photoUrl = cfg.studentPhoto && s?.photoUrl && r2Enabled
+    ? await presignDownload(s.photoUrl) : null;
   return (
     <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">
-      <div className="border-b-4 pb-4 text-center" style={{ borderColor: color }}>
-        <h1 className="text-2xl font-bold" style={{ color }}>{school.name}</h1>
-        {b.motto && <p className="text-sm italic">{b.motto}</p>}
-        <p className="text-xs text-neutral-600">{[b.address, b.phone, b.email].filter(Boolean).join(" · ")}</p>
+      <div className="relative border-b-4 pb-4 text-center" style={{ borderColor: color }}>
+        {cfg.schoolName && <h1 className="text-2xl font-bold" style={{ color }}>{school.name}</h1>}
+        {cfg.motto && b.motto && <p className="text-sm italic">{b.motto}</p>}
+        {cfg.addressLine && (
+          <p className="text-xs text-neutral-600">{[b.address, b.phone, b.email].filter(Boolean).join(" · ")}</p>
+        )}
         <p className="mt-2 font-semibold uppercase tracking-wide">Terminal Report Card</p>
         <p className="text-sm">{y?.name} — {t?.name}</p>
+        {photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="absolute right-0 top-0 h-20 w-20 rounded border border-neutral-300 object-cover" />
+        )}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
         <p><span className="text-neutral-500">Student:</span> <b>{s?.firstName} {s?.lastName}</b></p>
         <p><span className="text-neutral-500">Class:</span> {cls?.name}</p>
         <p><span className="text-neutral-500">Admission No:</span> {s?.admissionNo}</p>
-        <p><span className="text-neutral-500">Attendance:</span> {rc.data.attendance.present}/{rc.data.attendance.total} days</p>
+        {cfg.attendance && (
+          <p><span className="text-neutral-500">Attendance:</span> {rc.data.attendance.present}/{rc.data.attendance.total} days</p>
+        )}
       </div>
       {rc.data.skills && rc.data.skills.length > 0 && (
         <table className="mt-4 w-full border-collapse text-sm">
@@ -67,28 +80,31 @@ export default async function ReportCard({ params }: {
             <th className="border px-2 py-1.5">Exam Score</th>
             <th className="border px-2 py-1.5">Total</th>
             <th className="border px-2 py-1.5">Grade</th>
-            <th className="border px-2 py-1.5 text-left">Remark</th>
+            {cfg.gradeRemarks && <th className="border px-2 py-1.5 text-left">Remark</th>}
           </tr>
         </thead>
         <tbody>
           {rc.data.subjects.map((r) => (
             <tr key={r.name}>
               <td className="border px-2 py-1">{r.name}</td>
-              <td className="border px-2 py-1 text-center">{r.ca}</td>
-              <td className="border px-2 py-1 text-center">{r.exam}</td>
-              <td className="border px-2 py-1 text-center font-semibold">{r.total}</td>
-              <td className="border px-2 py-1 text-center">{r.grade}</td>
-              <td className="border px-2 py-1">{r.remark}</td>
+              {/* an empty subject stays on the paper as a blank row — never dropped */}
+              <td className="border px-2 py-1 text-center">{r.empty ? "" : r.ca}</td>
+              <td className="border px-2 py-1 text-center">{r.empty ? "" : r.exam}</td>
+              <td className="border px-2 py-1 text-center font-semibold">{r.empty ? "" : r.total}</td>
+              <td className="border px-2 py-1 text-center">{r.empty ? "" : r.grade}</td>
+              {cfg.gradeRemarks && <td className="border px-2 py-1">{r.empty ? "" : r.remark}</td>}
             </tr>
           ))}
         </tbody>
       </table>
       )}
-      <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
-        {(b.signatureLines?.length ? b.signatureLines : ["Class Teacher", "Head Teacher"]).map((l) => (
-          <div key={l} className="border-t border-neutral-400 pt-1 text-center">{l}</div>
-        ))}
-      </div>
+      {cfg.signatures && (
+        <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
+          {(b.signatureLines?.length ? b.signatureLines : ["Class Teacher", "Head Teacher"]).map((l) => (
+            <div key={l} className="border-t border-neutral-400 pt-1 text-center">{l}</div>
+          ))}
+        </div>
+      )}
       <p className="mt-6 text-center text-[10px] text-neutral-400 print:hidden">
         Digital report card · use your browser&apos;s Print for a PDF copy
       </p>
