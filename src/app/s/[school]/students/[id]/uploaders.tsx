@@ -39,7 +39,7 @@ export function PhotoUploader({ slug, studentId, enabled, currentUrl, initials }
             ? <img src={shown} alt="Profile photo" className="h-full w-full object-cover" />
             : (initials ?? <Camera size={22} className="text-primary/60" />)}
           {up.busy && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[11px] font-semibold text-white">
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[12px] font-semibold text-white">
               {up.state.phase === "uploading" ? `${up.state.pct}%` : "…"}
             </span>
           )}
@@ -49,7 +49,7 @@ export function PhotoUploader({ slug, studentId, enabled, currentUrl, initials }
             className={btnGhostCls + " disabled:opacity-50"}>
             {currentUrl || preview ? "Replace photo" : "Upload photo"}
           </button>
-          <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+          <p className="mt-1.5 text-[12.5px] text-muted-foreground">
             {IMAGE_LABEL} · up to {MAX_UPLOAD_MB} MB · auto-resized to passport size
           </p>
           <input ref={inputRef} type="file" accept={IMAGE_TYPES.join(",")} className="hidden"

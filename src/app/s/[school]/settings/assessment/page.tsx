@@ -42,7 +42,7 @@ export default async function AssessmentScheme({ params, searchParams }: {
           {sp.err === "total"
             ? `The weights must add up to exactly 100 — right now they total ${sp.t}.`
             : ERR[sp.err]}
-          <span className="block text-[12px] opacity-80">Nothing was saved — adjust and try again.</span>
+          <span className="block text-[13px] opacity-80">Nothing was saved — adjust and try again.</span>
         </div>
       )}
 
@@ -62,7 +62,7 @@ export default async function AssessmentScheme({ params, searchParams }: {
           {/* ── rating scale ── */}
           <Card className="mb-5">
             <h2 className="font-semibold">Rating scale</h2>
-            <p className="mt-1 text-[12.5px] text-muted-foreground">
+            <p className="mt-1 text-[13.5px] text-muted-foreground">
               The steps a child can be rated on, lowest first. The skills grid cycles through these.
             </p>
             <form action={saveSkillScale.bind(null, slug)} className="mt-3">
@@ -74,14 +74,14 @@ export default async function AssessmentScheme({ params, searchParams }: {
                 <input name="label" placeholder="Add a step…" className={inputCls + " w-32"} />
               </div>
               <SubmitButton className={btnCls + " mt-3"} pendingText="Saving…">Save scale</SubmitButton>
-              <span className="ml-3 text-[12px] text-muted-foreground">Clear a box to remove that step.</span>
+              <span className="ml-3 text-[13px] text-muted-foreground">Clear a box to remove that step.</span>
             </form>
           </Card>
 
           {/* ── skill areas ── */}
           <Card>
             <h2 className="font-semibold">Skills assessed</h2>
-            <p className="mt-1 text-[12.5px] text-muted-foreground">
+            <p className="mt-1 text-[13.5px] text-muted-foreground">
               The areas every preschool child is rated on. Rename freely — removing an area
               also removes any ratings already given in it.
             </p>
@@ -91,12 +91,12 @@ export default async function AssessmentScheme({ params, searchParams }: {
                   <form action={renameSkillArea.bind(null, slug, d.id)}
                     className="flex flex-wrap items-center gap-2">
                     <input name="name" defaultValue={d.name} className={inputCls + " w-56"} />
-                    <SubmitButton className={btnGhostCls + " px-2.5 py-1.5 text-[12.5px]"} pendingText="…">Save</SubmitButton>
+                    <SubmitButton className={btnGhostCls + " px-2.5 py-1.5 text-[13.5px]"} pendingText="…">Save</SubmitButton>
                     <SubmitButton formAction={deleteSkillArea.bind(null, slug, d.id)}
-                      className="rounded-md px-2 py-1.5 text-[12.5px] text-danger hover:bg-danger/10" pendingText="…">
+                      className="rounded-md px-2 py-1.5 text-[13.5px] text-danger hover:bg-danger/10" pendingText="…">
                       Remove
                     </SubmitButton>
-                    <label className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                    <label className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
                       <input type="checkbox" name="confirm" /> confirm removal if rated
                     </label>
                   </form>
@@ -120,7 +120,7 @@ export default async function AssessmentScheme({ params, searchParams }: {
               Total: {total}/100 {total === 100 ? "✓" : "— must be 100"}
             </span>
           </div>
-          <p className="mt-1 text-[12.5px] text-muted-foreground">
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
             Name the tests the way your school calls them. Each weight is the marks that
             component carries out of the final 100 — teachers can mark over any number
             (say, 30) and it converts automatically.
@@ -131,13 +131,13 @@ export default async function AssessmentScheme({ params, searchParams }: {
               {comps.map((c) => (
                 <div key={c.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
                   <input name={`name_${c.id}`} defaultValue={c.name} className={inputCls + " w-52"} />
-                  <span className="text-[12px] text-muted-foreground">weight</span>
+                  <span className="text-[13px] text-muted-foreground">weight</span>
                   <input name={`weight_${c.id}`} type="number" min={0} max={100}
                     defaultValue={c.weight} className={inputCls + " w-20"} data-nums="" />
                   {c.isExam ? (
                     <Badge tone="brand">exam — publishes with the report</Badge>
                   ) : (
-                    <label className="ml-auto flex items-center gap-1.5 text-[12px] text-danger">
+                    <label className="ml-auto flex items-center gap-1.5 text-[13px] text-danger">
                       <input type="checkbox" name={`del_${c.id}`} /> remove
                     </label>
                   )}
@@ -154,11 +154,11 @@ export default async function AssessmentScheme({ params, searchParams }: {
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <SubmitButton className={btnCls} pendingText="Saving…">Save scheme</SubmitButton>
-              <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <label className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
                 <input type="checkbox" name="confirmDelete" /> I understand, remove ticked tests even if they hold marks
               </label>
             </div>
-            <p className="mt-2 text-[12px] text-muted-foreground">
+            <p className="mt-2 text-[13px] text-muted-foreground">
               Saving refuses unless the weights total exactly 100, so the terminal report always tallies.
             </p>
           </form>

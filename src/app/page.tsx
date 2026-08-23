@@ -38,7 +38,7 @@ export default function Home() {
       <section className="relative overflow-hidden">
         <div aria-hidden className="absolute left-1/2 top-0 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-brand-soft blur-3xl" />
         <div className="relative mx-auto max-w-3xl px-6 pb-16 pt-16 text-center lg:pt-24">
-          <p className="mx-auto mb-4 w-fit rounded-full border border-border bg-card px-3 py-1 text-[12px] font-medium text-muted-foreground shadow-[var(--shadow-sm)]">
+          <p className="mx-auto mb-4 w-fit rounded-full border border-border bg-card px-3 py-1 text-[13px] font-medium text-muted-foreground shadow-[var(--shadow-sm)]">
             For preschool → JHS · Built for Ghana 🇬🇭
           </p>
           <h1 className="text-[40px] font-semibold leading-[1.1] tracking-tight lg:text-[52px]">
@@ -56,7 +56,7 @@ export default function Home() {
               Sign in
             </Link>
           </div>
-          <p className="mt-3 text-[12px] text-faint">No card required · set up in under an hour</p>
+          <p className="mt-3 text-[13px] text-faint">No card required · set up in under an hour</p>
         </div>
       </section>
 
@@ -69,7 +69,7 @@ export default function Home() {
                 <Icon size={18} />
               </span>
               <h3 className="mt-4 font-semibold">{t}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{d}</p>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">{d}</p>
             </div>
           ))}
         </div>
@@ -86,15 +86,15 @@ export default function Home() {
             <div key={name}
               className={`relative rounded-lg border bg-card p-6 shadow-[var(--shadow-sm)] ${popular ? "border-primary shadow-[var(--shadow-md)]" : "border-border"}`}>
               {popular && (
-                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2.5 py-0.5 text-[12px] font-semibold text-primary-foreground">
                   Most popular
                 </span>
               )}
               <p className="font-semibold">{name}</p>
               <p className="mt-2 text-[30px] font-semibold tracking-tight" data-nums="">
-                GHS {price}<span className="text-[13px] font-normal text-muted-foreground">/month</span>
+                GHS {price}<span className="text-[14px] font-normal text-muted-foreground">/month</span>
               </p>
-              <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">{desc}</p>
+              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{desc}</p>
               <Link href="/signup"
                 className={`mt-5 block rounded-md py-2 text-center text-sm font-medium transition-colors ${popular ? "bg-primary text-primary-foreground hover:bg-brand-strong" : "border border-border hover:bg-muted"}`}>
                 Get started
@@ -102,7 +102,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <p className="mt-6 text-center text-[13px] text-muted-foreground">
+        <p className="mt-6 text-center text-[14px] text-muted-foreground">
           Bigger school or specific needs? <span className="font-medium text-foreground">Custom plans</span> compose exactly the modules you want.
         </p>
       </section>
@@ -122,7 +122,7 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-[12px] text-muted-foreground">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-[13px] text-muted-foreground">
           <LogoLockup size={22} />
           <p>© {new Date().getFullYear()} Peysich — school management for preschool to JHS</p>
         </div>

@@ -7,11 +7,19 @@ import { assignments } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { uid } from "@/lib/utils";
 
+/** Homework is set by TEACHERS for the classes they actually teach — admins
+ *  read and monitor, they don't assign. */
 export async function createHomework(slug: string, f: FormData) {
-  const { school, user } = await requireModule(slug, "homework", ["admin", "teacher"]);
+  const { school, user } = await requireModule(slug, "homework", ["teacher"]);
+  const classId = String(f.get("classId"));
+  if (user.role === "teacher") {
+    const { getTeacherScope } = await import("@/core/school-context");
+    const scope = await getTeacherScope(school.id, user.id);
+    if (!scope?.allClassIds.has(classId)) redirect(`/homework?flash=error`);
+  }
   await db.insert(assignments).values({
     id: uid(), schoolId: school.id,
-    classId: String(f.get("classId")), subjectId: String(f.get("subjectId")),
+    classId, subjectId: String(f.get("subjectId")),
     title: String(f.get("title")), instructions: String(f.get("instructions") || "") || null,
     dueDate: String(f.get("dueDate")), createdBy: user.id,
   });

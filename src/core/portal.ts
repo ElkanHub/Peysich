@@ -5,18 +5,21 @@ import {
   feeInvoices, reportCards,
 } from "@/db/schema";
 
-/** A parent's children with the card data (doc 10: present? doing well? owing?). */
+/** A parent's children with the card data (doc 10: present? doing well? owing?).
+ *  One login can sit behind SEVERAL guardian records (listed separately for
+ *  different children) — every one of them counts, not just the first. */
 export async function getParentChildren(schoolId: string, userId: string, termId?: string) {
-  const [g] = await db.select().from(guardians)
+  const gs = await db.select().from(guardians)
     .where(and(eq(guardians.schoolId, schoolId), eq(guardians.userId, userId)));
-  if (!g) return [];
-  const links = await db.select().from(studentGuardians).where(eq(studentGuardians.guardianId, g.id));
+  if (!gs.length) return [];
+  const links = await db.select().from(studentGuardians)
+    .where(inArray(studentGuardians.guardianId, gs.map((g) => g.id)));
   if (!links.length) return [];
   const kids = await db.select({
     id: students.id, firstName: students.firstName, lastName: students.lastName,
     className: classes.name, classId: students.classId,
   }).from(students).leftJoin(classes, eq(students.classId, classes.id))
-    .where(inArray(students.id, links.map((l) => l.studentId)));
+    .where(inArray(students.id, [...new Set(links.map((l) => l.studentId))]));
 
   const today = new Date().toISOString().slice(0, 10);
   return Promise.all(kids.map(async (k) => {
@@ -39,13 +42,15 @@ export async function getParentChildren(schoolId: string, userId: string, termId
   }));
 }
 
-/** Assert this user is a guardian of the student (parent child-page gate). */
+/** Assert this user is a guardian of the student (parent child-page gate) —
+ *  through ANY of their guardian records. */
 export async function assertParentOf(schoolId: string, userId: string, studentId: string) {
-  const [g] = await db.select().from(guardians)
+  const gs = await db.select().from(guardians)
     .where(and(eq(guardians.schoolId, schoolId), eq(guardians.userId, userId)));
-  if (!g) return false;
+  if (!gs.length) return false;
   const [link] = await db.select().from(studentGuardians).where(and(
-    eq(studentGuardians.guardianId, g.id), eq(studentGuardians.studentId, studentId)));
+    inArray(studentGuardians.guardianId, gs.map((g) => g.id)),
+    eq(studentGuardians.studentId, studentId)));
   return Boolean(link);
 }
 

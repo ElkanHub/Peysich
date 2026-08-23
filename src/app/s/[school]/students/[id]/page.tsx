@@ -76,7 +76,7 @@ export default async function StudentFile({ params, searchParams }: {
             <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
               {s.firstName} {s.otherNames ? `${s.otherNames} ` : ""}{s.lastName}
             </h1>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
+            <p className="mt-0.5 text-[14px] text-muted-foreground">
               {s.admissionNo} · {cls?.name ?? "no class"}{room ? ` (${room.name})` : ""} · <span className="capitalize">{s.sex}</span>
               <span className="ml-2"><Badge tone={s.status === "active" ? "success" : "default"}>{s.status}</Badge></span>
             </p>
@@ -101,8 +101,8 @@ export default async function StudentFile({ params, searchParams }: {
             Left the school on {s.exitDate} — <span className="capitalize">{s.exitReason}</span>
             {s.exitDestination ? ` → ${s.exitDestination}` : ""}
           </p>
-          {s.exitNote && <p className="mt-0.5 text-[13px] text-muted-foreground">{s.exitNote}</p>}
-          <p className="mt-1.5 flex flex-wrap items-center gap-3 text-[13px]">
+          {s.exitNote && <p className="mt-0.5 text-[14px] text-muted-foreground">{s.exitNote}</p>}
+          <p className="mt-1.5 flex flex-wrap items-center gap-3 text-[14px]">
             <Link href={`/students/${id}/leaving-certificate`} className="font-medium text-primary">
               Leaving certificate & final statement ↗
             </Link>
@@ -122,7 +122,7 @@ export default async function StudentFile({ params, searchParams }: {
       <div className="mb-5 flex gap-1 border-b border-border">
         {visibleTabs.map((t) => (
           <Link key={t} href={`?tab=${t}`}
-            className={cn("border-b-2 px-3.5 py-2 text-[13px] font-medium transition-colors",
+            className={cn("border-b-2 px-3.5 py-2 text-[14px] font-medium transition-colors",
               tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
             {TAB_LABEL[t]}
           </Link>
@@ -157,7 +157,7 @@ export default async function StudentFile({ params, searchParams }: {
                 <dd>{s.emergencyName ? `${s.emergencyName} · ${s.emergencyPhone ?? ""}` : "—"}</dd></div>
             </dl>
             {s.medicalNotes && (
-              <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[12px] text-warning">
+              <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning">
                 ⚠ Has medical notes — visible to teachers of this class.
               </p>
             )}
@@ -172,8 +172,8 @@ export default async function StudentFile({ params, searchParams }: {
                     <Link href={`/guardians/${g.id}`} className="font-medium text-primary">{g.name}</Link>
                     {g.isPrimary && <span className="ml-1.5"><Badge tone="brand">primary</Badge></span>}
                     {g.contactPref !== "portal" &&
-                      <span className="ml-1.5 text-[11.5px] text-warning">📞 {g.contactPref === "sms" ? "SMS" : "phone"}-only</span>}
-                    <span className="block text-[12px] text-muted-foreground">
+                      <span className="ml-1.5 text-[12.5px] text-warning">📞 {g.contactPref === "sms" ? "SMS" : "phone"}-only</span>}
+                    <span className="block text-[13px] text-muted-foreground">
                       {g.relation}{g.occupation ? ` · ${g.occupation}` : ""}
                     </span>
                   </span>
@@ -181,7 +181,7 @@ export default async function StudentFile({ params, searchParams }: {
                     <span className="whitespace-nowrap text-muted-foreground">{g.phone}</span>
                     {isAdmin && (
                       <form action={unlinkChild.bind(null, slug, g.id, id)}>
-                        <SubmitButton className="rounded border border-border px-1.5 py-0.5 text-[11px] text-danger hover:bg-muted">Unlink</SubmitButton>
+                        <SubmitButton className="rounded border border-border px-1.5 py-0.5 text-[12px] text-danger hover:bg-muted">Unlink</SubmitButton>
                       </form>
                     )}
                   </span>
@@ -190,7 +190,7 @@ export default async function StudentFile({ params, searchParams }: {
             </ul>
             {isAdmin && (
               <details className="mt-3 border-t border-border pt-3">
-                <summary className="cursor-pointer text-[13px] font-medium text-primary">Add a guardian</summary>
+                <summary className="cursor-pointer text-[14px] font-medium text-primary">Add a guardian</summary>
                 <form action={addGuardianToStudent.bind(null, slug, id)} className="mt-2 grid grid-cols-2 gap-2.5">
                   <Field label="Full name"><input name="name" required className={inputCls} /></Field>
                   <Field label="Phone (reuses an existing parent)"><input name="phone" required className={inputCls} /></Field>
@@ -207,7 +207,7 @@ export default async function StudentFile({ params, searchParams }: {
                       <option value="portal">Uses the parent portal</option>
                     </select>
                   </Field>
-                  <label className="col-span-2 flex items-center gap-2 text-[13px]">
+                  <label className="col-span-2 flex items-center gap-2 text-[14px]">
                     <input type="checkbox" name="isPrimary" /> Primary contact
                   </label>
                   <SubmitButton className={btnGhostCls + " col-span-2"}>Add guardian</SubmitButton>
@@ -283,7 +283,7 @@ async function PerformanceTab({ schoolId, studentId, classId, termId }: {
       <Card>
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">Skills this term</h2>
-          <Link href={printable} className="text-[13px] font-medium text-primary">Open printable record →</Link>
+          <Link href={printable} className="text-[14px] font-medium text-primary">Open printable record →</Link>
         </div>
         <ul className="mt-2 divide-y divide-border text-sm">
           {doms.sort((a, b) => a.sortOrder - b.sortOrder).map((d) => (
@@ -302,7 +302,7 @@ async function PerformanceTab({ schoolId, studentId, classId, termId }: {
     <Card>
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-semibold">This term, across every assessment</h2>
-        <Link href={printable} className="text-[13px] font-medium text-primary">Open printable record →</Link>
+        <Link href={printable} className="text-[14px] font-medium text-primary">Open printable record →</Link>
       </div>
       <div className="mt-3">
         <PerformanceTable schoolId={schoolId} studentId={studentId} classId={cls.id} termId={termId} />
@@ -364,7 +364,7 @@ async function AcademicsTab({ schoolId, studentId, termId }: {
       {trend.length > 0 && (
         <Card className="md:col-span-2">
           <h2 className="font-semibold">Performance over time</h2>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">Average score across all subjects, per term.</p>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Average score across all subjects, per term.</p>
           <div className="mt-3 space-y-2">
             {trend.map((t, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">
@@ -411,7 +411,7 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
     <div className="space-y-5">
       <Card>
         <h2 className="font-semibold">Digital documents</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-0.5 text-[14px] text-muted-foreground">
           Scans and uploads linked to this student — birth certificate, immunization card, past reports.
         </p>
         {files.length === 0
@@ -423,12 +423,12 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
                 {files.map((f) => (
                   <Tr key={f.id}>
                     <Td className="font-medium">{f.title}
-                      {f.note && <p className="text-[12px] font-normal text-muted-foreground">{f.note}</p>}</Td>
+                      {f.note && <p className="text-[13px] font-normal text-muted-foreground">{f.note}</p>}</Td>
                     <Td><Badge>{f.kind.replace(/_/g, " ")}</Badge></Td>
                     <Td className="whitespace-nowrap text-muted-foreground">{f.createdAt.toISOString().slice(0, 10)}</Td>
                     <Td className="text-muted-foreground">{f.uploadedBy}</Td>
                     <Td>{links.has(f.id) &&
-                      <a href={links.get(f.id)} target="_blank" className="text-[13px] font-medium text-primary">Open ↗</a>}</Td>
+                      <a href={links.get(f.id)} target="_blank" className="text-[14px] font-medium text-primary">Open ↗</a>}</Td>
                   </Tr>
                 ))}
               </DataTable>
@@ -443,7 +443,7 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
 
       <Card>
         <h2 className="font-semibold">Physical items in custody</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-0.5 text-[14px] text-muted-foreground">
           Originals handed to the office — what was received, from whom, and exactly where it is kept.
         </p>
         {items.length === 0
@@ -455,7 +455,7 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
                 {items.map((it) => (
                   <Tr key={it.id}>
                     <Td className="font-medium">{it.itemName}
-                      {it.receivedFrom && <p className="text-[12px] font-normal text-muted-foreground">from {it.receivedFrom}</p>}</Td>
+                      {it.receivedFrom && <p className="text-[13px] font-normal text-muted-foreground">from {it.receivedFrom}</p>}</Td>
                     <Td>{it.location}</Td>
                     <Td className="whitespace-nowrap text-muted-foreground">
                       {it.receivedAt.toISOString().slice(0, 10)} · {it.receivedBy}</Td>
@@ -467,8 +467,8 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
                         <form action={returnStudentItem.bind(null, slug, studentId, it.id)}
                           className="flex items-center gap-1">
                           <input name="returnedTo" placeholder="returned to…"
-                            className="w-28 rounded-md border border-border px-2 py-1 text-[12px]" />
-                          <SubmitButton className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">Return</SubmitButton>
+                            className="w-28 rounded-md border border-border px-2 py-1 text-[13px]" />
+                          <SubmitButton className="rounded border border-border px-2 py-1 text-[13px] hover:bg-muted">Return</SubmitButton>
                         </form>
                       )}
                     </Td>
@@ -507,7 +507,7 @@ async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
     <div className="space-y-5">
       <Card>
         <h2 className="font-semibold">Payment arrangement</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-0.5 text-[14px] text-muted-foreground">
           How and where this family pays — the office memory that survives staff changes.
         </p>
         {isAdmin ? (
@@ -540,7 +540,7 @@ async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
           </DataTable>
         </div>
         {pays.length > 0 && (
-          <div className="mt-3 text-[12px] text-muted-foreground">
+          <div className="mt-3 text-[13px] text-muted-foreground">
             <p className="font-medium text-foreground">Payment trail (latest invoice)</p>
             {pays.map((p) => (
               <p key={p.id}>{p.createdAt.toISOString().slice(0, 10)} · {ghs(p.amountPesewas)} · via {p.method} · ref {p.reference.slice(0, 16)}</p>

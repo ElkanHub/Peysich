@@ -94,14 +94,14 @@ export default async function Allocations({ params, searchParams }: {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="font-semibold">{c.name}
               {classTeacherMode && (
-                <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+                <span className="ml-2 text-[12px] font-normal text-muted-foreground">
                   {SECTION_LABELS[S.sectionOfClass(c)]} · class-teacher mode
                 </span>
               )}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <form action={setClassTeacher.bind(null, slug, c.id)} className="flex items-center gap-1.5">
-                <span className="text-[13px] text-muted-foreground">Class teacher</span>
+                <span className="text-[14px] text-muted-foreground">Class teacher</span>
                 <select name="staffId" defaultValue={c.classTeacherId ?? ""}
                   className="rounded-md border border-border px-2 py-1.5 text-sm">
                   <option value="">None</option>
@@ -120,7 +120,7 @@ export default async function Allocations({ params, searchParams }: {
             </div>
           </div>
           {classTeacherMode ? (
-            <p className="mt-2.5 rounded-md bg-muted/60 px-3 py-2 text-[12.5px] text-muted-foreground">
+            <p className="mt-2.5 rounded-md bg-muted/60 px-3 py-2 text-[13.5px] text-muted-foreground">
               The class teacher automatically teaches all {effSubs.length} subjects — no per-subject
               assignments needed. Change the mode under{" "}
               <a href="/settings/timetable" className="font-medium text-primary">Settings → Day plan &amp; subjects</a>.
@@ -137,7 +137,7 @@ export default async function Allocations({ params, searchParams }: {
                   <span className="min-w-0 truncate text-sm">
                     {sub.name}
                     {outside && (
-                      <span className="ml-1.5 text-[11px] text-warning"
+                      <span className="ml-1.5 text-[12px] text-warning"
                         title={`${t!.name} is not listed as qualified for ${sub.name}`}>
                         ⚠ outside competencies
                       </span>
@@ -149,7 +149,7 @@ export default async function Allocations({ params, searchParams }: {
                       <option value="">Unassigned</option>
                       {teachers.map((tt) => <option key={tt.id} value={tt.id}>{tt.name}</option>)}
                     </select>
-                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] hover:bg-muted">Set</SubmitButton>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[12.5px] hover:bg-muted">Set</SubmitButton>
                   </span>
                 </form>
               );

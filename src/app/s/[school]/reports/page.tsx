@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { students, scorePublications, scoreSheets, reportCards, levels } from "@/db/schema";
+import { students, scorePublications, scoreSheets, reportCards, levels, terms, academicYears } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { getStructure, SECTIONS, SECTION_LABELS, type Section } from "@/core/academics";
 import { getReportConfig, REPORT_CONFIG_LABELS, REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/report-config";
@@ -20,14 +20,22 @@ const fmtDate = (d: Date) =>
  *  Nothing is edited here except the paper's design. */
 export default async function Reports({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ c?: string }>;
+  searchParams: Promise<{ c?: string; t?: string }>;
 }) {
   const { school: slug } = await params;
   const sp = await searchParams;
   const { school } = await requireModule(slug, "assessment", ["admin"]);
-  const term = await getCurrentTerm(school.id);
-  if (!term) return <div><PageHeader title="Reports" sub="No current term" />
+  const current = await getCurrentTerm(school.id);
+  if (!current) return <div><PageHeader title="Reports" sub="No current term" />
     <Empty title="Set up your academic year first" hint="Settings → Academic year & terms." /></div>;
+  // any term, any year — records stay findable long after a term closes
+  const [allTerms, yrs] = await Promise.all([
+    db.select().from(terms).where(eq(terms.schoolId, school.id)),
+    db.select().from(academicYears).where(eq(academicYears.schoolId, school.id)),
+  ]);
+  const term = allTerms.find((x) => x.id === sp.t) ?? current;
+  const viewingPast = term.id !== current.id;
+  const yearName = new Map(yrs.map((y) => [y.id, y.name]));
 
   const S = await getStructure(school.id);
   const lvs = await db.select().from(levels).where(eq(levels.schoolId, school.id));
@@ -99,19 +107,42 @@ export default async function Reports({ params, searchParams }: {
   return (
     <div>
       <PageHeader title="Reports"
-        sub={`${term.name} · what families receive — released per test, tracked separately`} />
+        sub={`${yearName.get(term.yearId)} · ${term.name} · what families receive — released per test, tracked separately`} />
+
+      {/* records are term-scoped and year-scoped — every past term stays reachable */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {[...yrs].sort((a, b) => b.startsAt.localeCompare(a.startsAt)).map((y) => (
+          <span key={y.id} className="flex items-center gap-1.5">
+            <span className="text-[13px] font-medium text-muted-foreground" data-nums="">{y.name}:</span>
+            {allTerms.filter((x) => x.yearId === y.id)
+              .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+              .map((x) => (
+                <Link key={x.id} href={`/reports?t=${x.id}`}
+                  className={`rounded-full px-2.5 py-1 text-[13px] font-medium ${x.id === term.id
+                    ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+                  {x.name}
+                </Link>
+              ))}
+          </span>
+        ))}
+      </div>
+      {viewingPast && (
+        <p className="mb-4 rounded-md bg-muted px-3 py-2 text-[13.5px] text-muted-foreground">
+          You are looking at a past term&apos;s records — reference only, nothing here can be released or changed.
+        </p>
+      )}
 
       {/* ── releases: one row per test, its own state, nothing blurred ── */}
       <Card className="mb-5">
-        <h2 className="font-semibold">Releases this term</h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <h2 className="font-semibold">{viewingPast ? `Releases in ${term.name}` : "Releases this term"}</h2>
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
           Each test is released on its own — families see exactly what has been released and
           nothing else. A release always carries the child&apos;s full record, every subject at once.
         </p>
         <div className="mt-3 space-y-4">
           {testSections.map((sec) => (
             <div key={sec}>
-              <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{SECTION_LABELS[sec as Section]}</p>
+              <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">{SECTION_LABELS[sec as Section]}</p>
               <ul className="divide-y divide-border">
                 {S.componentsFor(sec as Section).filter((c) => !c.isExam).map((c) => {
                   const secClasses = testClasses.filter((cl) => S.sectionOfClass(cl) === sec);
@@ -125,27 +156,29 @@ export default async function Reports({ params, searchParams }: {
                       {p ? (
                         <>
                           <Badge tone="success">released ✓</Badge>
-                          <span className="text-[12.5px] text-muted-foreground">
+                          <span className="text-[13.5px] text-muted-foreground">
                             {fmtDate(p.publishedAt)} by {p.publishedBy}
                           </span>
                         </>
                       ) : (
                         <>
                           <Badge tone="default">not released</Badge>
-                          <span className={`text-[12.5px] ${readyCount === secClasses.length ? "text-success" : "text-warning"}`} data-nums="">
+                          <span className={`text-[13.5px] ${readyCount === secClasses.length ? "text-success" : "text-warning"}`} data-nums="">
                             {readyCount}/{secClasses.length} classes fully submitted
                           </span>
                           {gaps.length > 0 && (
-                            <span className="text-[11.5px] text-muted-foreground"
+                            <span className="text-[12.5px] text-muted-foreground"
                               title={gaps.map((g) => `${g.cl.name}: ${g.done}/${g.total} subjects`).join(" · ")}>
                               waiting on {gaps.slice(0, 3).map((g) => g.cl.name).join(", ")}{gaps.length > 3 ? ` +${gaps.length - 3}` : ""}
                             </span>
                           )}
-                          <form action={releaseComponent.bind(null, slug, c.id)} className="ml-auto">
-                            <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[12.5px]"} pendingText="Releasing…">
-                              Release {c.name}
-                            </SubmitButton>
-                          </form>
+                          {!viewingPast && (
+                            <form action={releaseComponent.bind(null, slug, c.id)} className="ml-auto">
+                              <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[13.5px]"} pendingText="Releasing…">
+                                Release {c.name}
+                              </SubmitButton>
+                            </form>
+                          )}
                         </>
                       )}
                     </li>
@@ -158,13 +191,13 @@ export default async function Reports({ params, searchParams }: {
           {/* preschool — skills-based, so their release IS the end-of-term report */}
           {preClasses.length > 0 && (
             <div className="border-t border-border pt-3">
-              <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Preschool</p>
+              <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Preschool</p>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="w-44 shrink-0 font-medium">Skills report (end of term)</span>
                 {preReleased.length > 0 ? (
                   <>
                     <Badge tone="success">released ✓</Badge>
-                    <span className="text-[12.5px] text-muted-foreground" data-nums="">
+                    <span className="text-[13.5px] text-muted-foreground" data-nums="">
                       {preReleased.length} of {preKidIds.length} children
                       {preReleasedAt ? ` · ${fmtDate(preReleasedAt)}` : ""}
                     </span>
@@ -172,18 +205,20 @@ export default async function Reports({ params, searchParams }: {
                 ) : (
                   <>
                     <Badge tone="default">not released</Badge>
-                    <span className={`text-[12.5px] ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "text-success" : "text-warning"}`} data-nums="">
+                    <span className={`text-[13.5px] ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "text-success" : "text-warning"}`} data-nums="">
                       {ratedCount}/{preKidIds.length} children rated on the skills grid
                     </span>
                   </>
                 )}
-                <form action={releasePreschoolReports.bind(null, slug)} className="ml-auto">
-                  <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[12.5px]"} pendingText="Releasing…">
-                    {preReleased.length ? "Re-release skills reports" : "Release skills reports"}
-                  </SubmitButton>
-                </form>
+                {!viewingPast && (
+                  <form action={releasePreschoolReports.bind(null, slug)} className="ml-auto">
+                    <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[13.5px]"} pendingText="Releasing…">
+                      {preReleased.length ? "Re-release skills reports" : "Release skills reports"}
+                    </SubmitButton>
+                  </form>
+                )}
               </div>
-              <p className="mt-1.5 text-[12px] text-muted-foreground">
+              <p className="mt-1.5 text-[13px] text-muted-foreground">
                 Preschool is assessed on the skills grid, not tests — this single release sends each
                 child&apos;s Learning &amp; Development record to their family. Children with nothing
                 rated yet are skipped, and the term stays open.
@@ -193,26 +228,28 @@ export default async function Reports({ params, searchParams }: {
 
           {/* terminal report — its own, separate release */}
           <div className="border-t border-border pt-3">
-            <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Terminal report</p>
+            <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Terminal report</p>
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="w-44 shrink-0 font-medium">Report cards (incl. exam)</span>
               {reportsN > 0 ? (
                 <>
                   <Badge tone="success">released ✓</Badge>
-                  <span className="text-[12.5px] text-muted-foreground" data-nums="">
+                  <span className="text-[13.5px] text-muted-foreground" data-nums="">
                     {reportsN} report cards with families · scores locked
                   </span>
                 </>
               ) : (
                 <Badge tone="default">not released</Badge>
               )}
-              <form action={releaseTermReports.bind(null, slug)} className="ml-auto">
-                <SubmitButton className={reportsN ? btnGhostCls + " px-2.5 py-1 text-[12.5px]" : btnCls} pendingText="Publishing…">
-                  {reportsN ? "Re-publish report cards" : "Publish report cards"}
-                </SubmitButton>
-              </form>
+              {!viewingPast && (
+                <form action={releaseTermReports.bind(null, slug)} className="ml-auto">
+                  <SubmitButton className={reportsN ? btnGhostCls + " px-2.5 py-1 text-[13.5px]" : btnCls} pendingText="Publishing…">
+                    {reportsN ? "Re-publish report cards" : "Publish report cards"}
+                  </SubmitButton>
+                </form>
+              )}
             </div>
-            <p className="mt-1.5 text-[12px] text-muted-foreground">
+            <p className="mt-1.5 text-[13px] text-muted-foreground">
               Publishing the terminal report computes every child&apos;s CA + exam totals, locks the
               term&apos;s scores, and includes preschool skills reports.
               {" "}<Link href="/assessment/matrix" className="font-medium text-primary">Score-entry completeness matrix →</Link>
@@ -225,17 +262,17 @@ export default async function Reports({ params, searchParams }: {
       <Card className="mb-5">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-semibold">Report design</h2>
-          <Link href="/settings" className="text-[12.5px] font-medium text-primary">
+          <Link href="/settings" className="text-[13.5px] font-medium text-primary">
             Logo, colours &amp; motto values → Branding
           </Link>
         </div>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
           Tick what appears on every printed record and report card.
         </p>
         <form action={saveReportConfig.bind(null, slug)} className="mt-3">
           <div className="grid gap-1.5 sm:grid-cols-2">
             {(Object.keys(REPORT_CONFIG_DEFAULTS) as (keyof ReportConfig)[]).map((k) => (
-              <label key={k} className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-[13px]">
+              <label key={k} className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-[14px]">
                 <input type="checkbox" name={`cfg_${k}`} defaultChecked={cfg[k]} />
                 {REPORT_CONFIG_LABELS[k]}
               </label>
@@ -248,13 +285,13 @@ export default async function Reports({ params, searchParams }: {
       {/* ── read-only records browser ── */}
       <Card>
         <h2 className="font-semibold">The records</h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
           Open any child&apos;s record exactly as it prints. Reading only — marks are edited under Assessment.
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {allClasses.map((c) => (
-            <Link key={c.id} href={`?c=${c.id}`}
-              className={`rounded-md border px-2.5 py-1 text-[12.5px] font-medium ${c.id === activeClass?.id
+            <Link key={c.id} href={`?c=${c.id}&t=${term.id}`}
+              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === activeClass?.id
                 ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
               {c.name}
             </Link>
@@ -264,7 +301,7 @@ export default async function Reports({ params, searchParams }: {
           {roster.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
               <span className="font-medium">{r.lastName}, {r.firstName}</span>
-              <span className="flex gap-3 text-[12.5px] font-medium">
+              <span className="flex gap-3 text-[13.5px] font-medium">
                 <Link href={`/students/${r.id}/performance/${term.id}`} className="text-primary">Record →</Link>
                 {withReport.has(r.id) && (
                   <Link href={`/students/${r.id}/report/${term.id}`} className="text-primary">Report card →</Link>

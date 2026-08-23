@@ -112,7 +112,7 @@ export default async function Students({ params, searchParams }: {
                   <span className="ml-2 text-xs text-muted-foreground">stage {Math.min((d.step ?? 0) + 1, 7)} of 7</span></span>
                 <span className="flex items-center gap-2">
                   <Link href={`/students/new?draft=${d.id}`}
-                    className="text-[13px] font-medium text-primary">Continue →</Link>
+                    className="text-[14px] font-medium text-primary">Continue →</Link>
                   <form action={discardAdmission.bind(null, slug, d.id)}>
                     <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard</SubmitButton>
                   </form>
@@ -144,7 +144,7 @@ export default async function Students({ params, searchParams }: {
             <Tr key={s.id}>
               <Td className="font-medium">
                 <span className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[12px] font-semibold text-primary">
                     {photo.has(s.id)
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={photo.get(s.id)} alt="" width={32} height={32}

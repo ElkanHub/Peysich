@@ -44,14 +44,14 @@ function ClassGrid({ S, classId, base, sel, canEdit, focusSubjectId }: {
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full border-collapse text-[12px]">
+      <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr className="bg-muted/60">
             <th className="border-b border-r border-border px-2 py-2 text-left font-semibold"></th>
             {slots.map((sl) => (
               <th key={sl.id} className={`border-b border-border px-1.5 py-1.5 text-center font-medium ${sl.kind !== "teaching" ? "text-muted-foreground" : ""}`}>
                 <div>{sl.name}</div>
-                <div className="text-[10px] font-normal text-faint" data-nums="">{fmtMin(sl.startMin)}–{fmtMin(sl.endMin)}</div>
+                <div className="text-[11px] font-normal text-faint" data-nums="">{fmtMin(sl.startMin)}–{fmtMin(sl.endMin)}</div>
               </th>
             ))}
           </tr>
@@ -62,7 +62,7 @@ function ClassGrid({ S, classId, base, sel, canEdit, focusSubjectId }: {
               <td className="border-r border-border px-2 py-2 font-semibold">{DAY_LABELS[d].slice(0, 3)}</td>
               {slots.map((sl) => {
                 if (sl.kind !== "teaching") {
-                  return <td key={sl.id} className={`px-1.5 py-2 text-center text-[10px] uppercase tracking-wide ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.kind === "assembly" ? "🏫" : "☕"}</td>;
+                  return <td key={sl.id} className={`px-1.5 py-2 text-center text-[11px] uppercase tracking-wide ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.kind === "assembly" ? "🏫" : "☕"}</td>;
                 }
                 const e = at.get(`${d}:${sl.id}`);
                 const isSel = sel === `${d}:${sl.id}`;
@@ -136,14 +136,14 @@ export default async function Timetable({ params, searchParams }: {
       {clashes.length > 0 && (
         <div className="mb-4 rounded-lg border border-danger/40 bg-danger/5 px-4 py-3 text-sm">
           <p className="font-semibold text-danger">⚠ {clashes.length} timetable clash{clashes.length === 1 ? "" : "es"}</p>
-          <ul className="mt-1.5 space-y-1 text-[13px]">
+          <ul className="mt-1.5 space-y-1 text-[14px]">
             {clashes.slice(0, 6).map((cl, i) => (
               <li key={i}>
                 <b>{cl.teacherName}</b> is double-booked {DAY_LABELS[cl.day]} {cl.time}: {cl.classes.join(" and ")}
               </li>
             ))}
           </ul>
-          <p className="mt-1.5 text-[12px] text-muted-foreground">
+          <p className="mt-1.5 text-[13px] text-muted-foreground">
             Usually caused by changing allocations after lessons were placed — move one of the lessons, or change the allocation.
           </p>
         </div>
@@ -182,7 +182,7 @@ export default async function Timetable({ params, searchParams }: {
           <Card className="mb-4 border-primary/40">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {DAY_LABELS[d as Day]} · {slot.name} · <span data-nums="">{fmtMin(slot.startMin)}–{fmtMin(slot.endMin)}</span>
                 </p>
                 {entry ? (
@@ -226,7 +226,7 @@ export default async function Timetable({ params, searchParams }: {
                     </SubmitButton>
                   )}
                 </form>
-                <p className="mt-2 text-[12px] text-muted-foreground">
+                <p className="mt-2 text-[13px] text-muted-foreground">
                   The teacher comes from the allocation — a placement that double-books a teacher is refused.
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default async function Timetable({ params, searchParams }: {
         <div className="mb-4 flex flex-wrap gap-1.5">
           {visibleClasses.map((c) => (
             <Link key={c.id} href={`?view=class&c=${c.id}`}
-              className={`rounded-md border px-2.5 py-1 text-[12.5px] font-medium ${c.id === active.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === active.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
               {c.name}
             </Link>
           ))}
@@ -250,7 +250,7 @@ export default async function Timetable({ params, searchParams }: {
         {detail}
         <ClassGrid S={S} classId={active.id} base={base} sel={sp.sel} canEdit={isAdmin} />
         {mode === "class_teacher" && (
-          <p className="mt-2 text-[12px] text-muted-foreground">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             {SECTION_LABELS[S.sectionOfClass(active)]} runs in class-teacher mode — every lesson here is taught by the class teacher.
           </p>
         )}
@@ -283,7 +283,7 @@ export default async function Timetable({ params, searchParams }: {
           <div className="mb-4 flex flex-wrap gap-1.5">
             {teachers.map((t) => (
               <Link key={t.id} href={`?view=teacher&t=${t.id}`}
-                className={`rounded-md border px-2.5 py-1 text-[12.5px] font-medium ${t.id === activeTeacher.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+                className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${t.id === activeTeacher.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
                 {t.name}
               </Link>
             ))}
@@ -299,14 +299,14 @@ export default async function Timetable({ params, searchParams }: {
             <div key={section} className="mb-6">
               {mySections.length > 1 && <h2 className="mb-2 text-sm font-semibold">{SECTION_LABELS[section]} day</h2>}
               <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full border-collapse text-[12px]">
+                <table className="w-full border-collapse text-[13px]">
                   <thead>
                     <tr className="bg-muted/60">
                       <th className="border-b border-r border-border px-2 py-2"></th>
                       {slots.map((sl) => (
                         <th key={sl.id} className={`border-b border-border px-1.5 py-1.5 text-center font-medium ${sl.kind !== "teaching" ? "text-muted-foreground" : ""}`}>
                           <div>{sl.name}</div>
-                          <div className="text-[10px] font-normal text-faint" data-nums="">{fmtMin(sl.startMin)}–{fmtMin(sl.endMin)}</div>
+                          <div className="text-[11px] font-normal text-faint" data-nums="">{fmtMin(sl.startMin)}–{fmtMin(sl.endMin)}</div>
                         </th>
                       ))}
                     </tr>
@@ -317,7 +317,7 @@ export default async function Timetable({ params, searchParams }: {
                         <td className="border-r border-border px-2 py-2 font-semibold">{DAY_LABELS[d].slice(0, 3)}</td>
                         {slots.map((sl) => {
                           if (sl.kind !== "teaching")
-                            return <td key={sl.id} className={`px-1.5 py-2 text-center text-[10px] uppercase ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.kind === "assembly" ? "🏫" : "☕"}</td>;
+                            return <td key={sl.id} className={`px-1.5 py-2 text-center text-[11px] uppercase ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.kind === "assembly" ? "🏫" : "☕"}</td>;
                           // any entry of this teacher overlapping this slot's time on this day
                           const hit = myEntries.find((e) => {
                             if (e.day !== d) return false;
@@ -329,9 +329,9 @@ export default async function Timetable({ params, searchParams }: {
                               {hit ? (
                                 <Link href={`?view=class&c=${hit.classId}&sel=${d}:${hit.slotId}`} className="block">
                                   <span className="font-medium">{S.classById.get(hit.classId)?.name}</span>
-                                  <span className="block text-[10.5px] text-muted-foreground">{abbr(S.subjectById.get(hit.subjectId)?.name ?? "")}</span>
+                                  <span className="block text-[11.5px] text-muted-foreground">{abbr(S.subjectById.get(hit.subjectId)?.name ?? "")}</span>
                                 </Link>
-                              ) : <span className="text-[10.5px] text-success">free</span>}
+                              ) : <span className="text-[11.5px] text-success">free</span>}
                             </td>
                           );
                         })}
@@ -367,7 +367,7 @@ export default async function Timetable({ params, searchParams }: {
         <div className="mb-4 flex flex-wrap gap-1.5">
           {subs.map((s) => (
             <Link key={s.id} href={`?view=subject&sub=${s.id}`}
-              className={`rounded-md border px-2.5 py-1 text-[12.5px] font-medium ${s.id === activeSub.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${s.id === activeSub.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
               {s.name}
             </Link>
           ))}
@@ -390,7 +390,7 @@ export default async function Timetable({ params, searchParams }: {
             <div className="mt-4 flex flex-wrap gap-2">
               {takers.map((c) => (
                 <Link key={c.id} href={`?view=subject&sub=${activeSub.id}&c=${c.id}`}
-                  className={`rounded-md border px-2.5 py-1 text-[12px] ${c.id === activeCls.id ? "border-primary" : "border-border"}`}>
+                  className={`rounded-md border px-2.5 py-1 text-[13px] ${c.id === activeCls.id ? "border-primary" : "border-border"}`}>
                   {c.name} <span className="text-muted-foreground" data-nums="">{counts.get(c.id) ?? 0}×</span>
                 </Link>
               ))}
@@ -422,7 +422,7 @@ export default async function Timetable({ params, searchParams }: {
         <span className="mx-1 text-faint">·</span>
         {DAYS.map((d) => (
           <Link key={d} href={`?view=level&sec=${section}&d=${d}`}
-            className={`rounded-md border px-2.5 py-1.5 text-[12.5px] font-medium ${d === day ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>
+            className={`rounded-md border px-2.5 py-1.5 text-[13.5px] font-medium ${d === day ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>
             {DAY_LABELS[d].slice(0, 3)}
           </Link>
         ))}
@@ -431,7 +431,7 @@ export default async function Timetable({ params, searchParams }: {
         <Empty title={`No classes in ${SECTION_LABELS[section]}`} hint="Add levels & classes under Settings → Academic structure." />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full border-collapse text-[12px]">
+          <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr className="bg-muted/60">
                 <th className="border-b border-r border-border px-2 py-2 text-left font-semibold">{DAY_LABELS[day]}</th>
@@ -446,10 +446,10 @@ export default async function Timetable({ params, searchParams }: {
               {slots.map((sl) => (
                 <tr key={sl.id} className="border-t border-border">
                   <td className={`border-r border-border px-2 py-1.5 ${sl.kind !== "teaching" ? "text-muted-foreground" : "font-medium"}`}>
-                    {sl.name} <span className="block text-[10px] text-faint" data-nums="">{fmtMin(sl.startMin)}–{fmtMin(sl.endMin)}</span>
+                    {sl.name} <span className="block text-[11px] text-faint" data-nums="">{fmtMin(sl.startMin)}–{fmtMin(sl.endMin)}</span>
                   </td>
                   {sl.kind !== "teaching"
-                    ? <td colSpan={secClasses.length} className={`px-2 py-1.5 text-center text-[10.5px] uppercase tracking-wider ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.name}</td>
+                    ? <td colSpan={secClasses.length} className={`px-2 py-1.5 text-center text-[11.5px] uppercase tracking-wider ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.name}</td>
                     : secClasses.map((c) => {
                         const e = entryAt.get(`${c.id}:${sl.id}`);
                         const tid = e ? S.teacherFor(c.id, e.subjectId) : null;
@@ -458,7 +458,7 @@ export default async function Timetable({ params, searchParams }: {
                             {e ? (
                               <Link href={`?view=class&c=${c.id}&sel=${day}:${sl.id}`} className="block">
                                 <span className="font-medium">{abbr(S.subjectById.get(e.subjectId)?.name ?? "?")}</span>
-                                <span className="block text-[10px] text-muted-foreground">
+                                <span className="block text-[11px] text-muted-foreground">
                                   {tid ? S.staffById.get(tid)?.name.split(" ")[0] : "—"}
                                 </span>
                               </Link>

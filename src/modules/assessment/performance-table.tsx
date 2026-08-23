@@ -62,15 +62,15 @@ export async function PerformanceTable({ schoolId, studentId, classId, termId, p
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[13px]" data-nums="">
+      <table className="w-full text-[14px]" data-nums="">
         <thead>
-          <tr className="border-b border-border text-left text-[11.5px] uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border text-left text-[12.5px] uppercase tracking-wide text-muted-foreground">
             <th className="py-1.5 pr-2">Subject</th>
             {comps.map((c) => (
               <th key={c.id} className="px-2 py-1.5 text-center">
                 {c.name} <span className="font-normal">/{c.weight}</span>
                 {!publishedOnly && !published.has(c.id) && !c.isExam && (
-                  <span className="block text-[9.5px] font-normal normal-case text-faint">not published</span>
+                  <span className="block text-[10.5px] font-normal normal-case text-faint">not published</span>
                 )}
               </th>
             ))}

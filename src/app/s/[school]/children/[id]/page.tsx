@@ -97,7 +97,7 @@ export default async function ChildDetail({ params }: {
           <h2 className="font-semibold">Released results {term && `(${term.name})`}</h2>
           {term && latestScores.length > 0 && (
             <Link href={`/students/${id}/performance/${term.id}`}
-              className="text-[13px] font-medium text-primary">Full record →</Link>
+              className="text-[14px] font-medium text-primary">Full record →</Link>
           )}
         </div>
         {latestScores.length === 0

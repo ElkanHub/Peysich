@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Megaphone, Loader2 } from "lucide-react";
 import { acknowledgeAnnouncements } from "@/app/s/[school]/comms/actions";
 import { btnCls } from "@/ui/kit";
@@ -11,7 +12,9 @@ type Item = { id: string; title: string; body: string; audience: string; date: s
  *  the Announcements badge — no interruptions mid-task. */
 export function AnnouncementGate({ slug, items }: { slug: string; items: Item[] }) {
   const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [pending, start] = useTransition();
+  const router = useRouter();
 
   useEffect(() => {
     if (!items.length) return;
@@ -25,8 +28,14 @@ export function AnnouncementGate({ slug, items }: { slug: string; items: Item[] 
   if (!open || !items.length) return null;
 
   const ack = () => start(async () => {
-    await acknowledgeAnnouncements(slug, items.map((i) => i.id));
-    setOpen(false);
+    const r = await acknowledgeAnnouncements(slug, items.map((i) => i.id))
+      .catch(() => ({ ok: false }));
+    if (r.ok) {
+      setOpen(false);
+      router.refresh(); // badge and feed pick up the acknowledgement at once
+    } else {
+      setFailed(true); // keep the notice up — nothing was saved
+    }
   });
 
   return (
@@ -38,7 +47,7 @@ export function AnnouncementGate({ slug, items }: { slug: string; items: Item[] 
           </span>
           <div>
             <h2 className="font-semibold leading-tight">While you were away</h2>
-            <p className="text-[12.5px] text-muted-foreground" data-nums="">
+            <p className="text-[13.5px] text-muted-foreground" data-nums="">
               {items.length} announcement{items.length === 1 ? "" : "s"} for you
             </p>
           </div>
@@ -47,12 +56,17 @@ export function AnnouncementGate({ slug, items }: { slug: string; items: Item[] 
           {items.map((i) => (
             <div key={i.id} className="rounded-lg border-l-4 border-primary bg-muted/40 px-3.5 py-2.5">
               <p className="font-medium">{i.title}
-                <span className="ml-2 text-[11.5px] font-normal text-muted-foreground">{i.audience} · {i.date}</span>
+                <span className="ml-2 text-[12.5px] font-normal text-muted-foreground">{i.audience} · {i.date}</span>
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">{i.body}</p>
             </div>
           ))}
         </div>
+        {failed && (
+          <p className="mt-3 rounded-md bg-danger/10 px-3 py-2 text-[13.5px] text-danger">
+            Couldn&apos;t save your acknowledgement — please check your connection and try again.
+          </p>
+        )}
         <div className="mt-4 flex items-center justify-end gap-3">
           <button onClick={() => setOpen(false)} disabled={pending}
             className="text-sm text-muted-foreground hover:text-foreground">Later</button>

@@ -32,7 +32,7 @@ export default async function Broadcast() {
             <Tr key={b.id}>
               <Td className="whitespace-nowrap text-muted-foreground">{b.createdAt.toISOString().slice(0, 10)}</Td>
               <Td><span className="font-medium">{b.title}</span>
-                <p className="line-clamp-1 text-[12px] text-muted-foreground">{b.body}</p></Td>
+                <p className="line-clamp-1 text-[13px] text-muted-foreground">{b.body}</p></Td>
               <Td data-nums="">{b.schoolsReached} schools</Td>
             </Tr>
           ))}

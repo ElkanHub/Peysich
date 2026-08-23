@@ -60,7 +60,7 @@ export default async function StaffFile({ params }: {
           </span>
           <div>
             <h1 className="text-[22px] font-semibold leading-tight tracking-tight">{s.name}</h1>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
+            <p className="mt-0.5 text-[14px] text-muted-foreground">
               {s.staffNo ?? "—"} · {s.designation ?? TYPE_LABEL[s.staffType]}
               <span className="ml-2"><Badge tone={s.status === "active" ? "success" : "default"}>{s.status}</Badge></span>
               <span className="ml-1.5"><Badge tone={teaching ? "brand" : "default"}>{TYPE_LABEL[s.staffType]}</Badge></span>
@@ -76,7 +76,7 @@ export default async function StaffFile({ params }: {
         <div className="mb-5 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
           <p className="font-medium">Left the school on {s.exitDate}{s.exitNote ? ` — ${s.exitNote}` : ""}</p>
           <form action={reinstateStaff.bind(null, slug, id)} className="mt-1.5">
-            <SubmitButton className="text-[13px] font-medium text-primary underline-offset-2 hover:underline">
+            <SubmitButton className="text-[14px] font-medium text-primary underline-offset-2 hover:underline">
               Reinstate (recorded in error / re-hired)
             </SubmitButton>
           </form>
@@ -148,7 +148,7 @@ export default async function StaffFile({ params }: {
           <Card className="md:col-span-2">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">Teaching load</h2>
-              <span className="text-[13px] text-muted-foreground" data-nums="">
+              <span className="text-[14px] text-muted-foreground" data-nums="">
                 {allocations.length} class-subject{allocations.length === 1 ? "" : "s"} · {Number(periods.n)} periods/week
               </span>
             </div>
@@ -195,7 +195,7 @@ export default async function StaffFile({ params }: {
 
         <Card>
           <h2 className="font-semibold">Payroll & statutory</h2>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">Visible to school admins only.</p>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">Visible to school admins only.</p>
           <form action={updateStaffCard.bind(null, slug, id, "payroll")} className="mt-3 grid grid-cols-2 gap-2.5">
             <Field label="Bank"><input name="bankName" defaultValue={s.bankName ?? ""} className={inputCls} /></Field>
             <Field label="Branch"><input name="bankBranch" defaultValue={s.bankBranch ?? ""} className={inputCls} /></Field>
@@ -209,14 +209,14 @@ export default async function StaffFile({ params }: {
             <SubmitButton className={btnGhostCls + " col-span-2"} pendingText="Saving…">Save payroll</SubmitButton>
           </form>
           {s.salaryPesewas != null && (
-            <p className="mt-2 text-[12px] text-muted-foreground" data-nums="">Current: {ghs(s.salaryPesewas)}/month</p>
+            <p className="mt-2 text-[13px] text-muted-foreground" data-nums="">Current: {ghs(s.salaryPesewas)}/month</p>
           )}
         </Card>
 
         {s.status === "active" && (
           <Card>
             <h2 className="font-semibold text-danger">Offboarding</h2>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
+            <p className="mt-0.5 text-[14px] text-muted-foreground">
               Marks the record as left (never deleted), releases their class-teacher role and every subject allocation.
             </p>
             <form action={markStaffLeft.bind(null, slug, id)} className="mt-3 grid grid-cols-2 gap-2.5">

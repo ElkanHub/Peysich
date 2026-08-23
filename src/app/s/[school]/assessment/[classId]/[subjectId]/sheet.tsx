@@ -79,14 +79,14 @@ export function Sheet({ slug, classId, subjectId, roster, comps, initial, bands,
   return (
     <div>
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full border-collapse text-[13px]">
+        <table className="w-full border-collapse text-[14px]">
           <thead>
             <tr className="bg-muted/60 text-left">
               <th className="border-b border-r border-border px-3 py-2 font-semibold">Student</th>
               {comps.map((c) => (
                 <th key={c.id} className={`border-b border-border px-2 py-2 text-center font-medium ${c.isExam ? "border-l bg-brand-soft/40" : ""}`}>
                   <div>{c.name}</div>
-                  <div className="mt-0.5 flex items-center justify-center gap-1 text-[10.5px] font-normal text-muted-foreground">
+                  <div className="mt-0.5 flex items-center justify-center gap-1 text-[11.5px] font-normal text-muted-foreground">
                     <span>marked over</span>
                     {c.editable
                       ? <input value={outOf[c.id]} onChange={(e) => setOutOf({ ...outOf, [c.id]: e.target.value })}
@@ -98,9 +98,9 @@ export function Sheet({ slug, classId, subjectId, roster, comps, initial, bands,
                   <div className="mt-1">
                     {c.submitted
                       ? c.published
-                        ? <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10.5px] font-medium text-success">published ✓</span>
-                        : <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10.5px] font-medium text-primary">submitted ✓</span>
-                      : <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">draft</span>}
+                        ? <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11.5px] font-medium text-success">published ✓</span>
+                        : <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11.5px] font-medium text-primary">submitted ✓</span>
+                      : <span className="rounded-full bg-muted px-2 py-0.5 text-[11.5px] text-muted-foreground">draft</span>}
                   </div>
                 </th>
               ))}
@@ -125,7 +125,7 @@ export function Sheet({ slug, classId, subjectId, roster, comps, initial, bands,
                             title={`Mark over ${oo(c.id)} — type “-” if ${r.firstName} did not write`}
                             className={cn("w-14 rounded border bg-card px-1 py-1 text-center",
                               over ? "border-danger text-danger" : "border-border")} data-nums="" />
-                          <span className={cn("w-12 text-left text-[10.5px]",
+                          <span className={cn("w-12 text-left text-[11.5px]",
                             cell === null ? "text-faint" : cell.absent ? "text-warning" : over ? "text-danger" : "text-muted-foreground")} data-nums="">
                             {cell === null ? "" : cell.absent ? "dnw" : over ? `>${oo(c.id)}` : `→ ${conv(c.id, cell)}`}
                           </span>
@@ -134,7 +134,7 @@ export function Sheet({ slug, classId, subjectId, roster, comps, initial, bands,
                         <span data-nums="">
                           {cell === null ? <span className="text-faint">·</span>
                             : cell.absent ? <span className="text-warning">–</span>
-                            : <>{cell.raw} <span className="text-[10.5px] text-muted-foreground">→ {conv(c.id, cell)}</span></>}
+                            : <>{cell.raw} <span className="text-[11.5px] text-muted-foreground">→ {conv(c.id, cell)}</span></>}
                         </span>
                       )}
                     </td>
@@ -167,7 +167,7 @@ export function Sheet({ slug, classId, subjectId, roster, comps, initial, bands,
           ))}
         </div>
       )}
-      <p className="mt-2 text-[12px] text-muted-foreground">
+      <p className="mt-2 text-[13px] text-muted-foreground">
         Each mark converts right at the cell (raw ÷ marked-over × weight). Type <b>-</b> for a child who
         did not write. A student&apos;s Total appears only once every column has an entry.
         {isTeacher && " Submitting a column locks it — ask your admin if something must change after that."}

@@ -111,7 +111,7 @@ export default async function ReportCard({ params }: {
           ))}
         </div>
       )}
-      <p className="mt-6 text-center text-[10px] text-neutral-400 print:hidden">
+      <p className="mt-6 text-center text-[11px] text-neutral-400 print:hidden">
         Digital report card · use your browser&apos;s Print for a PDF copy
       </p>
     </div>

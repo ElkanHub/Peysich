@@ -44,13 +44,13 @@ export default async function AddStaff({ params, searchParams }: {
           const n = i + 1;
           const skipped = n === 3 && !teaching;
           const reachable = !skipped && (s ? n <= Math.min(maxStep + 1, 6) : n === 1);
-          const cls = cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors",
+          const cls = cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
             skipped ? "border-dashed border-border text-faint line-through"
               : n === step ? "border-primary bg-brand-soft text-primary"
               : n <= maxStep ? "border-border text-foreground hover:bg-muted"
               : "border-border text-faint");
           const inner = <>
-            <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[10px]",
+            <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[11px]",
               !skipped && n <= maxStep ? "bg-primary text-primary-foreground"
                 : n === step ? "bg-primary/20 text-primary" : "bg-muted")}>
               {!skipped && n <= maxStep ? "✓" : n}
@@ -93,7 +93,7 @@ function PersonalStage({ slug, s }: { slug: string; s: S | null }) {
   return (
     <Card>
       <h2 className="font-semibold">Personal & contact</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">Who they are and how to reach them. The passport photo is added at Review.</p>
+      <p className="mt-0.5 text-[14px] text-muted-foreground">Who they are and how to reach them. The passport photo is added at Review.</p>
       <form action={action} className="mt-4 grid grid-cols-2 gap-3">
         <Field label="Full name"><input name="name" required defaultValue={s?.name} className={inputCls} /></Field>
         <Field label="Phone"><input name="phone" defaultValue={s?.phone ?? ""} className={inputCls} /></Field>
@@ -115,7 +115,7 @@ function EmploymentStage({ slug, s }: { slug: string; s: S }) {
   return (
     <Card>
       <h2 className="font-semibold">Employment & contract</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">
+      <p className="mt-0.5 text-[14px] text-muted-foreground">
         Picking <b>Teaching</b> adds the Qualifications stage; admin &amp; support skip it.
       </p>
       <form action={saveEmployment.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-3">
@@ -150,7 +150,7 @@ async function QualificationsStage({ slug, s, schoolId }: { slug: string; s: S; 
   return (
     <Card>
       <h2 className="font-semibold">Qualifications & specialisations</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">
+      <p className="mt-0.5 text-[14px] text-muted-foreground">
         Competencies power the allocation screen — assigning outside them warns, never blocks.
       </p>
       <form action={saveQualifications.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-3">
@@ -183,7 +183,7 @@ function PayrollStage({ slug, s }: { slug: string; s: S }) {
   return (
     <Card>
       <h2 className="font-semibold">Payroll & statutory</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">
+      <p className="mt-0.5 text-[14px] text-muted-foreground">
         Visible to admins only. Everything here is optional — finalise it after the contract is signed.
       </p>
       <form action={savePayroll.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-3">
@@ -206,7 +206,7 @@ function AccessStage({ slug, s }: { slug: string; s: S }) {
   return (
     <Card>
       <h2 className="font-semibold">System access</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">
+      <p className="mt-0.5 text-[14px] text-muted-foreground">
         What can they do in Peysich? Support staff usually need no portal at all — their record still lives here.
       </p>
       <form action={saveAccess.bind(null, slug, s.id)} className="mt-4 grid gap-3">
@@ -272,7 +272,7 @@ async function ReviewStage({ slug, s, portalNone }: { slug: string; s: S; portal
               : `Issue a ${s.staffRole} login now (credentials appear on the Staff File)`}
           </label>
           {s.staffType === "teaching" && (
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-[14px] text-muted-foreground">
               After completing, assign their classes and subjects on <b>Teaching &amp; allocations</b>.
             </p>
           )}

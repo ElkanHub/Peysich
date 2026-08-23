@@ -110,7 +110,7 @@ export function ExcelImport({ slug, schoolName, classNames }: {
     <div className="space-y-5">
       <Card>
         <h2 className="font-semibold">1 · Download the collection sheet</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-0.5 text-[14px] text-muted-foreground">
           An Excel workbook with every column the student file needs, the rules for each column,
           and this school&apos;s exact class names. Take it to the school, fill one row per student.
         </p>
@@ -121,7 +121,7 @@ export function ExcelImport({ slug, schoolName, classNames }: {
 
       <Card>
         <h2 className="font-semibold">2 · Upload the filled sheet</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-0.5 text-[14px] text-muted-foreground">
           Rows are checked before anything is written — broken rows are listed with their Excel row number.
         </p>
         <input type="file" accept=".xlsx,.xls,.csv" className="mt-3 block text-sm"
@@ -133,7 +133,7 @@ export function ExcelImport({ slug, schoolName, classNames }: {
             {preErrors.length > 0 && (
               <div className="mt-2">
                 <p className="font-medium text-danger">{preErrors.length} rows need fixing (they will be skipped):</p>
-                <ul className="mt-1 max-h-40 list-inside list-disc overflow-y-auto text-[13px] text-danger">
+                <ul className="mt-1 max-h-40 list-inside list-disc overflow-y-auto text-[14px] text-danger">
                   {preErrors.map((e, i) => <li key={i}>{e}</li>)}
                 </ul>
               </div>
@@ -156,10 +156,10 @@ export function ExcelImport({ slug, schoolName, classNames }: {
             {result.errors.length > 0 && (
               <>
                 <p className="mt-2 font-medium text-danger">{result.errors.length} rows were skipped:</p>
-                <ul className="mt-1 max-h-40 list-inside list-disc overflow-y-auto text-[13px] text-danger">
+                <ul className="mt-1 max-h-40 list-inside list-disc overflow-y-auto text-[14px] text-danger">
                   {result.errors.map((e, i) => <li key={i}>{e}</li>)}
                 </ul>
-                <p className="mt-1 text-[13px] text-muted-foreground">
+                <p className="mt-1 text-[14px] text-muted-foreground">
                   Fix those rows in the sheet and upload again — already-imported students are skipped by admission number.
                 </p>
               </>

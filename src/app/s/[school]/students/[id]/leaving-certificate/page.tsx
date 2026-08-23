@@ -109,7 +109,7 @@ export default async function LeavingCertificate({ params }: {
         <div><div className="border-t border-neutral-400 pt-1">Date issued</div></div>
       </div>
 
-      <p className="mt-8 text-center text-[10px] text-neutral-400 print:hidden">
+      <p className="mt-8 text-center text-[11px] text-neutral-400 print:hidden">
         School leaving certificate · use your browser&apos;s Print for a PDF copy
       </p>
     </div>

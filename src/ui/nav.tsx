@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Users, HeartHandshake, BriefcaseBusiness, Settings, CreditCard,
   CalendarCheck, GraduationCap, CalendarDays, BookOpen, Megaphone, Wallet,
   UserPlus, Library, Bus, Boxes, Briefcase, BarChart3, ClipboardList, Menu, X,
+  CalendarRange,
   School, ListChecks, Inbox, Radio, ScrollText, Banknote,
   type LucideIcon,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const ICONS: Record<string, LucideIcon> = {
   Staff: BriefcaseBusiness, Settings, Billing: CreditCard,
   Attendance: CalendarCheck, Assessment: GraduationCap, Reports: ClipboardList,
   Timetable: CalendarDays, Homework: BookOpen, Announcements: Megaphone, Fees: Wallet,
+  Calendar: CalendarRange,
   Admissions: UserPlus, Library, Transport: Bus, Inventory: Boxes,
   "Staff HR": Briefcase, Analytics: BarChart3,
   Overview: LayoutDashboard, Schools: School, Onboarding: ListChecks, Leads: Inbox,
@@ -40,7 +42,7 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
         return (
           <Link key={n.label + href} href={href} onClick={onNavigate}
             className={cn(
-              "group relative flex h-9 items-center gap-3 rounded-md px-3 text-[13px] font-medium transition-colors",
+              "group relative flex h-9 items-center gap-3 rounded-md px-3 text-[14px] font-medium transition-colors",
               active
                 ? "bg-ink-active text-ink-text-strong"
                 : "text-ink-text hover:bg-ink-2 hover:text-ink-text-strong")}>
@@ -49,7 +51,7 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
               className={cn("shrink-0", active ? "text-ink-text-strong" : "text-ink-text/70 group-hover:text-ink-text-strong")} />
             {n.label}
             {typeof n.badge === "number" && n.badge > 0 && (
-              <span className="ml-auto rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-bold leading-none text-ink"
+              <span className="ml-auto rounded-full bg-warning px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink"
                 data-nums="" aria-label={`${n.badge} needing attention`}>
                 {n.badge > 99 ? "99+" : n.badge}
               </span>
@@ -70,23 +72,23 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
       <div className="flex items-center gap-2.5 border-b border-ink-border px-4 py-4">
         <LogoMark size={30} variant="light" />
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold leading-tight text-ink-text-strong">{schoolName}</p>
-          <p className="text-[11px] text-ink-text/60">{subtitle}</p>
+          <p className="truncate text-[14px] font-semibold leading-tight text-ink-text-strong">{schoolName}</p>
+          <p className="text-[12px] text-ink-text/60">{subtitle}</p>
         </div>
       </div>
       <NavLinks items={items} onNavigate={onNavigate} />
       <div className="border-t border-ink-border p-3">
         <Link href={accountHref} onClick={onNavigate}
           className="flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-ink-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-active text-[11px] font-semibold uppercase text-ink-text-strong">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-active text-[12px] font-semibold uppercase text-ink-text-strong">
             {avatarUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               : userName.slice(0, 2)}
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[13px] font-medium text-ink-text-strong">{userName}</span>
-            <span className="block text-[11px] capitalize text-ink-text/60">{role.replace("_", " ")}</span>
+            <span className="block truncate text-[14px] font-medium text-ink-text-strong">{userName}</span>
+            <span className="block text-[12px] capitalize text-ink-text/60">{role.replace("_", " ")}</span>
           </span>
         </Link>
         <div className="flex items-center justify-between px-2 pt-1"><SignOutButton /><ThemeToggle /></div>
@@ -110,7 +112,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
           <Menu size={20} />
         </button>
         <LogoMark size={24} variant="light" />
-        <span className="truncate text-[13px] font-semibold text-ink-text-strong">{props.schoolName}</span>
+        <span className="truncate text-[14px] font-semibold text-ink-text-strong">{props.schoolName}</span>
       </div>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">

@@ -38,7 +38,7 @@ export default function SignIn() {
             actually pay. Built for preschool through JHS.
           </p>
         </div>
-        <p className="relative text-[12px] text-ink-text/50">© {new Date().getFullYear()} Peysich</p>
+        <p className="relative text-[13px] text-ink-text/50">© {new Date().getFullYear()} Peysich</p>
       </div>
 
       {/* form panel */}
@@ -46,9 +46,9 @@ export default function SignIn() {
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden"><LogoLockup size={28} /></div>
           <h2 className="text-[22px] font-semibold tracking-tight">Welcome back</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">Sign in to your school workspace.</p>
+          <p className="mt-1 text-[14px] text-muted-foreground">Sign in to your school workspace.</p>
           {error && (
-            <p className="mt-4 rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger">{error}</p>
+            <p className="mt-4 rounded-md bg-danger-soft px-3 py-2 text-[14px] text-danger">{error}</p>
           )}
           <form onSubmit={submit} className="mt-6 space-y-4">
             <Field label="Email or username">
@@ -63,7 +63,7 @@ export default function SignIn() {
               {pending ? "Signing in…" : "Sign in"}
             </button>
           </form>
-          <p className="mt-6 text-[13px] text-muted-foreground">
+          <p className="mt-6 text-[14px] text-muted-foreground">
             New school? <a href="/signup" className="font-medium text-primary hover:underline">Start a free trial</a>
           </p>
         </div>

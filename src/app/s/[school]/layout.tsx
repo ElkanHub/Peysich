@@ -46,7 +46,7 @@ export default async function SchoolLayout({ children, params }: {
     <Shell schoolName={school.name} role={user.role} userName={user.name} modules={modules}
       badges={badges} logoUrl={logoUrl} avatarUrl={avatarUrl}>
       {trialDays !== null && user.role === "admin" && (
-        <div className="mb-5 flex items-center justify-between rounded-lg border border-primary/30 bg-brand-soft px-4 py-2.5 text-[13px]">
+        <div className="mb-5 flex items-center justify-between rounded-lg border border-primary/30 bg-brand-soft px-4 py-2.5 text-[14px]">
           <span><b>Free trial</b> — {trialDays} day{trialDays === 1 ? "" : "s"} left. Your data stays safe either way.</span>
           <a href="/billing" className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
             Choose a plan

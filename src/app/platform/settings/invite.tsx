@@ -7,7 +7,7 @@ export function InviteAdmin() {
   const [state, action, pending] = useActionState(invitePlatformAdmin, null);
   if (state && "loginAs" in state!)
     return (
-      <p className="rounded-md bg-success-soft px-3 py-2 font-mono text-[13px] text-success">
+      <p className="rounded-md bg-success-soft px-3 py-2 font-mono text-[14px] text-success">
         Invited: {state.loginAs} / {state.password} — share once, they change it on first login.
       </p>
     );

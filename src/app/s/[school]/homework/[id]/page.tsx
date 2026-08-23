@@ -49,7 +49,55 @@ export default async function HomeworkDetail({ params }: {
     );
   }
 
+  // ── parent view: THIS assignment for MY children only — never the roster ──
+  if (user.role === "parent") {
+    const { getParentChildren } = await import("@/core/portal");
+    const kids = (await getParentChildren(school.id, user.id)).filter((k) => k.classId === a.classId);
+    if (!kids.length) notFound();
+    const kidSubs = await db.select().from(submissions).where(and(
+      eq(submissions.assignmentId, id),
+      eq(submissions.schoolId, school.id)));
+    const byKid = new Map(kidSubs.map((s) => [s.studentId, s]));
+    const today = new Date().toISOString().slice(0, 10);
+    return (
+      <div className="max-w-lg">
+        <PageHeader title={a.title} sub={`${a.className} · ${a.subject} · due ${a.dueDate}`} />
+        {a.instructions && <Card className="mb-4 text-sm">{a.instructions}</Card>}
+        <Card>
+          <h2 className="font-semibold">Your child{kids.length > 1 ? "ren" : ""}</h2>
+          <ul className="mt-2 divide-y divide-border text-sm">
+            {kids.map((k) => {
+              const s = byKid.get(k.id);
+              return (
+                <li key={k.id} className="flex items-center justify-between py-1.5">
+                  <span>{k.firstName} {k.lastName}</span>
+                  {!cfg.recordSubmissions ? (
+                    <span className="text-[13px] text-muted-foreground">hand-ins not tracked in-app</span>
+                  ) : s ? (
+                    <span className="text-[13.5px] font-medium text-success">
+                      handed in ✓{cfg.recordMarks && s.mark != null ? ` · mark ${s.mark}` : ""}
+                    </span>
+                  ) : (
+                    <span className={`text-[13.5px] ${a.dueDate < today ? "font-medium text-danger" : "text-muted-foreground"}`}>
+                      {a.dueDate < today ? "not handed in" : "pending"}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      </div>
+    );
+  }
+
   // ── teacher/admin view: submissions + marking ──
+  if (!["admin", "teacher", "platform_admin"].includes(user.role)) notFound();
+  if (user.role === "teacher") {
+    const { getTeacherScope } = await import("@/core/school-context");
+    const scope = await getTeacherScope(school.id, user.id);
+    if (!scope?.allClassIds.has(a.classId)) notFound(); // not one of their classes
+  }
   const roster = await db.select({
     id: students.id, firstName: students.firstName, lastName: students.lastName,
   }).from(students).where(and(eq(students.schoolId, school.id),
@@ -107,7 +155,7 @@ export default async function HomeworkDetail({ params }: {
                 )}
                 {!s && (
                   <form action={recordSubmissionReceipt.bind(null, slug, id, r.id)}>
-                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11px] hover:bg-muted"
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted"
                       pendingText="…">✓ handed in</SubmitButton>
                   </form>
                 )}

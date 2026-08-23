@@ -11,6 +11,7 @@ const LABELS: Record<string, string> = {
   fees: "Fees", admissions: "Admissions", library: "Library", transport: "Transport",
   inventory: "Inventory", hr: "Staff HR", analytics: "Analytics", children: "My Children",
   report: "Report card", reports: "Reports", performance: "Performance",
+  calendar: "Calendar", register: "Record book",
   platform: "Console", schools: "Schools", audit: "Audit log",
   onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
   financials: "Financials", broadcast: "Broadcast", users: "All users",
@@ -42,7 +43,7 @@ export function Breadcrumbs({ root = "Home" }: { root?: string }) {
     last: i === parts.length - 1,
   }));
   return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[13px]">
+    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[14px]">
       <Link href={base || "/"} className="shrink-0 text-muted-foreground transition-colors hover:text-foreground">{root}</Link>
       {crumbs.map((c) => (
         <span key={c.href} className="flex min-w-0 items-center gap-1">

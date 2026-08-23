@@ -51,7 +51,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
             <Field label="New academic year">
               <input name="yearName" placeholder={`${y}/${y + 1}`} className={inputCls + " w-44"} />
             </Field>
-            <p className="max-w-sm text-[12px] text-muted-foreground">
+            <p className="max-w-sm text-[13px] text-muted-foreground">
               Submitting creates the new year, moves every class to its destination,
               keeps ticked students back as <em>repeated</em>, and graduates the top level to alumni.
               Students who are leaving should be <b>exited from their Student File first</b> —
@@ -67,7 +67,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-semibold">{c.name}</p>
-                  <p className="text-[12px] text-muted-foreground">{kids.length} students</p>
+                  <p className="text-[13px] text-muted-foreground">{kids.length} students</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <span className="text-muted-foreground">moves to</span>
@@ -82,7 +82,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
               </div>
               {kids.length > 0 && (
                 <details className="mt-3 border-t border-border pt-3">
-                  <summary className="cursor-pointer text-[13px] font-medium text-primary">
+                  <summary className="cursor-pointer text-[14px] font-medium text-primary">
                     Select students repeating in {c.name}
                   </summary>
                   <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
@@ -90,7 +90,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
                       <label key={s.id} className="flex items-center gap-2 text-sm">
                         <input type="checkbox" name={`repeat_${s.id}`} />
                         {s.lastName}, {s.firstName}
-                        <span className="font-mono text-[11px] text-muted-foreground">{s.admissionNo}</span>
+                        <span className="font-mono text-[12px] text-muted-foreground">{s.admissionNo}</span>
                       </label>
                     ))}
                   </div>

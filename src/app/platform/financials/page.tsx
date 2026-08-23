@@ -53,11 +53,11 @@ export default async function Financials() {
           <div className="mt-4 space-y-2.5">
             {months.map(([m, v]) => (
               <div key={m} className="flex items-center gap-3">
-                <span className="w-16 shrink-0 text-[12px] text-muted-foreground" data-nums="">{m}</span>
+                <span className="w-16 shrink-0 text-[13px] text-muted-foreground" data-nums="">{m}</span>
                 <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <span className="block h-full rounded-full bg-primary/80" style={{ width: `${(v / maxMonth) * 100}%` }} />
                 </span>
-                <span className="w-24 shrink-0 text-right text-[12px]" data-nums="">{ghs(v)}</span>
+                <span className="w-24 shrink-0 text-right text-[13px]" data-nums="">{ghs(v)}</span>
               </div>
             ))}
             {months.length === 0 && <p className="text-sm text-muted-foreground">No payments yet.</p>}

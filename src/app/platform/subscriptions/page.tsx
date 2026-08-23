@@ -41,7 +41,7 @@ export default async function Subscriptions() {
                     {days !== null ? `${Math.max(0, days)}d` : "—"}</span></Td>
                   <Td>
                     <form action={extendTrial.bind(null, s.id, 14)}>
-                      <button className={btnGhostCls + " h-7 px-2 text-[12px]"}>Extend 14 days</button>
+                      <button className={btnGhostCls + " h-7 px-2 text-[13px]"}>Extend 14 days</button>
                     </form>
                   </Td>
                 </Tr>
@@ -78,14 +78,14 @@ export default async function Subscriptions() {
 
       <Card>
         <h2 className="font-semibold">Dunning levers</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
+        <p className="mt-1 text-[14px] text-muted-foreground">
           Suspend/reactivate lives on each school&apos;s page; the daily sweep moves overdue schools
           to past-due (7-day grace) then suspended automatically.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {allSchools.filter((s) => s.status === "past_due").map((s) => (
             <form key={s.id} action={setSchoolStatus.bind(null, s.id, "suspended")}>
-              <button className={btnGhostCls + " h-8 text-[12px]"}>Suspend {s.name} now</button>
+              <button className={btnGhostCls + " h-8 text-[13px]"}>Suspend {s.name} now</button>
             </form>
           ))}
           {allSchools.every((s) => s.status !== "past_due") &&

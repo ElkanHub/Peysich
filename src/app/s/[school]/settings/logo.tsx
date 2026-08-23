@@ -38,7 +38,7 @@ export function LogoUploader({ slug, enabled, currentUrl }: {
             className={btnGhostCls + " disabled:opacity-50"}>
             {shown ? "Replace logo" : "Upload logo"}
           </button>
-          <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+          <p className="mt-1.5 text-[12.5px] text-muted-foreground">
             {LABEL} · up to {MAX_UPLOAD_MB} MB · square works best on printouts
           </p>
           <input ref={inputRef} type="file" accept={TYPES.join(",")} className="hidden"

@@ -25,10 +25,10 @@ export default async function Leads() {
             <Tr key={l.id}>
               <Td>
                 <span className="font-medium">{l.name}</span><br />
-                <span className="text-[12px] text-muted-foreground">{l.phone}{l.email && ` · ${l.email}`}</span>
+                <span className="text-[13px] text-muted-foreground">{l.phone}{l.email && ` · ${l.email}`}</span>
               </Td>
               <Td>{l.schoolName ?? "—"}</Td>
-              <Td className="max-w-56 text-[13px] text-muted-foreground">
+              <Td className="max-w-56 text-[14px] text-muted-foreground">
                 <span className="line-clamp-2">{l.message ?? "—"}</span>
               </Td>
               <Td className="whitespace-nowrap text-muted-foreground">{l.createdAt.toISOString().slice(0, 10)}</Td>
@@ -37,7 +37,7 @@ export default async function Leads() {
                 <span className="flex gap-1">
                   {["contacted", "converted", "lost"].filter((s) => s !== l.status).map((s) => (
                     <form key={s} action={setLeadStatus.bind(null, l.id, s, undefined)}>
-                      <button className="rounded border border-border px-2 py-1 text-[11px] capitalize hover:bg-muted">{s}</button>
+                      <button className="rounded border border-border px-2 py-1 text-[12px] capitalize hover:bg-muted">{s}</button>
                     </form>
                   ))}
                 </span>

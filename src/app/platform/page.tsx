@@ -47,7 +47,7 @@ export default async function Overview() {
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Recent signups</h2>
-            <Link href="/platform/schools" className="text-[13px] font-medium text-primary">All schools →</Link>
+            <Link href="/platform/schools" className="text-[14px] font-medium text-primary">All schools →</Link>
           </div>
           <div className="mt-3">
             <DataTable head={["School", "Plan", "Status", "Joined"]}>
@@ -65,7 +65,7 @@ export default async function Overview() {
         <div className="space-y-4">
           <Card>
             <h2 className="font-semibold">Trials ending soon</h2>
-            <ul className="mt-2.5 space-y-2 text-[13px]">
+            <ul className="mt-2.5 space-y-2 text-[14px]">
               {trials
                 .sort((a, b) => +(a.trialEndsAt ?? 0) - +(b.trialEndsAt ?? 0))
                 .slice(0, 5)
@@ -83,13 +83,13 @@ export default async function Overview() {
                 })}
               {trials.length === 0 && <li className="text-muted-foreground">No trials running.</li>}
             </ul>
-            <Link href="/platform/subscriptions" className="mt-3 inline-block text-[13px] font-medium text-primary">
+            <Link href="/platform/subscriptions" className="mt-3 inline-block text-[14px] font-medium text-primary">
               Manage subscriptions →
             </Link>
           </Card>
           <Card>
             <h2 className="font-semibold">Needs attention</h2>
-            <ul className="mt-2.5 space-y-2 text-[13px]">
+            <ul className="mt-2.5 space-y-2 text-[14px]">
               {attention.slice(0, 5).map((s) => (
                 <li key={s.id} className="flex justify-between">
                   <Link href={`/platform/schools/${s.id}`} className="font-medium hover:text-primary">{s.name}</Link>

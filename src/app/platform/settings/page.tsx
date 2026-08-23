@@ -21,7 +21,7 @@ export default async function PlatformSettings() {
 
       <Card>
         <h2 className="font-semibold">Plan pricing</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
+        <p className="mt-1 text-[14px] text-muted-foreground">
           Changes apply to new checkouts immediately; existing paid periods keep their price.
           Custom per-school plans are composed on each school&apos;s page.
         </p>
@@ -48,7 +48,7 @@ export default async function PlatformSettings() {
                     className="w-28 rounded-md border border-border px-2 py-1 text-sm" />
                 </Td>
                 <Td>
-                  <button form={`plan-${p!.key}`} className={btnGhostCls + " h-8 text-[12px]"}>Save</button>
+                  <button form={`plan-${p!.key}`} className={btnGhostCls + " h-8 text-[13px]"}>Save</button>
                 </Td>
               </Tr>
             ))}

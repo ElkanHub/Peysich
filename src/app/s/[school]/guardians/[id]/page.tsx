@@ -99,7 +99,7 @@ export default async function GuardianProfile({ params, searchParams }: {
       </div>
 
       {activeKids === 0 && kids.length > 0 && (
-        <p className="mb-5 rounded-md bg-muted/60 px-3 py-2 text-[13px] text-muted-foreground">
+        <p className="mb-5 rounded-md bg-muted/60 px-3 py-2 text-[14px] text-muted-foreground">
           No active children currently enrolled — this guardian is kept for history and re-activates
           automatically if a child is re-admitted.
         </p>
@@ -149,7 +149,7 @@ export default async function GuardianProfile({ params, searchParams }: {
                 : <IssueLoginButton slug={slug} kind="guardian" id={g.id} />}
             </div>
             {g.contactPref !== "portal" && g.userId && (
-              <p className="mt-2 text-[12px] text-muted-foreground">
+              <p className="mt-2 text-[13px] text-muted-foreground">
                 Has a login but is marked as not using the portal — keep phoning for anything urgent.
               </p>
             )}
@@ -173,7 +173,7 @@ export default async function GuardianProfile({ params, searchParams }: {
             {kids.map((k) => (
               <li key={k.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                 <Link href={`/students/${k.id}`} className="flex min-w-0 items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[12px] font-semibold text-primary">
                     {photo.has(k.id)
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={photo.get(k.id)} alt="" width={32} height={32} loading="lazy" className="h-full w-full object-cover" />
@@ -181,7 +181,7 @@ export default async function GuardianProfile({ params, searchParams }: {
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium text-primary">{k.firstName} {k.lastName}</span>
-                    <span className="block text-[12px] text-muted-foreground">
+                    <span className="block text-[13px] text-muted-foreground">
                       {k.admissionNo} · {k.className ?? "no class"}
                     </span>
                   </span>
@@ -189,14 +189,14 @@ export default async function GuardianProfile({ params, searchParams }: {
                 <span className="flex flex-wrap items-center gap-2">
                   <Badge tone={k.status === "active" ? "success" : "default"}>{k.status}</Badge>
                   {(balByKid.get(k.id) ?? 0) > 0 &&
-                    <span className="text-[12px] font-medium text-danger" data-nums="">{ghs(balByKid.get(k.id)!)} owing</span>}
+                    <span className="text-[13px] font-medium text-danger" data-nums="">{ghs(balByKid.get(k.id)!)} owing</span>}
                   {k.isPrimary
                     ? <Badge tone="brand">primary contact</Badge>
                     : <form action={setPrimaryGuardian.bind(null, slug, id, k.id)}>
-                        <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] hover:bg-muted">Make primary</SubmitButton>
+                        <SubmitButton className="rounded border border-border px-2 py-1 text-[12.5px] hover:bg-muted">Make primary</SubmitButton>
                       </form>}
                   <form action={unlinkChild.bind(null, slug, id, k.id)}>
-                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] text-danger hover:bg-muted">Unlink</SubmitButton>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[12.5px] text-danger hover:bg-muted">Unlink</SubmitButton>
                   </form>
                 </span>
               </li>
@@ -214,9 +214,9 @@ export default async function GuardianProfile({ params, searchParams }: {
               {candidates.filter((c) => !kidIds.includes(c.id)).map((c) => (
                 <li key={c.id} className="flex items-center justify-between">
                   <span>{c.lastName}, {c.firstName}
-                    <span className="ml-2 text-[12px] text-muted-foreground">{c.admissionNo} · {c.className ?? "no class"}</span></span>
+                    <span className="ml-2 text-[13px] text-muted-foreground">{c.admissionNo} · {c.className ?? "no class"}</span></span>
                   <form action={linkChild.bind(null, slug, id, c.id)}>
-                    <SubmitButton className="rounded border border-border px-2 py-1 text-[11.5px] font-medium text-primary hover:bg-muted">Link</SubmitButton>
+                    <SubmitButton className="rounded border border-border px-2 py-1 text-[12.5px] font-medium text-primary hover:bg-muted">Link</SubmitButton>
                   </form>
                 </li>
               ))}
@@ -228,7 +228,7 @@ export default async function GuardianProfile({ params, searchParams }: {
 
         <Card className="md:col-span-2">
           <h2 className="font-semibold">Co-guardians</h2>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">Other guardians linked to the same children.</p>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Other guardians linked to the same children.</p>
           {coGuardians.length === 0
             ? <p className="mt-2 text-sm text-muted-foreground">None — sole guardian on file.</p>
             : (
@@ -240,7 +240,7 @@ export default async function GuardianProfile({ params, searchParams }: {
                       <Link href={`/guardians/${c.id}`} className="text-sm font-medium text-primary">
                         {c.name} <span className="font-normal text-muted-foreground">· {c.relation}</span>
                       </Link>
-                      <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                      <span className="flex items-center gap-2 text-[14px] text-muted-foreground">
                         <p.Icon size={13} /> {c.phone}
                       </span>
                     </li>

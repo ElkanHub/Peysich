@@ -18,10 +18,10 @@ const ERR: Record<string, string> = {
  *  send-reminder button; marking on their behalf sits behind a disclosure. */
 export default async function ClassRegister({ params, searchParams }: {
   params: Promise<{ school: string; classId: string }>;
-  searchParams: Promise<{ err?: string }>;
+  searchParams: Promise<{ err?: string; date?: string }>;
 }) {
   const { school: slug, classId } = await params;
-  const { err } = await searchParams;
+  const { err, date: dateParam } = await searchParams;
   const { school, user } = await requireModule(slug, "attendance", ["admin", "teacher"]);
   const [cls] = await db.select().from(classes)
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
@@ -34,6 +34,9 @@ export default async function ClassRegister({ params, searchParams }: {
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  // admins may open a PAST day to correct it from the record book
+  const date = !isTeacher && dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= today
+    ? dateParam : today;
   const [roster, existing, [classTeacher]] = await Promise.all([
     db.select({
       id: students.id, firstName: students.firstName, lastName: students.lastName,
@@ -43,7 +46,7 @@ export default async function ClassRegister({ params, searchParams }: {
       .orderBy(students.lastName),
     db.select().from(attendanceRecords)
       .where(and(eq(attendanceRecords.schoolId, school.id),
-        eq(attendanceRecords.classId, classId), eq(attendanceRecords.date, today))),
+        eq(attendanceRecords.classId, classId), eq(attendanceRecords.date, date))),
     cls.classTeacherId
       ? db.select().from(staff).where(eq(staff.id, cls.classTeacherId))
       : Promise.resolve([null]),
@@ -62,6 +65,17 @@ export default async function ClassRegister({ params, searchParams }: {
     );
   }
 
+  // ── admin correcting a past day: straight to the register, clearly dated ──
+  if (date !== today) {
+    return (
+      <div className="max-w-lg">
+        <PageHeader title={cls.name}
+          sub={`Correcting the register for ${date} — the record will show it was edited by you`} />
+        <Register slug={slug} classId={classId} roster={roster} initial={statusMap} date={date} />
+      </div>
+    );
+  }
+
   // ── admin: monitor first, mark-on-behalf tucked away ──
   const nudge = marked ? null : await lastNudgeToday(school.id, classId);
   return (
@@ -75,12 +89,12 @@ export default async function ClassRegister({ params, searchParams }: {
       <Card className="mb-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Class teacher</p>
+            <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Class teacher</p>
             <p className="mt-0.5 font-medium">
               {classTeacher
                 ? <Link href={`/staff/${classTeacher.id}`} className="text-primary">{classTeacher.name}</Link>
                 : <span className="text-warning">No class teacher assigned</span>}
-              {classTeacher?.phone && <span className="ml-2 text-[12.5px] font-normal text-muted-foreground">{classTeacher.phone}</span>}
+              {classTeacher?.phone && <span className="ml-2 text-[13.5px] font-normal text-muted-foreground">{classTeacher.phone}</span>}
             </p>
           </div>
           {marked
@@ -91,7 +105,7 @@ export default async function ClassRegister({ params, searchParams }: {
                   <SubmitButton className={btnCls} pendingText="Sending…">Send reminder</SubmitButton>
                 </form>
                 {nudge && (
-                  <p className="mt-1 text-[11.5px] text-muted-foreground">
+                  <p className="mt-1 text-[12.5px] text-muted-foreground">
                     reminded {nudge.sentAt.toISOString().slice(11, 16)} by {nudge.sentBy}
                   </p>
                 )}
@@ -99,7 +113,7 @@ export default async function ClassRegister({ params, searchParams }: {
             )}
         </div>
         {!marked && (
-          <p className="mt-2 text-[12.5px] text-muted-foreground">
+          <p className="mt-2 text-[13.5px] text-muted-foreground">
             Not marked yet — the reminder goes to the teacher by SMS and shows on their dashboard until the register is saved.
           </p>
         )}
@@ -132,7 +146,7 @@ export default async function ClassRegister({ params, searchParams }: {
           ⋯ More
         </summary>
         <div className="mt-3 rounded-lg border border-border p-4">
-          <p className="mb-3 text-[13px] text-muted-foreground">
+          <p className="mb-3 text-[14px] text-muted-foreground">
             <b>Mark on behalf of the class teacher</b> — use when the teacher is absent or unreachable.
             The record will show it was marked by you.
           </p>

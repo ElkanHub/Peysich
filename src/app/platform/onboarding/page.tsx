@@ -29,7 +29,7 @@ export default async function Onboarding() {
                 <span className="ml-2"><Badge tone={s.status === "active" ? "success" : s.status === "trial" ? "brand" : "danger"}>{s.status.replace("_", " ")}</Badge></span>
               </Td>
               <Td className="text-muted-foreground">{s.createdAt.toISOString().slice(0, 10)}</Td>
-              <Td className="text-[13px]">
+              <Td className="text-[14px]">
                 {admin ? <>{admin.name}<br /><span className="text-muted-foreground">{admin.email}</span></> : "—"}
               </Td>
               <Td>
@@ -51,7 +51,7 @@ export default async function Onboarding() {
           );
         })}
       </DataTable>
-      <p className="mt-3 text-[12px] text-muted-foreground">
+      <p className="mt-3 text-[13px] text-muted-foreground">
         Dots, in order: academic year · classes · staff · students · first register · first invoices.
       </p>
     </div>

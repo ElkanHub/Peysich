@@ -78,7 +78,7 @@ export default async function DayPlanSettings({ params, searchParams }: {
       {/* ── day skeleton ── */}
       <Card className="mb-5">
         <h2 className="font-semibold">The {SECTION_LABELS[section]} school day</h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
           Assembly, periods, breaks and lunch — the columns of every {SECTION_LABELS[section]} timetable.
           Removing a period also clears any lessons placed in it.
         </p>
@@ -94,9 +94,9 @@ export default async function DayPlanSettings({ params, searchParams }: {
               <input name="start" type="time" defaultValue={t2v(sl.startMin)} className={inputCls + " w-28"} />
               <span className="text-muted-foreground">–</span>
               <input name="end" type="time" defaultValue={t2v(sl.endMin)} className={inputCls + " w-28"} />
-              <SubmitButton className={btnGhostCls + " px-2.5 py-1.5 text-[12.5px]"} pendingText="…">Save</SubmitButton>
+              <SubmitButton className={btnGhostCls + " px-2.5 py-1.5 text-[13.5px]"} pendingText="…">Save</SubmitButton>
               <SubmitButton formAction={deleteSlot.bind(null, slug, sl.id, section)}
-                className="rounded-md px-2 py-1.5 text-[12.5px] text-danger hover:bg-danger/10" pendingText="…">
+                className="rounded-md px-2 py-1.5 text-[13.5px] text-danger hover:bg-danger/10" pendingText="…">
                 Remove
               </SubmitButton>
             </form>
@@ -119,7 +119,7 @@ export default async function DayPlanSettings({ params, searchParams }: {
       {/* ── section subject set ── */}
       <Card className="mb-5">
         <h2 className="font-semibold">{SECTION_LABELS[section]} subjects</h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
           Every class in {SECTION_LABELS[section]} inherits this list — score sheets, allocations and the
           timetable all follow it. The catalogue itself is managed under{" "}
           <Link href="/settings" className="text-primary">Settings → Subjects</Link>.
@@ -128,7 +128,7 @@ export default async function DayPlanSettings({ params, searchParams }: {
           <input type="hidden" name="section" value={section} />
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             {S.subjects.map((s) => (
-              <label key={s.id} className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-[13px]">
+              <label key={s.id} className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-[14px]">
                 <input type="checkbox" name="subjectId" value={s.id} defaultChecked={secSubjectIds.has(s.id)} />
                 {s.name}
               </label>
@@ -141,7 +141,7 @@ export default async function DayPlanSettings({ params, searchParams }: {
       {/* ── per-class deviations ── */}
       <Card>
         <h2 className="font-semibold">Classes in {SECTION_LABELS[section]}</h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
           Classes inherit the section list. Open one only when it genuinely differs.
         </p>
         <ul className="mt-3 divide-y divide-border text-sm">
@@ -153,9 +153,9 @@ export default async function DayPlanSettings({ params, searchParams }: {
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{c.name}</span>
                   <span className="flex items-center gap-2">
-                    <span className="text-[12px] text-muted-foreground" data-nums="">{eff.length} subjects</span>
+                    <span className="text-[13px] text-muted-foreground" data-nums="">{eff.length} subjects</span>
                     {deviates && <Badge tone="warning">deviates</Badge>}
-                    <Link href={`?s=${section}&cls=${c.id}`} className="text-[12.5px] font-medium text-primary">
+                    <Link href={`?s=${section}&cls=${c.id}`} className="text-[13.5px] font-medium text-primary">
                       {openCls?.id === c.id ? "editing…" : "Adjust"}
                     </Link>
                   </span>
@@ -163,13 +163,13 @@ export default async function DayPlanSettings({ params, searchParams }: {
                 {openCls?.id === c.id && (
                   <form action={saveClassDeviation.bind(null, slug, c.id)}
                     className="mt-2 rounded-md border border-border p-3">
-                    <p className="mb-2 text-[12px] text-muted-foreground">
+                    <p className="mb-2 text-[13px] text-muted-foreground">
                       Tick exactly what <b>{c.name}</b> studies — only the difference from the
                       {" "}{SECTION_LABELS[section]} list is stored.
                     </p>
                     <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                       {S.subjects.map((s) => (
-                        <label key={s.id} className="flex items-center gap-2 text-[13px]">
+                        <label key={s.id} className="flex items-center gap-2 text-[14px]">
                           <input type="checkbox" name="subjectId" value={s.id}
                             defaultChecked={eff.includes(s.id)} />
                           {s.name}

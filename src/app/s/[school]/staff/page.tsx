@@ -73,7 +73,7 @@ export default async function Staff({ params, searchParams }: {
                 <span>{d.name}
                   <span className="ml-2 text-xs text-muted-foreground">stage {Math.min((d.step ?? 0) + 1, 6)} of 6</span></span>
                 <span className="flex items-center gap-2">
-                  <Link href={`/staff/new?draft=${d.id}`} className="text-[13px] font-medium text-primary">Continue →</Link>
+                  <Link href={`/staff/new?draft=${d.id}`} className="text-[14px] font-medium text-primary">Continue →</Link>
                   <form action={discardOnboarding.bind(null, slug, d.id)}>
                     <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard</SubmitButton>
                   </form>
@@ -101,7 +101,7 @@ export default async function Staff({ params, searchParams }: {
             <Tr key={s.id}>
               <Td className="font-medium">
                 <span className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[12px] font-semibold text-primary">
                     {photo.has(s.id)
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={photo.get(s.id)} alt="" width={32} height={32} loading="lazy" className="h-full w-full object-cover" />
@@ -109,14 +109,14 @@ export default async function Staff({ params, searchParams }: {
                   </span>
                   <span>
                     <Link href={`/staff/${s.id}`} className="text-primary">{s.name}</Link>
-                    <span className="block text-[12px] font-normal text-muted-foreground">
+                    <span className="block text-[13px] font-normal text-muted-foreground">
                       {s.staffNo ?? "—"}{s.designation ? ` · ${s.designation}` : ""}
                     </span>
                   </span>
                 </span>
               </Td>
               <Td><Badge tone={s.staffType === "teaching" ? "brand" : "default"}>{TYPE_LABEL[s.staffType]}</Badge></Td>
-              <Td className="text-[13px]">{[s.phone, s.email].filter(Boolean).join(" · ") || "—"}</Td>
+              <Td className="text-[14px]">{[s.phone, s.email].filter(Boolean).join(" · ") || "—"}</Td>
               <Td>{s.userId
                 ? <Badge tone="success">{s.staffRole}</Badge>
                 : <span className="text-xs text-muted-foreground">no portal</span>}</Td>

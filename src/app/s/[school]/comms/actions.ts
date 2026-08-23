@@ -61,13 +61,32 @@ export async function sendBlast(slug: string, f: FormData) {
 }
 
 /** Mark announcements as seen by this user — closes the on-open notice and
- *  clears the tab badge. */
-export async function acknowledgeAnnouncements(slug: string, ids: string[]) {
+ *  clears the tab badge. Returns {ok} so the modal can react honestly
+ *  instead of closing over a failed write. */
+export async function acknowledgeAnnouncements(
+  slug: string, ids: string[],
+): Promise<{ ok: boolean }> {
+  try {
+    const { school, user } = await requireModule(slug, "comms");
+    const { announcementAcks } = await import("@/db/schema");
+    if (!ids.length) return { ok: true };
+    await db.insert(announcementAcks).values(ids.map((annId) => ({
+      id: uid(), schoolId: school.id, announcementId: annId, userId: user.id,
+    }))).onConflictDoNothing();
+    revalidatePath(`/comms`);
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/** Acknowledge a single announcement from its card on the feed. */
+export async function acknowledgeOne(slug: string, annId: string) {
   const { school, user } = await requireModule(slug, "comms");
   const { announcementAcks } = await import("@/db/schema");
-  if (!ids.length) return;
-  await db.insert(announcementAcks).values(ids.map((annId) => ({
+  await db.insert(announcementAcks).values({
     id: uid(), schoolId: school.id, announcementId: annId, userId: user.id,
-  }))).onConflictDoNothing();
+  }).onConflictDoNothing();
   revalidatePath(`/comms`);
+  redirect(`/comms?flash=done`);
 }

@@ -30,7 +30,7 @@ export function StaffPhotoUploader({ slug, staffId, enabled, currentUrl, initial
             ? <img src={shown} alt="Staff photo" className="h-full w-full object-cover" />
             : (initials ?? <Camera size={20} className="text-primary/60" />)}
           {up.busy && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[11px] font-semibold text-white">
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[12px] font-semibold text-white">
               {up.state.phase === "uploading" ? `${up.state.pct}%` : "…"}
             </span>
           )}
@@ -40,7 +40,7 @@ export function StaffPhotoUploader({ slug, staffId, enabled, currentUrl, initial
             className={btnGhostCls + " disabled:opacity-50"}>
             {shown ? "Replace photo" : "Upload photo"}
           </button>
-          <p className="mt-1.5 text-[11.5px] text-muted-foreground">JPG, PNG or WebP · up to {MAX_UPLOAD_MB} MB</p>
+          <p className="mt-1.5 text-[12.5px] text-muted-foreground">JPG, PNG or WebP · up to {MAX_UPLOAD_MB} MB</p>
           <input ref={inputRef} type="file" accept={TYPES.join(",")} className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];

@@ -101,7 +101,7 @@ export default async function Assessment({ params, searchParams }: {
         sub={`${term.name}${term.scoresLocked ? " · closed" : ""} · everything here revolves around the student`} />
 
       {/* releasing to families lives on Reports — this page is for the marks */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-[13px]">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-[14px]">
         <span className="text-muted-foreground">
           Releasing results to families — per test, with readiness — happens on the <b className="text-foreground">Reports</b> tab.
         </span>
@@ -125,7 +125,7 @@ export default async function Assessment({ params, searchParams }: {
       <div className="mb-4 flex flex-wrap gap-1.5">
         {testClasses.map((c) => (
           <Link key={c.id} href={`?view=${view}&c=${c.id}`}
-            className={`rounded-md border px-2.5 py-1 text-[12.5px] font-medium ${c.id === activeClass?.id
+            className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === activeClass?.id
               ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
             {c.name}
           </Link>
@@ -186,7 +186,7 @@ async function StudentsView({ schoolId, slug, termId, S, classId, openStudentId,
 
   return (
     <Card>
-      <p className="text-[12.5px] text-muted-foreground">
+      <p className="text-[13.5px] text-muted-foreground">
         {roster.length} students · each chip shows how many of the {subjectIds.length} subjects
         have a mark in for that test. Open a child to see the exact record their family receives.
       </p>
@@ -204,7 +204,7 @@ async function StudentsView({ schoolId, slug, termId, S, classId, openStudentId,
                   const full = n >= subjectIds.length && subjectIds.length > 0;
                   return (
                     <span key={c.id} data-nums=""
-                      className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${full
+                      className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${full
                         ? "bg-success/10 text-success" : n > 0 ? "bg-warning/15 text-warning" : "bg-muted text-faint"}`}>
                       {c.name.split(" ").map((w) => w[0]).join("")} {n}/{subjectIds.length}
                     </span>
@@ -215,8 +215,8 @@ async function StudentsView({ schoolId, slug, termId, S, classId, openStudentId,
             {open?.id === r.id && (
               <div className="mt-2 rounded-lg border border-primary/30 p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[12.5px] font-semibold">{r.firstName}&apos;s full record — as the family sees it</p>
-                  <span className="flex gap-3 text-[12.5px] font-medium">
+                  <p className="text-[13.5px] font-semibold">{r.firstName}&apos;s full record — as the family sees it</p>
+                  <span className="flex gap-3 text-[13.5px] font-medium">
                     <Link href={`/students/${r.id}/performance/${termId}`} className="text-primary">Printable preview →</Link>
                     <Link href={`/students/${r.id}?tab=performance`} className="text-primary">Student file →</Link>
                     <Link href={`?view=students&c=${classId}`} className="text-muted-foreground">Close</Link>
@@ -251,16 +251,16 @@ async function SubjectsView({ S, classId, termId, sheetBy, rosterN, schoolId }: 
 
   return (
     <Card>
-      <p className="text-[12.5px] text-muted-foreground">
+      <p className="text-[13.5px] text-muted-foreground">
         Submission status per subject — <span className="text-success">green = submitted (locked)</span>,{" "}
         <span className="text-warning">amber = marks entered, not yet submitted</span>, grey = nothing yet.
         Click any cell to open that sheet. Teacher per subject is on{" "}
         <Link href="/staff/allocations" className="font-medium text-primary">Teaching &amp; allocations</Link>.
       </p>
       <div className="mt-3 overflow-x-auto">
-        <table className="w-full text-[12.5px]">
+        <table className="w-full text-[13.5px]">
           <thead>
-            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-border text-left text-[12px] uppercase tracking-wide text-muted-foreground">
               <th className="py-1.5 pr-2">Subject</th>
               {comps.map((c) => <th key={c.id} className="px-2 py-1.5 text-center">{c.name}</th>)}
             </tr>
@@ -275,7 +275,7 @@ async function SubjectsView({ S, classId, termId, sheetBy, rosterN, schoolId }: 
                   <tr key={sub.id}>
                     <td className="py-1.5 pr-2">
                       <span className="font-medium">{sub.name}</span>
-                      <span className="ml-2 text-[11px] text-muted-foreground">
+                      <span className="ml-2 text-[12px] text-muted-foreground">
                         {tid ? S.staffById.get(tid)?.name : "no teacher"}
                       </span>
                     </td>
@@ -285,7 +285,7 @@ async function SubjectsView({ S, classId, termId, sheetBy, rosterN, schoolId }: 
                       return (
                         <td key={c.id} className="px-2 py-1 text-center">
                           <Link href={`/assessment/${classId}/${sub.id}`} data-nums=""
-                            className={`inline-block min-w-16 rounded-md px-2 py-1 text-[11.5px] font-medium ${submitted
+                            className={`inline-block min-w-16 rounded-md px-2 py-1 text-[12.5px] font-medium ${submitted
                               ? "bg-success/10 text-success" : n > 0
                                 ? "bg-warning/15 text-warning" : "bg-muted text-faint hover:text-muted-foreground"}`}>
                             {submitted ? "✓ submitted" : n > 0 ? `${n}/${rosterN} entered` : "—"}

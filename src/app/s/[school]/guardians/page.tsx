@@ -95,7 +95,7 @@ export default async function Guardians({ params, searchParams }: {
               <Tr key={g.id}>
                 <Td className="font-medium">
                   <Link href={`/guardians/${g.id}`} className="text-primary">{g.name}</Link>
-                  <p className="text-[12px] font-normal capitalize text-muted-foreground">
+                  <p className="text-[13px] font-normal capitalize text-muted-foreground">
                     {g.relation}{g.occupation ? ` · ${g.occupation}` : ""}
                   </p>
                 </Td>
@@ -108,7 +108,7 @@ export default async function Guardians({ params, searchParams }: {
                 <Td>
                   {kids.length === 0
                     ? <span className="text-muted-foreground">—</span>
-                    : <span className="text-[13px]">
+                    : <span className="text-[14px]">
                         {active.map((k) => `${k.firstName} (${k.className ?? "—"})`).join(", ")}
                         {kids.length > active.length &&
                           <span className="text-muted-foreground"> +{kids.length - active.length} left/alumni</span>}

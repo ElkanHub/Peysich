@@ -179,7 +179,7 @@ export default async function PerformanceSheet({ params }: {
                   <th key={c.id} className="border border-neutral-400 px-2 py-1.5 text-center" style={{ background: `${color}12` }}>
                     {c.name}<br /><span className="font-normal text-neutral-500">/{c.weight}</span>
                     {!famView && !published.has(c.id) && !c.isExam && (
-                      <span className="block text-[10px] font-normal text-neutral-400">(not published)</span>
+                      <span className="block text-[11px] font-normal text-neutral-400">(not published)</span>
                     )}
                   </th>
                 ))}
@@ -226,7 +226,7 @@ export default async function PerformanceSheet({ params }: {
       {(b.signatureLines ?? []).map((l, i) => (
         <p key={i} className="mt-2 text-center text-xs text-neutral-500">{l}</p>
       ))}
-      <p className="mt-6 text-center text-[10px] text-neutral-400 print:hidden">
+      <p className="mt-6 text-center text-[11px] text-neutral-400 print:hidden">
         Use your browser&apos;s print for a paper copy.
         {comps.length > 0 && pubAt.size > 0 && " Published records only."}
       </p>

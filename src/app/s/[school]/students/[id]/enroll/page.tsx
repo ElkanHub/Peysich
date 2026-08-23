@@ -79,7 +79,7 @@ export default async function EnrollStudent({ params }: {
         </form>
       </Card>
       {history.length > 0 && (
-        <p className="mt-3 text-[13px] text-muted-foreground">
+        <p className="mt-3 text-[14px] text-muted-foreground">
           Existing placements: {history.map((h) => {
             const y = years.find((yy) => yy.id === h.yearId);
             const c = cls.find((cc) => cc.id === h.classId);

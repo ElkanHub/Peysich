@@ -55,12 +55,12 @@ export default async function AdmitStudent({ params, searchParams }: {
         {STAGES.map((label, i) => {
           const n = i + 1;
           const reachable = s ? n <= Math.min(maxStep + 1, 7) : n === 1;
-          const cls = cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors",
+          const cls = cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
             n === step ? "border-primary bg-brand-soft text-primary"
               : n <= maxStep ? "border-border text-foreground hover:bg-muted"
               : "border-border text-faint");
           const inner = <>
-            <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[10px]",
+            <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[11px]",
               n <= maxStep ? "bg-primary text-primary-foreground" : n === step ? "bg-primary/20 text-primary" : "bg-muted")}>
               {n <= maxStep ? "✓" : n}
             </span>
@@ -103,7 +103,7 @@ function IdentityStage({ slug, s }: { slug: string; s: S | null }) {
   return (
     <Card>
       <h2 className="font-semibold">Basic & personal information</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">Who the child is and where they live. The passport photo is added at Review.</p>
+      <p className="mt-0.5 text-[14px] text-muted-foreground">Who the child is and where they live. The passport photo is added at Review.</p>
       <form action={action} className="mt-4 grid grid-cols-2 gap-3">
         <Field label="First name"><input name="firstName" required defaultValue={s?.firstName} className={inputCls} /></Field>
         <Field label="Last name"><input name="lastName" required defaultValue={s?.lastName} className={inputCls} /></Field>
@@ -131,7 +131,7 @@ async function PlacementStage({ slug, s, schoolId, err }: { slug: string; s: S; 
   return (
     <Card>
       <h2 className="font-semibold">Academic & enrolment details</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">Where the child is placed and how they attend.</p>
+      <p className="mt-0.5 text-[14px] text-muted-foreground">Where the child is placed and how they attend.</p>
       <form action={savePlacement.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-3">
         <Field label="Class placement">
           <select name="classId" defaultValue={s.classId ?? ""} className={inputCls}>
@@ -169,7 +169,7 @@ async function GuardiansStage({ slug, s }: { slug: string; s: S }) {
     <div className="space-y-5">
       <Card>
         <h2 className="font-semibold">Parents & guardians</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-0.5 text-[14px] text-muted-foreground">
           Linked by phone number — a parent with children already in the school is reused, not duplicated.
         </p>
         {gs.length > 0 && (
@@ -215,7 +215,7 @@ async function GuardiansStage({ slug, s }: { slug: string; s: S }) {
       </Card>
       <Card>
         <h2 className="font-semibold">Emergency contact</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">Who the school calls if a guardian can’t be reached, and who may pick the child up.</p>
+        <p className="mt-0.5 text-[14px] text-muted-foreground">Who the school calls if a guardian can’t be reached, and who may pick the child up.</p>
         <form action={saveEmergency.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-3">
           <Field label="Name & relation"><input name="emergencyName" defaultValue={s.emergencyName ?? ""} placeholder="Uncle — Kwame Mensah" className={inputCls} /></Field>
           <Field label="Phone"><input name="emergencyPhone" defaultValue={s.emergencyPhone ?? ""} className={inputCls} /></Field>
@@ -230,7 +230,7 @@ function HealthStage({ slug, s }: { slug: string; s: S }) {
   return (
     <Card>
       <h2 className="font-semibold">Health & medical</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">Allergies and conditions raise a flag teachers see on the class register.</p>
+      <p className="mt-0.5 text-[14px] text-muted-foreground">Allergies and conditions raise a flag teachers see on the class register.</p>
       <form action={saveHealth.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-3">
         <Field label="Blood group">
           <select name="bloodGroup" defaultValue={s.bloodGroup ?? ""} className={inputCls}>
@@ -260,7 +260,7 @@ async function DocumentsStage({ slug, s }: { slug: string; s: S }) {
     <div className="space-y-5">
       <Card>
         <h2 className="font-semibold">Digital documents</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">Birth certificate, immunization card, previous reports, transfer certificate.</p>
+        <p className="mt-0.5 text-[14px] text-muted-foreground">Birth certificate, immunization card, previous reports, transfer certificate.</p>
         {files.length > 0 && (
           <ul className="mt-3 space-y-1 text-sm">
             {files.map((fl) => (
@@ -280,7 +280,7 @@ async function DocumentsStage({ slug, s }: { slug: string; s: S }) {
       </Card>
       <Card>
         <h2 className="font-semibold">Physical items into custody</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">Originals the office keeps — note exactly where each is stored.</p>
+        <p className="mt-0.5 text-[14px] text-muted-foreground">Originals the office keeps — note exactly where each is stored.</p>
         {items.length > 0 && (
           <ul className="mt-3 space-y-1 text-sm">
             {items.map((it) => (
@@ -318,7 +318,7 @@ async function BillingStage({ slug, s, schoolId }: { slug: string; s: S; schoolI
   return (
     <Card>
       <h2 className="font-semibold">Billing & fee configuration</h2>
-      <p className="mt-0.5 text-[13px] text-muted-foreground">
+      <p className="mt-0.5 text-[14px] text-muted-foreground">
         {cls
           ? `Fee plan for ${cls.name}${term ? ` · ${term.name}` : ""} — the invoice can be raised automatically at Review.`
           : "Pick a class in Placement to see the applicable fee plan."}

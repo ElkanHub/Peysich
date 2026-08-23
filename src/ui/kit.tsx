@@ -16,7 +16,7 @@ export const btnDangerCls =
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
       {children}
@@ -32,7 +32,7 @@ export function PageHeader({ title, sub, action }: {
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 className="text-[22px] font-semibold leading-tight tracking-tight">{title}</h1>
-        {sub && <p className="mt-1 text-[13px] text-muted-foreground">{sub}</p>}
+        {sub && <p className="mt-1 text-[14px] text-muted-foreground">{sub}</p>}
       </div>
       {action != null && typeof action === "object" && "href" in action
         ? <Link href={action.href} className={btnCls}>{action.label}</Link>
@@ -57,7 +57,7 @@ export function Stat({ label, value, tone }: {
 }) {
   return (
     <Card className="hover:shadow-[var(--shadow-md)]">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
       <p data-nums="" className={cn("mt-1.5 text-[26px] font-semibold leading-none tracking-tight",
         tone === "success" && "text-success", tone === "danger" && "text-danger",
         tone === "warning" && "text-warning")}>
@@ -78,7 +78,7 @@ export function Badge({ children, tone = "default" }: {
     default: "bg-muted text-muted-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize", tones[tone])}>
+    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium capitalize", tones[tone])}>
       {children}
     </span>
   );
@@ -90,7 +90,7 @@ export function Empty({ title, hint, action }: {
   return (
     <div className="rounded-lg border border-dashed border-border-strong bg-card/60 px-8 py-14 text-center">
       <p className="font-medium">{title}</p>
-      {hint && <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="mx-auto mt-1.5 max-w-sm text-[14px] text-muted-foreground">{hint}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   );
@@ -103,7 +103,7 @@ export function DataTable({ head, children }: { head: string[]; children: React.
     <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-[var(--shadow-sm)]">
       <table className="w-full min-w-[560px] text-sm">
         <thead className="sticky top-0 z-10">
-          <tr className="border-b border-border bg-muted/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground backdrop-blur">
+          <tr className="border-b border-border bg-muted/60 text-left text-[12px] uppercase tracking-wider text-muted-foreground backdrop-blur">
             {head.map((h, i) => <th key={i} className="px-4 py-2.5 font-semibold">{h}</th>)}
           </tr>
         </thead>

@@ -76,7 +76,7 @@ function AvatarCard() {
   return (
     <Card>
       <h2 className="font-semibold">Profile picture</h2>
-      <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+      <p className="mt-0.5 text-[13.5px] text-muted-foreground">
         Only shows inside the app (sidebar) — separate from any photo the school keeps on documents.
       </p>
       <div className="mt-3 flex items-center gap-4">
@@ -86,7 +86,7 @@ function AvatarCard() {
             ? <img src={preview} alt="" className="h-full w-full object-cover" />
             : <Camera size={20} className="text-primary/60" />}
           {up.busy && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[11px] font-semibold text-white">
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[12px] font-semibold text-white">
               {up.state.phase === "uploading" ? `${up.state.pct}%` : "…"}
             </span>
           )}
@@ -96,7 +96,7 @@ function AvatarCard() {
             className={btnGhostCls + " disabled:opacity-50"}>
             Choose picture
           </button>
-          <p className="mt-1 text-[11px] text-muted-foreground">{IMAGE_LABEL}, up to 10 MB.</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">{IMAGE_LABEL}, up to 10 MB.</p>
           <input ref={inputRef} type="file" accept={IMAGE_TYPES.join(",")} className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -108,7 +108,7 @@ function AvatarCard() {
       </div>
       <UploadProgress state={up.state} onRetry={up.retry} />
       {up.state.phase === "done" && (
-        <p className="mt-1 text-[12px] text-success">Saved ✓ — it appears in your sidebar on the next page load.</p>
+        <p className="mt-1 text-[13px] text-success">Saved ✓ — it appears in your sidebar on the next page load.</p>
       )}
     </Card>
   );

@@ -66,7 +66,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
           </ul>
           {school.status === "trial" && (
             <form action={extendTrial.bind(null, id, 14)} className="mt-3">
-              <button className="rounded-md border border-border px-3 py-1.5 text-[12px] font-medium hover:bg-muted">
+              <button className="rounded-md border border-border px-3 py-1.5 text-[13px] font-medium hover:bg-muted">
                 Extend trial 14 days{school.trialEndsAt && ` (ends ${school.trialEndsAt.toISOString().slice(0, 10)})`}
               </button>
             </form>
@@ -78,14 +78,14 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             {people.slice(0, 8).map((u) => (
               <li key={u.id} className="flex items-center justify-between gap-2">
                 <span className="min-w-0"><span className="font-medium">{u.name}</span>
-                  <span className="block truncate text-[12px] text-muted-foreground">{u.email}{u.phone && ` · ${u.phone}`}</span></span>
+                  <span className="block truncate text-[13px] text-muted-foreground">{u.email}{u.phone && ` · ${u.phone}`}</span></span>
                 <Badge tone={u.role === "admin" ? "success" : "default"}>{u.role}</Badge>
               </li>
             ))}
             {people.length === 0 && <li className="text-muted-foreground">No accounts yet.</li>}
           </ul>
           {subs.length > 0 && (
-            <div className="mt-3 border-t border-border pt-2 text-[12px] text-muted-foreground">
+            <div className="mt-3 border-t border-border pt-2 text-[13px] text-muted-foreground">
               {subs.length} payment{subs.length > 1 ? "s" : ""} · latest {subs.at(-1)!.planKey} until {subs.at(-1)!.periodEnd.toISOString().slice(0, 10)}
             </div>
           )}

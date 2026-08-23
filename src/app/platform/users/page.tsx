@@ -32,7 +32,7 @@ export default async function AllUsers({ searchParams }: {
       <PageHeader title="All users" sub={`${n} accounts across the platform`} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBox placeholder="Name or email…" />
-        <span className="flex gap-1 text-[12px]">
+        <span className="flex gap-1 text-[13px]">
           {["", "platform_admin", "admin", "teacher", "parent", "student"].map((r) => (
             <a key={r} href={r ? `?role=${r}` : "?"}
               className={`rounded-md border px-2.5 py-1 capitalize transition-colors ${(sp.role ?? "") === r ? "border-primary bg-brand-soft text-primary" : "border-border hover:bg-muted"}`}>
@@ -45,7 +45,7 @@ export default async function AllUsers({ searchParams }: {
         {rows.map((u) => (
           <Tr key={u.id}>
             <Td className="font-medium">{u.name}</Td>
-            <Td className="text-[13px] text-muted-foreground">{u.email}</Td>
+            <Td className="text-[14px] text-muted-foreground">{u.email}</Td>
             <Td><Badge tone={TONE[u.role as keyof typeof TONE] ?? "default"}>{u.role.replace("_", " ")}</Badge></Td>
             <Td>{u.schoolName ?? <span className="text-muted-foreground">— platform —</span>}</Td>
             <Td className="text-muted-foreground">{u.phone ?? "—"}</Td>

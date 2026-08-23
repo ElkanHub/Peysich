@@ -115,10 +115,10 @@ export function UploadProgress({ state, onRetry }: { state: UploadState; onRetry
   if (state.phase === "error")
     return (
       <div className="mt-2 flex items-start justify-between gap-2 rounded-md bg-danger/10 px-3 py-2">
-        <p className="text-[12.5px] leading-snug text-danger">{state.message}</p>
+        <p className="text-[13.5px] leading-snug text-danger">{state.message}</p>
         {onRetry && (
           <button type="button" onClick={onRetry}
-            className="flex shrink-0 items-center gap-1 rounded border border-danger/30 px-2 py-0.5 text-[11.5px] font-medium text-danger hover:bg-danger/10">
+            className="flex shrink-0 items-center gap-1 rounded border border-danger/30 px-2 py-0.5 text-[12.5px] font-medium text-danger hover:bg-danger/10">
             <RotateCcw size={11} /> Retry
           </button>
         )}
@@ -126,7 +126,7 @@ export function UploadProgress({ state, onRetry }: { state: UploadState; onRetry
     );
   if (state.phase === "done")
     return (
-      <p className="mt-2 flex items-center gap-1.5 text-[12.5px] font-medium text-success">
+      <p className="mt-2 flex items-center gap-1.5 text-[13.5px] font-medium text-success">
         <CheckCircle2 size={14} /> {state.message}
       </p>
     );
@@ -138,7 +138,7 @@ export function UploadProgress({ state, onRetry }: { state: UploadState; onRetry
             indeterminate && "animate-pulse")}
           style={{ width: indeterminate ? "100%" : `${state.pct}%`, opacity: indeterminate ? 0.35 : 1 }} />
       </div>
-      <p className="mt-1 text-[12px] text-muted-foreground" aria-live="polite">{state.message}</p>
+      <p className="mt-1 text-[13px] text-muted-foreground" aria-live="polite">{state.message}</p>
     </div>
   );
 }
@@ -168,10 +168,10 @@ export function Dropzone({ accept, acceptLabel, disabled, onFile, icon = "file",
         disabled && "cursor-not-allowed opacity-50",
       )}>
       <Icon size={compact ? 18 : 22} className={cn("text-muted-foreground", over && "text-primary")} />
-      <span className="text-[13px] font-medium">
+      <span className="text-[14px] font-medium">
         {over ? "Drop to upload" : <>Drag a file here or <span className="text-primary underline underline-offset-2">browse</span></>}
       </span>
-      <span className="text-[11.5px] text-muted-foreground">{acceptLabel} · up to {MAX_UPLOAD_MB} MB</span>
+      <span className="text-[12.5px] text-muted-foreground">{acceptLabel} · up to {MAX_UPLOAD_MB} MB</span>
       <input ref={inputRef} type="file" accept={accept} className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -191,8 +191,8 @@ export function FileChip({ file, onClear, disabled }: { file: File; onClear: () 
         ? <ImageIcon size={16} className="shrink-0 text-primary" />
         : <FileText size={16} className="shrink-0 text-primary" />}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium">{file.name}</p>
-        <p className="text-[11.5px] text-muted-foreground">
+        <p className="truncate text-[14px] font-medium">{file.name}</p>
+        <p className="text-[12.5px] text-muted-foreground">
           {(file.type || "unknown type").replace("application/", "")} · {fmtMb(file.size)}
         </p>
       </div>

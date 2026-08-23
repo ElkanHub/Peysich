@@ -32,11 +32,23 @@ export async function requireModule(slug: string, moduleKey: string, roles?: str
   return ctx;
 }
 
-/** Current term (and year) for a school — most flows hang off this. */
+/** Current term (and year) for a school — most flows hang off this.
+ *  The conventional rule: the ACTIVE term is the one whose start/end dates
+ *  contain today. During vacation (between terms) the admin's chosen term
+ *  keeps working; with no choice we fall to the next upcoming, then the
+ *  most recently ended — so the app always has a sensible term to stand on. */
 export const getCurrentTerm = cache(async (schoolId: string) => {
-  const [t] = await db.select().from(terms)
-    .where(and(eq(terms.schoolId, schoolId), eq(terms.isCurrent, true)));
-  if (!t) return null;
+  const ts = await db.select().from(terms).where(eq(terms.schoolId, schoolId));
+  if (!ts.length) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const flagged = ts.find((t) => t.isCurrent);
+  const containing = ts.filter((t) => t.startsAt <= today && today <= t.endsAt);
+  const byStart = [...ts].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const t =
+    (flagged && containing.some((c) => c.id === flagged.id) ? flagged : containing[0])
+    ?? flagged
+    ?? byStart.find((x) => x.startsAt > today)
+    ?? byStart.at(-1)!;
   const [y] = await db.select().from(academicYears).where(eq(academicYears.id, t.yearId));
   return { ...t, year: y };
 });

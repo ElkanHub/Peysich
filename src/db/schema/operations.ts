@@ -148,6 +148,14 @@ export const announcementAcks = pgTable("announcement_acks", {
   ackedAt: timestamp("acked_at").notNull().defaultNow(),
 }, (t) => [uniqueIndex("ack_unique").on(t.announcementId, t.userId)]);
 
+/** Days school is closed (public holidays, mid-term breaks). One row per
+ *  day so attendance sheets and the calendar join on plain dates. Weekends
+ *  need no rows — Saturday and Sunday are never school days. */
+export const holidays = pgTable("holidays", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  date: date("date").notNull(), name: text("name").notNull(),
+}, (t) => [uniqueIndex("holiday_unique").on(t.schoolId, t.date)]);
+
 // ── homework ──
 export const assignments = pgTable("assignments", {
   id: text("id").primaryKey(), schoolId: sid(),

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { saveGradingScheme } from "../actions-grading";
-import { Card, btnCls, inputCls } from "@/ui/kit";
+import { btnCls, inputCls } from "@/ui/kit";
 
 type Band = { min: number; grade: string; remark: string };
 
@@ -17,9 +17,8 @@ export function GradingEditor({ slug, caWeight, examWeight, bands }: {
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: k === "min" ? Number(v) : v } : r)));
 
   return (
-    <Card>
-      <h2 className="font-semibold">Grading scheme</h2>
-      <div className="mt-3 flex items-center gap-3 text-sm">
+    <div>
+      <div className="flex items-center gap-3 text-sm">
         <label>Class score (CA)</label>
         <input type="number" min={0} max={100} value={ca}
           onChange={(e) => setCa(Number(e.target.value))} className={inputCls + " w-20"} />
@@ -53,6 +52,6 @@ export function GradingEditor({ slug, caWeight, examWeight, bands }: {
         </button>
         {msg && <span className="text-sm text-success">{msg}</span>}
       </div>
-    </Card>
+    </div>
   );
 }

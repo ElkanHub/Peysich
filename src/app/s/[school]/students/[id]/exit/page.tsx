@@ -55,13 +55,13 @@ export default async function ExitStudent({ params, searchParams }: {
   const Row = ({ ok, label, detail }: { ok: boolean; label: string; detail: string }) => (
     <li className="flex items-start justify-between gap-3 py-2">
       <span className="flex items-center gap-2">
-        <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+        <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[12px] font-bold",
           ok ? "bg-success/15 text-success" : "bg-warning-soft text-warning")}>
           {ok ? "✓" : "!"}
         </span>
         <span className="text-sm font-medium">{label}</span>
       </span>
-      <span className={cn("text-right text-[13px]", ok ? "text-muted-foreground" : "font-medium text-warning")}>{detail}</span>
+      <span className={cn("text-right text-[14px]", ok ? "text-muted-foreground" : "font-medium text-warning")}>{detail}</span>
     </li>
   );
 
@@ -126,7 +126,7 @@ export default async function ExitStudent({ params, searchParams }: {
 
         <Card>
           <h2 className="font-semibold">3 · Confirm</h2>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] text-muted-foreground">
+          <ul className="mt-2 list-inside list-disc space-y-1 text-[14px] text-muted-foreground">
             <li>Drops off registers, score sheets and rosters immediately — never marked absent again.</li>
             <li>This year&apos;s enrolment is closed with the reason; all history and documents are preserved.</li>
             <li>Student portal becomes read-only (past reports and receipts stay viewable); transport seat is released.</li>
