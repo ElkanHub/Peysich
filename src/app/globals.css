@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the app's .dark class (ThemeToggle), not the OS */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── Peysich design system ─────────────────────────────────────────────
    One deliberate look: ink sidebar, paper canvas, hairline borders,
    a single confident accent. Swap the brand block to re-skin (logo colors). */

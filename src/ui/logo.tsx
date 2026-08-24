@@ -5,9 +5,11 @@
 const WINE = "#5E1D3E";
 
 export function LogoMark({ size = 28, variant = "dark", className }: {
-  size?: number; variant?: "light" | "dark"; className?: string;
+  size?: number; variant?: "light" | "dark" | "auto"; className?: string;
 }) {
-  const p = variant === "light" ? "#FFFFFF" : "#0A0A0A";
+  // "auto" follows the canvas: near-black on light, white in dark mode
+  const p = variant === "light" ? "#FFFFFF"
+    : variant === "auto" ? "var(--foreground)" : "#0A0A0A";
   return (
     <svg width={size} height={size} viewBox="0 0 375 375" fill="none"
       className={className} aria-hidden>
@@ -35,7 +37,7 @@ export function LogoTile({ size = 28, className }: { size?: number; className?: 
 export function LogoLockup({ size = 28, dark = false }: { size?: number; dark?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <LogoMark size={size} variant={dark ? "light" : "dark"} />
+      <LogoMark size={size} variant={dark ? "light" : "auto"} />
       <span className={`font-semibold tracking-tight ${dark ? "text-ink-text-strong" : "text-foreground"}`}
         style={{ fontSize: size * 0.72 }}>
         Peysich
