@@ -37,7 +37,13 @@ export function proxy(req: NextRequest) {
       return res;
     }
     const tenant = req.cookies.get(TENANT_COOKIE)?.value;
-    if (tenant && !RESERVED.some((p) => pathname.startsWith(p))) {
+    // "/" only becomes the school when someone is actually signed in —
+    // otherwise a lingering tenant cookie would bounce every visitor off
+    // the marketing page onto sign-in. (Presence check only; the school
+    // layout still verifies the session properly.)
+    const hasSession = req.cookies.getAll().some((c) => c.name.includes("session_token"));
+    if (tenant && !RESERVED.some((p) => pathname.startsWith(p))
+      && (pathname !== "/" || hasSession)) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${tenant}${pathname === "/" ? "" : pathname}`;
       return NextResponse.rewrite(url);
