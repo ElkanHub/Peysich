@@ -22,7 +22,13 @@ export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/api")) return NextResponse.next();
+  // the ORIGINAL path rides along as a header so server code (Team & access
+  // tab checks) knows which tab a request is for, rewrites included
+  const fwd = new Headers(req.headers);
+  fwd.set("x-peysich-path", pathname);
+  const pass = { request: { headers: fwd } };
+
+  if (pathname.startsWith("/api")) return NextResponse.next(pass);
 
   if (host === ROOT || host === `www.${ROOT}`) {
     // /t/<slug> — enter a school (preview mode); /t/exit — back to marketing
@@ -46,16 +52,16 @@ export function proxy(req: NextRequest) {
       && (pathname !== "/" || hasSession)) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${tenant}${pathname === "/" ? "" : pathname}`;
-      return NextResponse.rewrite(url);
+      return NextResponse.rewrite(url, pass);
     }
-    return NextResponse.next();
+    return NextResponse.next(pass);
   }
 
   if (host === `admin.${ROOT}`) {
-    if (pathname.startsWith("/platform")) return NextResponse.next();
+    if (pathname.startsWith("/platform")) return NextResponse.next(pass);
     const url = req.nextUrl.clone();
     url.pathname = `/platform${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url);
+    return NextResponse.rewrite(url, pass);
   }
 
   if (host.endsWith(`.${ROOT}`)) {
@@ -63,10 +69,10 @@ export function proxy(req: NextRequest) {
     if (!sub.includes(".")) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${sub}${pathname === "/" ? "" : pathname}`;
-      return NextResponse.rewrite(url);
+      return NextResponse.rewrite(url, pass);
     }
   }
-  return NextResponse.next();
+  return NextResponse.next(pass);
 }
 
 export const config = {

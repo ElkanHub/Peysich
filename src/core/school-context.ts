@@ -1,9 +1,11 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import { getSchoolBySlug } from "./tenant";
 import { getSession } from "./session";
 import { getEnabledModules } from "./entitlements";
+import { getAdminGrants, type AdminGrants } from "./access";
 import { db } from "@/db";
 import { terms, academicYears, staff, classes, teachingAssignments } from "@/db/schema";
 
@@ -11,9 +13,24 @@ export type Ctx = {
   school: NonNullable<Awaited<ReturnType<typeof getSchoolBySlug>>>;
   user: { id: string; name: string; role: string; schoolId?: string | null };
   modules: Set<string>;
+  /** Team & access — null means FULL admin (or a non-admin role). */
+  grants: AdminGrants | null;
 };
 
-/** The one gate every school page & action goes through. */
+/** Tabs that never need a grant: the dashboard, own account, block page. */
+const OPEN_TABS = new Set(["", "account", "no-access", "go"]);
+
+/** Which tab this request is for — first segment after any /s/{slug}. */
+async function requestTab(slug: string) {
+  const h = await headers();
+  let p = h.get("x-peysich-path") ?? "";
+  if (p.startsWith(`/s/${slug}`)) p = p.slice(`/s/${slug}`.length);
+  return p.split("/").filter(Boolean)[0] ?? "";
+}
+
+/** The one gate every school page & action goes through. Limited admin
+ *  members (Team & access) get checked against the tab they're opening —
+ *  everything they weren't granted redirects to the friendly block page. */
 export const requireSchool = cache(async (slug: string, roles?: string[]): Promise<Ctx> => {
   const school = await getSchoolBySlug(slug);
   if (!school || school.status === "archived") notFound();
@@ -22,7 +39,16 @@ export const requireSchool = cache(async (slug: string, roles?: string[]): Promi
   const user = session.user as Ctx["user"];
   if (user.schoolId !== school.id && user.role !== "platform_admin") redirect("/sign-in");
   if (roles && !roles.includes(user.role) && user.role !== "platform_admin") redirect(".");
-  return { school, user, modules: await getEnabledModules(school.id) };
+  let grants: AdminGrants | null = null;
+  if (user.role === "admin") {
+    grants = await getAdminGrants(school.id, user.id);
+    if (grants) {
+      const tab = await requestTab(slug);
+      if (!OPEN_TABS.has(tab) && !grants.tabs.has(tab))
+        redirect(`/no-access?t=${encodeURIComponent(tab)}`);
+    }
+  }
+  return { school, user, modules: await getEnabledModules(school.id), grants };
 });
 
 /** Same gate + module check, for module pages/actions. */

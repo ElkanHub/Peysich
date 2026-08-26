@@ -20,6 +20,18 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [index("user_school_idx").on(t.schoolId)]);
 
+/** Scoped access for admin-role logins (Team & access). NO row = full admin.
+ *  A row lists the tabs this member may open and, for the money module,
+ *  which fee actions they may perform — how a "cashier" exists without
+ *  being a fifth role. */
+export const adminAccess = pgTable("admin_access", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  schoolId: text("school_id").notNull().references(() => schools.id, { onDelete: "cascade" }),
+  tabs: text("tabs").notNull(), // JSON array of tab keys, e.g. ["fees"]
+  feeActions: text("fee_actions").notNull().default("{}"), // {record,voidPay,catalog,generate}
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [index("admin_access_school").on(t.schoolId)]);
+
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),

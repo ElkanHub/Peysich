@@ -11,7 +11,6 @@ import { getStructure } from "@/core/academics";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { getUnackedAnnouncements } from "@/modules/comms/unacked";
 import { Card, PageHeader, Stat } from "@/ui/kit";
-import { PayFeesButton } from "@/ui/pay-fees";
 import { TermPulseBar } from "@/ui/term-pulse-bar";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
@@ -52,9 +51,11 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
                     <span className={k.feeDuePesewas > 0 ? "font-medium text-danger" : "text-success"}>
                       {k.feeDuePesewas > 0 ? ghs(k.feeDuePesewas) : "cleared"}
                     </span>
-                    {k.feeDuePesewas > 0 && k.invoiceId && (
-                      <PayFeesButton slug={slug} invoiceId={k.invoiceId}
-                        maxGhs={k.feeDuePesewas / 100} />
+                    {k.feeDuePesewas > 0 && (
+                      <Link href={`/fees?child=${k.id}`}
+                        className="rounded-md border border-border px-2 py-0.5 text-[12.5px] font-medium text-primary hover:bg-muted">
+                        how to pay →
+                      </Link>
                     )}
                   </dd>
                 </div>

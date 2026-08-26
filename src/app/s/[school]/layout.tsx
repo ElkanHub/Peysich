@@ -11,7 +11,7 @@ export default async function SchoolLayout({ children, params }: {
   children: React.ReactNode; params: Promise<{ school: string }>;
 }) {
   const { school: slug } = await params;
-  const { school, user, modules } = await requireSchool(slug);
+  const { school, user, modules, grants } = await requireSchool(slug);
 
   if (school.status === "suspended" && user.role !== "platform_admin") {
     return (
@@ -44,7 +44,7 @@ export default async function SchoolLayout({ children, params }: {
 
   return (
     <Shell schoolName={school.name} role={user.role} userName={user.name} modules={modules}
-      badges={badges} logoUrl={logoUrl} avatarUrl={avatarUrl}>
+      badges={badges} logoUrl={logoUrl} avatarUrl={avatarUrl} allowedTabs={grants?.tabs ?? null}>
       {trialDays !== null && user.role === "admin" && (
         <div className="mb-5 flex items-center justify-between rounded-lg border border-primary/30 bg-brand-soft px-4 py-2.5 text-[14px]">
           <span><b>Free trial</b> — {trialDays} day{trialDays === 1 ? "" : "s"} left. Your data stays safe either way.</span>

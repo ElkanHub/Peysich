@@ -14,10 +14,13 @@ const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
 
 /** App shell: ink sidebar (nav composed from core + enabled modules — off means
  *  ABSENT), breadcrumb topbar, mobile drawer. Nothing ever moves. */
-export function Shell({ schoolName, role, userName, modules, badges, logoUrl, avatarUrl, children }: {
+export function Shell({ schoolName, role, userName, modules, badges, logoUrl, avatarUrl, allowedTabs, children }: {
   schoolName: string; role: string; userName: string;
   modules: Set<string>; badges?: Record<string, number>;
-  logoUrl?: string | null; avatarUrl?: string | null; children: React.ReactNode;
+  logoUrl?: string | null; avatarUrl?: string | null;
+  /** Team & access: a limited member's granted tab keys — null/undefined = everything. */
+  allowedTabs?: Set<string> | null;
+  children: React.ReactNode;
 }) {
   const moduleNav: NavEntry[] = [...registry.values()]
     .filter((m) => modules.has(m.key))
@@ -25,7 +28,9 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
   const items: NavEntry[] = [
     ...CORE_NAV.filter((n) => n.roles.includes(role as Role)),
     ...moduleNav,
-  ].map((n) => ({ ...n, badge: badges?.[n.href] }));
+  ]
+    .filter((n) => !allowedTabs || n.href === "" || allowedTabs.has(n.href.replace(/^\//, "")))
+    .map((n) => ({ ...n, badge: badges?.[n.href] }));
 
   return (
     <div className="flex min-h-screen">

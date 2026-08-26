@@ -91,15 +91,19 @@ export async function exitStudent(slug: string, id: string, f: FormData) {
     redirect(`/students/${id}/exit?err=reason`);
 
   // clearance gate: outstanding fees / custody items need an explicit
-  // acknowledgement — schools DO force-exit, but never silently
-  const [[{ bal }], custody] = await Promise.all([
-    db.select({ bal: sql<number>`coalesce(sum(total_pesewas - paid_pesewas), 0)` })
-      .from(feeInvoices).where(and(
-        eq(feeInvoices.schoolId, school.id), eq(feeInvoices.studentId, id))),
+  // acknowledgement — and in "block" mode a fee balance stops the exit
+  // outright until it's paid or formally waived
+  const { studentBalance } = await import("@/modules/fees/engine");
+  const { getFeesConfig } = await import("@/modules/fees/config");
+  const gate = getFeesConfig(school.settings).clearanceGate;
+  const [ledgerBal, custody] = await Promise.all([
+    studentBalance(school.id, id),
     db.select({ id: studentItems.id }).from(studentItems).where(and(
       eq(studentItems.studentId, id), isNull(studentItems.returnedAt))),
   ]);
-  const hasIssues = Number(bal) > 0 || custody.length > 0;
+  const bal = gate === "off" ? 0 : ledgerBal;
+  if (gate === "block" && bal > 0) redirect(`/students/${id}/exit?err=clearance`);
+  const hasIssues = bal > 0 || custody.length > 0;
   if (hasIssues && f.get("override") !== "on")
     redirect(`/students/${id}/exit?err=clearance`);
 

@@ -15,6 +15,10 @@ import {
   renameClass, deleteClass, updateRoom,
 } from "./structure-actions";
 import { updateTermDates, saveSchoolHours } from "./calendar-actions";
+import { updateMemberGrants, revokeTeamMember } from "./team-actions";
+import { AddTeamMember } from "./team";
+import { adminAccess, user as userTable } from "@/db/schema";
+import { TAB_KEYS, FEE_ACTION_LABELS, type FeeActionKey } from "@/core/access-const";
 import { Field, PageHeader, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { GradingEditor } from "./grading";
@@ -29,6 +33,8 @@ const ERR: Record<string, string> = {
   termdates: "A term has to end after it starts — please check the two dates.",
   termoverlap: "Those dates sit on top of another term in the same year — terms can't overlap.",
   hours: "Closing time has to come after opening time.",
+  selfgrant: "You can't change your own access — ask another full admin.",
+  lastadmin: "That would leave the school with no full admin — promote someone else first.",
 };
 
 /** Preschool / Primary / JHS grouping for the GES ladder; customs follow
@@ -66,7 +72,18 @@ export default async function Settings({ params, searchParams }: {
 }) {
   const { school: slug } = await params;
   const { err } = await searchParams;
-  const { school } = await requireSchool(slug, ["admin"]);
+  const { school, user } = await requireSchool(slug, ["admin"]);
+  const [teamUsers, teamGrants] = await Promise.all([
+    db.select({ id: userTable.id, name: userTable.name, email: userTable.email, username: userTable.username })
+      .from(userTable).where(and(eq(userTable.schoolId, school.id), eq(userTable.role, "admin"))),
+    db.select().from(adminAccess).where(eq(adminAccess.schoolId, school.id)),
+  ]);
+  const grantOf = new Map(teamGrants.map((g) => {
+    let tabs: string[] = []; let fees: Partial<Record<FeeActionKey, boolean>> = {};
+    try { tabs = JSON.parse(g.tabs); } catch { /* empty */ }
+    try { fees = JSON.parse(g.feeActions); } catch { /* none */ }
+    return [g.userId, { tabs, fees }];
+  }));
   const [yrs, tms, lvs, cls, subs, tchs, rms, kidCounts, enrolCounts, allocCounts, sheetCounts] = await Promise.all([
     db.select().from(academicYears).where(eq(academicYears.schoolId, school.id)),
     db.select().from(terms).where(eq(terms.schoolId, school.id)),
@@ -174,6 +191,78 @@ export default async function Settings({ params, searchParams }: {
           School days are Monday to Friday — weekends never count in attendance or any student records.
           Mark holidays on the <a href="/calendar" className="font-medium text-primary">Calendar</a>.
         </p>
+      </Section>
+
+      {/* ── team & access ── */}
+      <div id="team" />
+      <Section title="Team & access"
+        hint="Who can sign in on the school's side, and exactly which sections and money actions each member may touch">
+        <ul className="mb-5 space-y-3">
+          {teamUsers.map((m) => {
+            const g = grantOf.get(m.id);
+            const self = m.id === user.id;
+            return (
+              <li key={m.id} className="rounded-lg border border-border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium">{m.name}{self && <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">(you)</span>}</p>
+                    <p className="truncate text-[12.5px] text-muted-foreground">{m.username ?? m.email}</p>
+                  </div>
+                  {g
+                    ? <span className="max-w-[55%] text-right text-[12px] text-muted-foreground">
+                        {g.tabs.map((t) => TAB_KEYS.find((x) => x.key === t)?.label ?? t).join(" · ") || "no sections yet"}
+                        {Object.values(g.fees).some(Boolean) && <span className="text-primary"> · money: {
+                          (Object.keys(g.fees) as FeeActionKey[]).filter((k) => g.fees[k])
+                            .map((k) => FEE_ACTION_LABELS[k].split(" (")[0].toLowerCase()).join(", ")}</span>}
+                      </span>
+                    : <Badge tone="success">full access</Badge>}
+                </div>
+                {!self && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[12.5px] font-medium text-primary">Change access…</summary>
+                    <form action={updateMemberGrants.bind(null, slug, m.id)} className="mt-2 rounded-md bg-muted/40 p-3">
+                      <label className="flex items-center gap-2 text-[13px] font-medium">
+                        <input type="checkbox" name="full" defaultChecked={!g} /> Full admin — everything, always
+                      </label>
+                      <p className="mb-2 mt-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">…or only these sections</p>
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                        {TAB_KEYS.map((t) => (
+                          <label key={t.key} className="flex items-center gap-1.5 text-[13px]">
+                            <input type="checkbox" name={`tab_${t.key}`} defaultChecked={g?.tabs.includes(t.key)} /> {t.label}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="mb-1 mt-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Money actions</p>
+                      <div className="grid gap-1.5 sm:grid-cols-2">
+                        {(Object.keys(FEE_ACTION_LABELS) as FeeActionKey[]).map((k) => (
+                          <label key={k} className="flex items-center gap-1.5 text-[13px]">
+                            <input type="checkbox" name={`fee_${k}`} defaultChecked={!!g?.fees[k]} /> {FEE_ACTION_LABELS[k]}
+                          </label>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <SubmitButton className={btnCls} pendingText="Saving…">Save access</SubmitButton>
+                        <SubmitButton formAction={revokeTeamMember.bind(null, slug, m.id)}
+                          className="text-[12.5px] font-medium text-danger underline-offset-2 hover:underline"
+                          pendingText="Removing…">
+                          Remove this login
+                        </SubmitButton>
+                      </div>
+                    </form>
+                  </details>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <div className="border-t border-border pt-4">
+          <p className="mb-2 text-[13px] font-semibold">Add a member</p>
+          <p className="mb-3 text-[12.5px] text-muted-foreground">
+            A cashier, bursar or registrar gets their own login limited to exactly what you tick —
+            anything else shows them who to ask. What each cashier collects is tracked by name.
+          </p>
+          <AddTeamMember slug={slug} />
+        </div>
       </Section>
 
       {/* ── 3 · structure: levels & classes ── */}

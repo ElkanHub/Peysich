@@ -5,7 +5,10 @@ import { uid } from "./utils";
 /** Outbound messaging, always graceful: no key → email no-ops, SMS logs as
  *  "queued" with cost tracked (re-billable). Keys (HANDOFF.md §6–7) flip both live. */
 
-export async function sendEmail(to: string, subject: string, html: string, fromName = "Peysich") {
+export async function sendEmail(
+  to: string, subject: string, html: string, fromName = "Peysich",
+  attachments?: { filename: string; content: Buffer }[],
+) {
   if (!process.env.RESEND_API_KEY) return { sent: false as const };
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -13,6 +16,7 @@ export async function sendEmail(to: string, subject: string, html: string, fromN
     body: JSON.stringify({
       from: `${fromName} <${process.env.EMAIL_FROM ?? "noreply@peysich.com"}>`,
       to, subject, html,
+      attachments: attachments?.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })),
     }),
   });
   return { sent: res.ok };

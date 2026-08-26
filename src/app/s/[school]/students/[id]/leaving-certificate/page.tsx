@@ -48,6 +48,28 @@ export default async function LeavingCertificate({ params }: {
   const balance = Number(fees.billed) - Number(fees.paid);
   const admitted = s.admittedOn ?? s.createdAt.toISOString().slice(0, 10);
 
+  // fee clearance gate — in "block" mode the certificate waits for a clear ledger
+  const { getFeesConfig } = await import("@/modules/fees/config");
+  const { studentBalance } = await import("@/modules/fees/engine");
+  const gate = getFeesConfig(school.settings).clearanceGate;
+  const ledgerBal = gate === "off" ? 0 : await studentBalance(school.id, id);
+  if (gate === "block" && ledgerBal > 0) {
+    const { Card } = await import("@/ui/kit");
+    return (
+      <div className="mx-auto max-w-md pt-8">
+        <Card>
+          <h1 className="text-lg font-semibold">Certificate held — fees outstanding</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {s.firstName} {s.lastName} still owes{" "}
+            <b className="text-danger">GHS {(ledgerBal / 100).toFixed(2)}</b>. This school issues
+            leaving certificates only once fees are cleared or formally waived — record the payment
+            or a waiver adjustment on the student file, then return here.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">
       <div className="border-b-4 pb-4 text-center" style={{ borderColor: color }}>

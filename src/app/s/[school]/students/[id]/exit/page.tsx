@@ -36,10 +36,11 @@ export default async function ExitStudent({ params, searchParams }: {
     );
   }
 
-  const [[fees], openLoans, custody, [transport]] = await Promise.all([
-    db.select({ bal: sql<number>`coalesce(sum(total_pesewas - paid_pesewas), 0)` })
-      .from(feeInvoices).where(and(
-        eq(feeInvoices.schoolId, school.id), eq(feeInvoices.studentId, id))),
+  const { studentBalance } = await import("@/modules/fees/engine");
+  const { getFeesConfig } = await import("@/modules/fees/config");
+  const feesCfg = getFeesConfig(school.settings);
+  const [ledgerBal, openLoans, custody, [transport]] = await Promise.all([
+    studentBalance(school.id, id),
     db.select({ title: books.title, loanedAt: loans.loanedAt })
       .from(loans).innerJoin(books, eq(loans.bookId, books.id))
       .where(and(eq(loans.schoolId, school.id), eq(loans.studentId, id), isNull(loans.returnedAt))),
@@ -49,8 +50,9 @@ export default async function ExitStudent({ params, searchParams }: {
       .innerJoin(routes, eq(routeStudents.routeId, routes.id))
       .where(and(eq(routeStudents.schoolId, school.id), eq(routeStudents.studentId, id))),
   ]);
-  const balance = Number(fees.bal);
+  const balance = feesCfg.clearanceGate === "off" ? 0 : ledgerBal;
   const issues = (balance > 0 ? 1 : 0) + openLoans.length + custody.length;
+  const feesBlocked = feesCfg.clearanceGate === "block" && balance > 0;
 
   const Row = ({ ok, label, detail }: { ok: boolean; label: string; detail: string }) => (
     <li className="flex items-start justify-between gap-3 py-2">
@@ -133,7 +135,14 @@ export default async function ExitStudent({ params, searchParams }: {
             <li>The <b>leaving certificate</b> and final statement become available on the file.</li>
             <li>Recorded in error? The file has an <b>Undo exit</b>. Returning next year? Just <b>Enrol</b> them again.</li>
           </ul>
-          {issues > 0 && (
+          {feesBlocked && (
+            <p className="mt-3 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">
+              This school <b>blocks exits until fees are cleared</b> ({ghs(balance)} outstanding).
+              Record the payment, or formally waive it as an adjustment on the student file —
+              then come back here. A full admin can relax this under Fees → Catalog &amp; settings.
+            </p>
+          )}
+          {issues > 0 && !feesBlocked && (
             <label className="mt-3 flex items-start gap-2 rounded-md bg-warning-soft px-3 py-2 text-sm">
               <input type="checkbox" name="override" className="mt-0.5" />
               <span>I acknowledge the outstanding clearance items above and the school accepts the exit anyway.</span>

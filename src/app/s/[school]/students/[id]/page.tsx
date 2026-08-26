@@ -522,10 +522,12 @@ async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
         )}
       </Card>
 
+      {isAdmin && <FeeArrangements slug={slug} schoolId={schoolId} studentId={studentId} />}
+
       <Card>
         <h2 className="font-semibold">Invoices</h2>
         <div className="mt-3">
-          <DataTable head={["Raised", "Total", "Paid", "Balance", "Status"]}>
+          <DataTable head={["Raised", "Total", "Paid", "Balance", "Status", ""]}>
             {invoices.map((i) => (
               <Tr key={i.id}>
                 <Td className="text-muted-foreground">{i.createdAt.toISOString().slice(0, 10)}</Td>
@@ -535,6 +537,7 @@ async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
                   {ghs(i.totalPesewas - i.paidPesewas)}</Td>
                 <Td><Badge tone={i.status === "paid" ? "success" : i.status === "part_paid" ? "warning" : "danger"}>
                   {i.status.replace("_", " ")}</Badge></Td>
+                <Td><Link href={`/fees/invoice/${i.id}`} className="text-[12.5px] font-medium text-primary">open →</Link></Td>
               </Tr>
             ))}
           </DataTable>
@@ -543,11 +546,95 @@ async function FeesTab({ slug, schoolId, studentId, paymentNote, isAdmin }: {
           <div className="mt-3 text-[13px] text-muted-foreground">
             <p className="font-medium text-foreground">Payment trail (latest invoice)</p>
             {pays.map((p) => (
-              <p key={p.id}>{p.createdAt.toISOString().slice(0, 10)} · {ghs(p.amountPesewas)} · via {p.method} · ref {p.reference.slice(0, 16)}</p>
+              <p key={p.id}>{p.createdAt.toISOString().slice(0, 10)} · {ghs(p.amountPesewas)} · via {p.method}
+                {p.receiptNo ? ` · receipt ${p.receiptNo}` : ""}{p.voidedAt ? " · VOID" : ""}</p>
             ))}
           </div>
         )}
       </Card>
     </div>
+  );
+}
+
+/** Fee assignment inputs for THIS child: transport flag, scholarships,
+ *  one-off adjustments — the office's levers, all with a paper trail. */
+async function FeeArrangements({ slug, schoolId, studentId }: {
+  slug: string; schoolId: string; studentId: string;
+}) {
+  const { scholarships, studentScholarships, feeAdjustments } = await import("@/db/schema");
+  const { setTransportRider, grantScholarship, revokeScholarship, addAdjustment } =
+    await import("../../fees/actions");
+  const [[s], schols, mine, adjs] = await Promise.all([
+    db.select({ transportRider: students.transportRider }).from(students).where(eq(students.id, studentId)),
+    db.select().from(scholarships).where(and(eq(scholarships.schoolId, schoolId), eq(scholarships.active, true))),
+    db.select().from(studentScholarships).where(and(
+      eq(studentScholarships.schoolId, schoolId), eq(studentScholarships.studentId, studentId))),
+    db.select().from(feeAdjustments).where(and(
+      eq(feeAdjustments.schoolId, schoolId), eq(feeAdjustments.studentId, studentId)))
+      .orderBy(desc(feeAdjustments.createdAt)).limit(6),
+  ]);
+  const mineIds = new Set(mine.map((m) => m.scholarshipId));
+
+  return (
+    <Card>
+      <h2 className="font-semibold">Fee arrangement for this child</h2>
+      <form action={setTransportRider.bind(null, slug, studentId)} className="mt-2.5 flex items-center gap-3">
+        <label className="flex items-center gap-1.5 text-[13.5px]">
+          <input type="checkbox" name="rider" defaultChecked={s?.transportRider} />
+          Uses school transport (transport fees apply)
+        </label>
+        <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[12.5px]"} pendingText="…">Save</SubmitButton>
+      </form>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <p className="text-[13px] font-semibold">Scholarships &amp; discounts</p>
+        <ul className="mt-1.5 space-y-1 text-[13px]">
+          {mine.map((m) => {
+            const sc = schols.find((x) => x.id === m.scholarshipId);
+            return (
+              <li key={m.scholarshipId} className="flex items-center justify-between gap-2">
+                <span>{sc?.name ?? "—"}
+                  <span className="ml-2 text-[11.5px] text-muted-foreground">granted by {m.grantedBy}{m.note ? ` · ${m.note}` : ""}</span>
+                </span>
+                <SubmitButton formAction={revokeScholarship.bind(null, slug, studentId, m.scholarshipId)}
+                  className="text-[11.5px] text-danger underline-offset-2 hover:underline" pendingText="…">remove</SubmitButton>
+              </li>
+            );
+          })}
+          {!mine.length && <li className="text-muted-foreground">None.</li>}
+        </ul>
+        {schols.some((sc) => !mineIds.has(sc.id)) && (
+          <form action={grantScholarship.bind(null, slug, studentId)} className="mt-2 flex flex-wrap items-end gap-2">
+            <select name="scholarshipId" className={inputCls + " w-48"}>
+              {schols.filter((sc) => !mineIds.has(sc.id)).map((sc) => (
+                <option key={sc.id} value={sc.id}>{sc.name}</option>
+              ))}
+            </select>
+            <input name="note" placeholder="note (why)" className={inputCls + " w-40"} />
+            <SubmitButton className={btnGhostCls} pendingText="…">Grant</SubmitButton>
+          </form>
+        )}
+      </div>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <p className="text-[13px] font-semibold">One-off adjustment</p>
+        <p className="text-[12px] text-muted-foreground">
+          Positive bills more (a fine, a lost book); negative waives. Applies to this term&apos;s
+          bill — instantly if it&apos;s already issued.
+        </p>
+        <form action={addAdjustment.bind(null, slug, studentId)} className="mt-2 flex flex-wrap items-end gap-2">
+          <input name="amountGhs" type="number" step="0.01" required placeholder="±GHS" className={inputCls + " w-24"} />
+          <input name="reason" required placeholder="reason (required)" className={inputCls + " w-56"} />
+          <SubmitButton className={btnGhostCls} pendingText="…">Apply</SubmitButton>
+        </form>
+        {adjs.length > 0 && (
+          <ul className="mt-2 space-y-0.5 text-[12px] text-muted-foreground" data-nums="">
+            {adjs.map((a) => (
+              <li key={a.id}>{a.createdAt.toISOString().slice(0, 10)} · {ghs(a.amountPesewas)} · {a.reason} · by {a.createdBy}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Card>
   );
 }

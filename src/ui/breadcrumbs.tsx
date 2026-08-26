@@ -12,6 +12,8 @@ const LABELS: Record<string, string> = {
   inventory: "Inventory", hr: "Staff HR", analytics: "Analytics", children: "My Children",
   report: "Report card", reports: "Reports", performance: "Performance",
   calendar: "Calendar", register: "Record book",
+  setup: "Catalog & settings", invoice: "Invoice", receipt: "Receipt",
+  "no-access": "No access",
   platform: "Console", schools: "Schools", audit: "Audit log",
   onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
   financials: "Financials", broadcast: "Broadcast", users: "All users",

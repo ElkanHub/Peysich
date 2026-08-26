@@ -10,7 +10,6 @@ import {
 import { requireSchool, getCurrentTerm } from "@/core/school-context";
 import { assertParentOf } from "@/core/portal";
 import { Card, DataTable, PageHeader, Tr, Td } from "@/ui/kit";
-import { PayFeesButton } from "@/ui/pay-fees";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -131,7 +130,8 @@ export default async function ChildDetail({ params }: {
                 <Td>{ghs(i.totalPesewas)}</Td>
                 <Td className="text-success">{ghs(i.paidPesewas)}</Td>
                 <Td className={bal > 0 ? "text-danger" : "text-success"}>{ghs(bal)}</Td>
-                <Td>{bal > 0 && <PayFeesButton slug={slug} invoiceId={i.id} maxGhs={bal / 100} />}</Td>
+                <Td><Link href={`/fees?child=${id}`} className="text-[12.5px] font-medium text-primary">
+                  {bal > 0 ? "how to pay →" : "details →"}</Link></Td>
               </Tr>
             );
           })}

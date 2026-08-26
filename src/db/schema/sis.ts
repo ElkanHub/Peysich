@@ -111,6 +111,7 @@ export const students = pgTable("students", {
   /** How/where this family pays fees (MoMo number, bank branch, who pays, when) */
   paymentNote: text("payment_note"),
   boarding: boolean("boarding").notNull().default(false), // day student vs boarder
+  transportRider: boolean("transport_rider").notNull().default(false), // uses school transport → transport fees apply
   admittedOn: date("admitted_on"), // official admission date (createdAt = record creation)
   /** Admission wizard progress: 1..7 while a draft, null once admission completes. */
   admissionStep: integer("admission_step"),
