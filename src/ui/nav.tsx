@@ -102,11 +102,11 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
   const [open, setOpen] = useState(false);
   return (
     <>
-      <aside className="hidden w-60 shrink-0 lg:block">
+      <aside className="hidden w-60 shrink-0 print:hidden lg:block">
         <div className="fixed inset-y-0 w-60"><SidebarInner {...props} /></div>
       </aside>
       {/* mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-13 items-center gap-3 border-b border-ink-border bg-ink px-4 py-2.5 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 flex h-13 items-center gap-3 border-b border-ink-border bg-ink px-4 py-2.5 print:hidden lg:hidden">
         <button onClick={() => setOpen(true)} aria-label="Open menu"
           className="rounded-md p-1.5 text-ink-text hover:bg-ink-2">
           <Menu size={20} />

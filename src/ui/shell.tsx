@@ -37,7 +37,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
       <AppNav schoolName={schoolName} role={role} userName={userName} items={items}
         avatarUrl={avatarUrl} />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 mt-13 flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur lg:mt-0 lg:px-8">
+        <header className="sticky top-0 z-30 mt-13 flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:mt-0 lg:px-8">
           <Breadcrumbs root={schoolName} />
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -45,7 +45,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
               className="h-8 w-8 shrink-0 rounded-md object-contain" />
           )}
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-6 print:max-w-none print:p-0 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );
