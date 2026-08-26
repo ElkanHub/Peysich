@@ -88,22 +88,22 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
       {/* ── the teacher drawer ── */}
       <div className="sticky top-12 z-20 -mx-1 mb-3 rounded-lg border border-border bg-card/95 px-3 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Teachers</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">To assign</span>
           <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
-            {teachers.map((t) => (
+            {teachers.filter((t) => t.load === 0).map((t) => (
               <span key={t.id} draggable
                 onDragStart={(e) => { dragId.current = t.id; e.dataTransfer.setData("text/plain", t.id); }}
                 onDragEnd={() => { dragId.current = null; }}
-                title={`${t.name} — drag into the grid · ${t.load} role${t.load === 1 ? "" : "s"}`}
-                className={`inline-flex cursor-grab items-center gap-1.5 rounded-full border-[1.5px] bg-card py-0.5 pl-1 pr-2.5 text-[12.5px] font-semibold transition-transform hover:-translate-y-px active:cursor-grabbing ${
-                  t.load ? "border-border-strong opacity-90" : "border-border-strong"}`}>
+                title={`${t.name} — drag into the grid`}
+                className="inline-flex cursor-grab items-center gap-1.5 rounded-full border-[1.5px] border-border-strong bg-card py-0.5 pl-1 pr-2.5 text-[12.5px] font-semibold transition-transform hover:-translate-y-px active:cursor-grabbing">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
                   style={{ background: t.color }}>{initials(t.name)}</span>
                 {t.name}
-                {t.load > 0 && <span className="font-bold text-success">✓</span>}
-                {t.load > 0 && <span className="text-[10.5px] font-medium text-faint" data-nums="">{t.load}</span>}
               </span>
             ))}
+            {teachers.every((t) => t.load > 0) && (
+              <span className="py-0.5 text-[13px] font-medium text-success">Everyone has a role ✓</span>
+            )}
           </div>
           <div className="flex overflow-hidden rounded-full border-[1.5px] border-border-strong text-[11.5px] font-bold">
             <button type="button" onClick={() => setMode("main")}
@@ -116,6 +116,28 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
             </button>
           </div>
         </div>
+        {teachers.some((t) => t.load > 0) && (
+          <details className="mt-1.5">
+            <summary className="cursor-pointer text-[11.5px] font-semibold text-muted-foreground">
+              Assigned · {teachers.filter((t) => t.load > 0).length} — drag one out again for another role
+            </summary>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {teachers.filter((t) => t.load > 0).map((t) => (
+                <span key={t.id} draggable
+                  onDragStart={(e) => { dragId.current = t.id; e.dataTransfer.setData("text/plain", t.id); }}
+                  onDragEnd={() => { dragId.current = null; }}
+                  title={`${t.name} · ${t.load} role${t.load === 1 ? "" : "s"} — drag for another`}
+                  className="inline-flex cursor-grab items-center gap-1.5 rounded-full border-[1.5px] border-border bg-muted/60 py-0.5 pl-1 pr-2.5 text-[12.5px] font-semibold opacity-85 transition-transform hover:-translate-y-px active:cursor-grabbing">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                    style={{ background: t.color }}>{initials(t.name)}</span>
+                  {t.name}
+                  <span className="font-bold text-success">✓</span>
+                  <span className="text-[10.5px] font-medium text-faint" data-nums="">{t.load}</span>
+                </span>
+              ))}
+            </div>
+          </details>
+        )}
         <p className="mt-1 text-[12px] text-muted-foreground" data-nums="">
           <b className="text-foreground">Drag</b> a name in, or <b className="text-foreground">click a cell to type</b>.
           Sweep across a subject row to give one teacher several classes at once. Double-click clears.
