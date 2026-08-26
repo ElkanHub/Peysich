@@ -40,11 +40,13 @@ export async function placeEntry(slug: string, classId: string, day: string, slo
     }
   }
 
-  await db.delete(timetableEntries).where(and(
-    eq(timetableEntries.classId, classId), eq(timetableEntries.day, day as Day),
-    eq(timetableEntries.slotId, slotId)));
+  // one atomic upsert — a retry after a half-finished attempt can never
+  // trip over the (class, day, slot) unique index
   await db.insert(timetableEntries).values({
     id: uid(), schoolId: school.id, classId, subjectId, slotId, day: day as Day,
+  }).onConflictDoUpdate({
+    target: [timetableEntries.classId, timetableEntries.day, timetableEntries.slotId],
+    set: { subjectId, teacherId: null },
   });
   revalidatePath("/timetable");
   redirect(`${backTo}&flash=saved`);

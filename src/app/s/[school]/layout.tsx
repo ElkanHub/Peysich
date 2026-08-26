@@ -7,6 +7,12 @@ import { LiveSync } from "@/ui/live-sync";
 import { AnnouncementGate } from "@/ui/announcement-gate";
 import { Shell } from "@/ui/shell";
 
+/** A suspended Neon compute can take ~10s to wake; the platform's default
+ *  function window kills the first request after a quiet spell mid-flight
+ *  ("error → try again → works"). Give every school page and its server
+ *  actions room to ride the wake-up out. */
+export const maxDuration = 60;
+
 export default async function SchoolLayout({ children, params }: {
   children: React.ReactNode; params: Promise<{ school: string }>;
 }) {

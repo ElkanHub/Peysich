@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -147,8 +148,10 @@ export async function ensureAcademicDefaults(schoolId: string) {
 
 export type Structure = Awaited<ReturnType<typeof getStructure>>;
 
-/** Everything the timetable and its sibling screens need, resolved once. */
-export async function getStructure(schoolId: string) {
+/** Everything the timetable and its sibling screens need, resolved once.
+ *  cache() dedupes it per request — pages and getTeacherScope share one
+ *  resolution instead of each firing the 13-query fan-out again. */
+export const getStructure = cache(async (schoolId: string) => {
   await ensureAcademicDefaults(schoolId);
   const [lvls, cls, subs, confs, slots, secSubs, ovr, tas, tchs, entries, comps, domains, profiles] = await Promise.all([
     db.select().from(levels).where(eq(levels.schoolId, schoolId)),
@@ -321,4 +324,4 @@ export async function getStructure(schoolId: string) {
     components: comps, componentsFor, skillScaleFor,
     skillDomains: domains.sort((a, b) => a.sortOrder - b.sortOrder),
   };
-}
+});
