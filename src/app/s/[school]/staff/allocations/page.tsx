@@ -1,184 +1,111 @@
-import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { staff, staffTeaching } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
-import { getStructure, SECTION_LABELS } from "@/core/academics";
+import { getStructure, SECTION_LABELS, type Section } from "@/core/academics";
 import { Card, PageHeader, Badge } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
-import { setAllocation, addTeachingRole, removeTeachingRole, clearMainClassTeacher, setFormMaster } from "../staff-actions";
+import { setAllocation, setFormMaster } from "../staff-actions";
+import { AllocationMatrix, type MatrixCell, type MatrixColumn } from "./matrix";
 
-/** TEACHING & ALLOCATIONS — profile-based. A teacher IS either a class
- *  teacher (main, with any number of assistants) or a subject teacher
- *  (subject + the levels they carry, main/assistant). Everything else —
- *  the timetable, score sheets, registers — is DERIVED from these
- *  profiles. Pins only break ties; nothing is repeated per class. */
-export default async function Allocations({ params, searchParams }: {
-  params: Promise<{ school: string }>;
-  searchParams: Promise<{ err?: string }>;
-}) {
+/** Teacher identity colors — CVD-checked base set, cycled deterministically. */
+const TEACHER_COLORS = [
+  "#A33268", "#0084B8", "#A8690A", "#6455CC", "#1B7F4B",
+  "#B3417A", "#2E6E8E", "#7A5C2E", "#4E63C0", "#207F70",
+];
+
+/** TEACHING & ALLOCATIONS — the Allocation Matrix on top (rows = subjects,
+ *  columns = classes; drag teachers in, sweep spans, everything derives),
+ *  with Form masters and Needs attention below. */
+export default async function Allocations({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
-  const { err } = await searchParams;
   const { school } = await requireSchool(slug, ["admin"]);
   const S = await getStructure(school.id);
-  const [teachers, profileRows] = await Promise.all([
-    db.select().from(staff).where(and(
-      eq(staff.schoolId, school.id), eq(staff.staffType, "teaching"), eq(staff.status, "active")))
-      .orderBy(staff.name),
-    db.select().from(staffTeaching).where(eq(staffTeaching.schoolId, school.id)),
-  ]);
-  const lvls = [...S.levels].sort((a, b) => a.sortOrder - b.sortOrder);
-  const levelName = new Map(lvls.map((l) => [l.id, l.name]));
+  const teacherRows = await db.select().from(staff).where(and(
+    eq(staff.schoolId, school.id), eq(staff.staffType, "teaching"), eq(staff.status, "active")))
+    .orderBy(staff.name);
+  const profileRows = await db.select().from(staffTeaching)
+    .where(eq(staffTeaching.schoolId, school.id));
+
   const ordered = [...S.classes].sort((a, b) =>
     (S.levelById.get(a.levelId)?.sortOrder ?? 99) - (S.levelById.get(b.levelId)?.sortOrder ?? 99)
     || a.name.localeCompare(b.name));
   const teacherName = (id: string | null) => (id && S.staffById.get(id)?.name) || null;
-  const parseLv = (raw: string | null) => {
-    try { const a = JSON.parse(raw || "[]"); return Array.isArray(a) ? (a as string[]) : []; } catch { return []; }
-  };
 
-  // resolved periods/week per teacher (per-period overrides included)
-  const periodsOf = new Map<string, number>();
-  for (const e of S.entries) {
-    const tid = S.teacherFor(e.classId, e.subjectId, e.teacherId);
-    if (tid) periodsOf.set(tid, (periodsOf.get(tid) ?? 0) + 1);
+  // ── matrix props ──
+  const load = new Map<string, number>();
+  for (const c of ordered) {
+    if (c.classTeacherId) load.set(c.classTeacherId, (load.get(c.classTeacherId) ?? 0) + 1);
   }
+  for (const r of profileRows) load.set(r.staffId, (load.get(r.staffId) ?? 0) + 1);
+  const teachers = teacherRows.map((t, i) => ({
+    id: t.id, name: t.name, color: TEACHER_COLORS[i % TEACHER_COLORS.length],
+    load: load.get(t.id) ?? 0,
+  }));
+
+  const columns: MatrixColumn[] = ordered.map((c) => {
+    const ct = S.modeBySection.get(S.sectionOfClass(c)) === "class_teacher";
+    const main = c.classTeacherId ? { id: c.classTeacherId, name: teacherName(c.classTeacherId) ?? "?" } : null;
+    const assistants = (S.classAssistants.get(c.id) ?? [])
+      .map((a) => ({ id: a.staffId, name: teacherName(a.staffId) ?? "?" }));
+    return { id: c.id, name: c.name, ct, main, assistants };
+  });
+  const bands = (["preschool", "primary", "jhs"] as Section[])
+    .map((sec) => ({
+      label: `${SECTION_LABELS[sec]} · ${S.modeBySection.get(sec) === "class_teacher" ? "class teaching" : "subject teaching"}`,
+      span: ordered.filter((c) => S.sectionOfClass(c) === sec).length,
+    }))
+    .filter((b) => b.span > 0);
+
+  // subjects that appear on at least one subject-mode class's list, name order
+  const subjectIds = new Set<string>();
+  for (const c of ordered) {
+    if (S.modeBySection.get(S.sectionOfClass(c)) === "class_teacher") continue;
+    for (const sid of S.effectiveSubjectIds(c.id)) subjectIds.add(sid);
+  }
+  const subjects = [...subjectIds]
+    .map((id) => ({ id, name: S.subjectById.get(id)?.name ?? "?" }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const cells: Record<string, MatrixCell> = {};
+  for (const c of ordered) {
+    if (S.modeBySection.get(S.sectionOfClass(c)) === "class_teacher") continue;
+    const eff = new Set(S.effectiveSubjectIds(c.id));
+    for (const sub of subjects) {
+      const key = `${sub.id}|${c.id}`;
+      if (!eff.has(sub.id)) { cells[key] = { off: true }; continue; }
+      const pool = S.poolFor(c.id, sub.id)
+        .map((p) => ({ id: p.staffId, name: teacherName(p.staffId) ?? "?", role: p.role }));
+      const mainId = S.teacherFor(c.id, sub.id);
+      cells[key] = {
+        main: mainId ? { id: mainId, name: teacherName(mainId) ?? "?" } : null,
+        pinned: S.pins.has(`${c.id}:${sub.id}`),
+        tie: !mainId && pool.length > 1,
+        assistants: pool.filter((p) => p.role === "assistant" && p.id !== mainId),
+        pool,
+      };
+    }
+  }
+
   const issues = S.allocationIssues();
-  const pins = [...S.pins.entries()]; // [ "classId:subjectId", teacherId ]
+  const pins = [...S.pins.entries()];
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-6xl">
       <PageHeader title="Teaching & allocations"
-        sub="Assign each teacher ONCE — a class, or a subject with its levels. The timetable, registers and score sheets follow automatically." />
-      {err === "roleform" && (
-        <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">
-          That role needs its details — a class for class roles; a subject plus at least one level for subject roles.
-        </p>
-      )}
+        sub="One grid, whole school — drag a teacher in once and the timetable, registers and score sheets follow." />
 
-      {/* ═══ 1 · teacher profiles ═══ */}
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Teacher profiles</h2>
-      <div className="mb-6 space-y-2.5">
-        {teachers.map((t) => {
-          const mainOf = ordered.filter((c) => c.classTeacherId === t.id);
-          const myRows = profileRows.filter((r) => r.staffId === t.id);
-          const assistClasses = myRows.filter((r) => r.kind === "class");
-          const subjectsMine = myRows.filter((r) => r.kind === "subject");
-          const formOf = ordered.filter((c) => S.formMasterOf(c.id) === t.id);
-          const empty = !mainOf.length && !assistClasses.length && !subjectsMine.length;
-          return (
-            <Card key={t.id} className="p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">
-                  <Link href={`/staff/${t.id}`} className="hover:text-primary">{t.name}</Link>
-                  {formOf.length > 0 && (
-                    <span className="ml-2 text-[12px] font-medium text-muted-foreground">
-                      form master of {formOf.map((c) => c.name).join(", ")}
-                    </span>
-                  )}
-                </p>
-                <span className="text-[12.5px] text-muted-foreground" data-nums="">
-                  {periodsOf.get(t.id) ?? 0} periods/wk
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {mainOf.map((c) => (
-                  <form key={c.id} action={clearMainClassTeacher.bind(null, slug, c.id)}
-                    className="flex items-center gap-1 rounded-full bg-brand-soft py-1 pl-3 pr-1.5 text-[12.5px] font-semibold text-primary">
-                    Class teacher — {c.name}
-                    <SubmitButton className="rounded-full px-1 leading-none hover:text-danger" pendingText="…">×</SubmitButton>
-                  </form>
-                ))}
-                {assistClasses.map((r) => (
-                  <form key={r.id} action={removeTeachingRole.bind(null, slug, r.id)}
-                    className="flex items-center gap-1 rounded-full border border-border py-1 pl-3 pr-1.5 text-[12.5px] font-medium">
-                    Assistant — {S.classById.get(r.classId ?? "")?.name ?? "?"}
-                    <SubmitButton className="rounded-full px-1 leading-none text-muted-foreground hover:text-danger" pendingText="…">×</SubmitButton>
-                  </form>
-                ))}
-                {subjectsMine.map((r) => (
-                  <form key={r.id} action={removeTeachingRole.bind(null, slug, r.id)}
-                    className={`flex items-center gap-1 rounded-full py-1 pl-3 pr-1.5 text-[12.5px] font-medium ${
-                      r.role === "main" ? "bg-primary/10 text-primary" : "border border-border"}`}>
-                    {S.subjectById.get(r.subjectId ?? "")?.name ?? "?"}
-                    {r.role === "assistant" && <span className="opacity-70">(assistant)</span>}
-                    <span className="font-normal text-muted-foreground">
-                      · {parseLv(r.levelIds).map((id) => levelName.get(id)).filter(Boolean).join(", ") || "no levels"}
-                    </span>
-                    <SubmitButton className="rounded-full px-1 leading-none hover:text-danger" pendingText="…">×</SubmitButton>
-                  </form>
-                ))}
-                {empty && <span className="text-[13px] text-muted-foreground">No teaching role yet — assign one below.</span>}
-              </div>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-[13px] font-medium text-primary">Assign a role…</summary>
-                <form action={addTeachingRole.bind(null, slug, t.id)}
-                  className="mt-2 grid gap-2.5 rounded-md border border-border bg-muted/40 p-3 text-sm sm:grid-cols-2">
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Role</span>
-                    <select name="what" className="rounded-md border border-border bg-card px-2 py-1.5">
-                      <option value="class-main">Class teacher (main — all subjects)</option>
-                      <option value="class-assist">Class assistant</option>
-                      <option value="subject">Subject teacher</option>
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Class (for class roles)</span>
-                    <select name="classId" className="rounded-md border border-border bg-card px-2 py-1.5">
-                      <option value="">—</option>
-                      {ordered.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Subject (for subject roles)</span>
-                    <select name="subjectId" className="rounded-md border border-border bg-card px-2 py-1.5">
-                      <option value="">—</option>
-                      {[...S.subjects].sort((a, b) => a.name.localeCompare(b.name))
-                        .map((s2) => <option key={s2.id} value={s2.id}>{s2.name}</option>)}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">As</span>
-                    <select name="role" className="rounded-md border border-border bg-card px-2 py-1.5">
-                      <option value="main">Main teacher</option>
-                      <option value="assistant">Assistant</option>
-                    </select>
-                  </label>
-                  <fieldset className="sm:col-span-2">
-                    <legend className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Levels the subject covers
-                    </legend>
-                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
-                      {lvls.map((l) => (
-                        <label key={l.id} className="flex items-center gap-1.5 text-[13px]">
-                          <input type="checkbox" name="levelIds" value={l.id} className="h-3.5 w-3.5 accent-[var(--primary)]" />
-                          {l.name}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                  <SubmitButton className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground sm:col-span-2"
-                    pendingText="Saving…">
-                    Add to {t.name.split(" ")[0]}&apos;s profile
-                  </SubmitButton>
-                </form>
-              </details>
-            </Card>
-          );
-        })}
-        {teachers.length === 0 && (
-          <Card><p className="text-sm text-muted-foreground">No active teaching staff yet — onboard teachers under Staff first.</p></Card>
-        )}
-      </div>
+      <AllocationMatrix slug={slug} teachers={teachers} bands={bands}
+        columns={columns} subjects={subjects} cells={cells} />
 
-      {/* ═══ 2 · form masters ═══ */}
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Form masters</h2>
+      {/* ═══ form masters ═══ */}
+      <h2 className="mb-2 mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Form masters</h2>
       <Card className="mb-6">
         <p className="mb-2 text-[13px] text-muted-foreground">
           The responsible teacher of each class — register, report cards, &quot;my class&quot;. Class-teaching
           classes default to their class teacher; subject-teaching classes appoint one.
         </p>
-        <div className="grid gap-1.5 sm:grid-cols-2">
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
           {ordered.map((c) => {
             const mode = S.modeBySection.get(S.sectionOfClass(c));
             const derived = S.formMasterOf(c.id);
@@ -188,16 +115,13 @@ export default async function Allocations({ params, searchParams }: {
                 className="flex items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5">
                 <span className="min-w-0 truncate text-sm font-medium">
                   {c.name}
-                  <span className="ml-1.5 text-[11.5px] font-normal text-muted-foreground">
-                    {mode === "class_teacher" ? "class-teaching" : "subject-teaching"}
-                  </span>
                   {!derived && <Badge tone="warning">needs one</Badge>}
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
                   <select name="staffId" defaultValue={c.formMasterId ?? ""}
-                    className="max-w-44 rounded-md border border-border bg-card px-2 py-1 text-xs">
-                    <option value="">{autoName ? `Auto — ${autoName} (class teacher)` : "— choose —"}</option>
-                    {teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    className="max-w-40 rounded-md border border-border bg-card px-2 py-1 text-xs">
+                    <option value="">{autoName ? `Auto — ${autoName}` : "— choose —"}</option>
+                    {teacherRows.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                   <SubmitButton className="rounded border border-border px-2 py-1 text-[12.5px] hover:bg-muted" pendingText="…">Set</SubmitButton>
                 </span>
@@ -207,14 +131,13 @@ export default async function Allocations({ params, searchParams }: {
         </div>
       </Card>
 
-      {/* ═══ 3 · needs attention ═══ */}
+      {/* ═══ needs attention ═══ */}
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Needs attention</h2>
       <Card className="mb-6">
         {issues.length === 0 ? (
           <p className="text-sm text-success">Every subject in every class resolves to exactly one teacher ✓</p>
         ) : (
           <div className="space-y-1.5">
-            {/* uncovered cells grouped BY SUBJECT — one line says everything */}
             {[...new Set(issues.filter((i) => i.kind === "uncovered").map((i) => i.subjectId))].map((sid) => {
               const classNames = issues
                 .filter((i) => i.kind === "uncovered" && i.subjectId === sid)
@@ -223,7 +146,7 @@ export default async function Allocations({ params, searchParams }: {
                 <div key={sid} className="rounded-md border border-warning/50 bg-warning-soft px-3 py-2 text-sm">
                   <b>{S.subjectById.get(sid)?.name ?? "?"}</b> — nobody carries it yet in{" "}
                   <span className="text-muted-foreground">{classNames.join(", ")}</span>.
-                  Add it to a teacher&apos;s profile above with those levels ticked.
+                  Sweep those cells above and drop a teacher on them.
                 </div>
               );
             })}

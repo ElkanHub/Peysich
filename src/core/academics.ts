@@ -227,9 +227,12 @@ export async function getStructure(schoolId: string) {
         if (!out.some((x) => x.staffId === a.staffId)) out.push({ staffId: a.staffId, role: "assistant" });
       return out;
     }
-    return subjectRows
-      .filter((r) => r.subjectId === subjectId && r.levelIds.includes(c.levelId))
-      .map((r) => ({ staffId: r.staffId, role: r.role }))
+    const seen = new Map<string, string>(); // staffId → best role (main wins)
+    for (const r of subjectRows) {
+      if (r.subjectId !== subjectId || !r.levelIds.includes(c.levelId)) continue;
+      if (seen.get(r.staffId) !== "main") seen.set(r.staffId, r.role);
+    }
+    return [...seen.entries()].map(([staffId, role]) => ({ staffId, role }))
       .sort((a, b) => Number(b.role === "main") - Number(a.role === "main"));
   };
 

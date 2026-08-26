@@ -329,3 +329,146 @@ export async function setFormMaster(slug: string, classId: string, f: FormData) 
   revalidatePath("/staff/allocations");
   redirect(`/staff/allocations?flash=saved`);
 }
+
+/* ── the Allocation Matrix — one grid, whole school. Every drop writes the
+ *    SAME profile rows the engine derives from; pins appear only where a
+ *    drop needs to be class-exact (partial level, or a second main). ── */
+
+async function mergeSubjectRole(
+  schoolId: string, staffId: string, subjectId: string, role: string, addLevelIds: string[],
+) {
+  const rows = await db.select().from(staffTeaching).where(and(
+    eq(staffTeaching.schoolId, schoolId), eq(staffTeaching.staffId, staffId),
+    eq(staffTeaching.kind, "subject"), eq(staffTeaching.subjectId, subjectId),
+    eq(staffTeaching.role, role)));
+  const parse = (raw: string | null) => {
+    try { const a = JSON.parse(raw || "[]"); return Array.isArray(a) ? (a as string[]) : []; } catch { return []; }
+  };
+  const levels = new Set([...(rows[0] ? parse(rows[0].levelIds) : []), ...addLevelIds]);
+  if (rows[0]) {
+    await db.update(staffTeaching).set({ levelIds: JSON.stringify([...levels]) })
+      .where(eq(staffTeaching.id, rows[0].id));
+  } else {
+    await db.insert(staffTeaching).values({
+      id: uid(), schoolId, staffId, kind: "subject", subjectId,
+      levelIds: JSON.stringify([...levels]), role,
+    });
+  }
+}
+
+/** A sweep-drop on a subject row: teacher × subject × the swept classes. */
+export async function matrixAssignSubject(
+  slug: string, teacherId: string, subjectId: string, classIds: string[], role: "main" | "assistant",
+) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [me] = await db.select({ id: staff.id }).from(staff)
+    .where(and(eq(staff.id, teacherId), eq(staff.schoolId, school.id)));
+  if (!me || !classIds.length) return { ok: false as const };
+  const cls = await db.select().from(classes).where(eq(classes.schoolId, school.id));
+  const swept = cls.filter((c) => classIds.includes(c.id));
+  const sweptLevels = [...new Set(swept.map((c) => c.levelId))];
+  await mergeSubjectRole(school.id, teacherId, subjectId, role, sweptLevels);
+
+  if (role === "main") {
+    // pin exactly the swept classes when the drop must be class-exact:
+    // the level has classes outside the sweep, or another main covers it
+    const others = await db.select().from(staffTeaching).where(and(
+      eq(staffTeaching.schoolId, school.id), eq(staffTeaching.kind, "subject"),
+      eq(staffTeaching.subjectId, subjectId), eq(staffTeaching.role, "main")));
+    const parse = (raw: string | null) => {
+      try { const a = JSON.parse(raw || "[]"); return Array.isArray(a) ? (a as string[]) : []; } catch { return []; }
+    };
+    for (const c of swept) {
+      const levelClassCount = cls.filter((x) => x.levelId === c.levelId).length;
+      const sweptAtLevel = swept.filter((x) => x.levelId === c.levelId).length;
+      const rival = others.some((r) => r.staffId !== teacherId && parse(r.levelIds).includes(c.levelId));
+      if (rival || sweptAtLevel < levelClassCount) {
+        await db.insert(teachingAssignments)
+          .values({ id: uid(), schoolId: school.id, teacherId, classId: c.id, subjectId })
+          .onConflictDoUpdate({
+            target: [teachingAssignments.classId, teachingAssignments.subjectId],
+            set: { teacherId },
+          });
+      } else {
+        // sole main over the whole level — the profile is enough; drop stale pins
+        await db.delete(teachingAssignments).where(and(
+          eq(teachingAssignments.classId, c.id), eq(teachingAssignments.subjectId, subjectId)));
+      }
+    }
+  }
+  revalidatePath("/staff/allocations");
+  return { ok: true as const };
+}
+
+/** A drop on a class-teaching column: main takes the seat, assistants stack. */
+export async function matrixAssignClass(
+  slug: string, teacherId: string, classId: string, role: "main" | "assistant",
+) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [me] = await db.select({ id: staff.id }).from(staff)
+    .where(and(eq(staff.id, teacherId), eq(staff.schoolId, school.id)));
+  if (!me) return { ok: false as const };
+  if (role === "main") {
+    await db.update(classes).set({ classTeacherId: teacherId })
+      .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  } else {
+    const dup = await db.select({ id: staffTeaching.id }).from(staffTeaching).where(and(
+      eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, teacherId),
+      eq(staffTeaching.kind, "class"), eq(staffTeaching.classId, classId)));
+    if (!dup.length) await db.insert(staffTeaching).values({
+      id: uid(), schoolId: school.id, staffId: teacherId, kind: "class", classId, role: "assistant",
+    });
+  }
+  revalidatePath("/staff/allocations");
+  return { ok: true as const };
+}
+
+/** Clear one subject cell: drop the pin if one exists; otherwise take this
+ *  class's level out of the resolved teacher's profile row for that role. */
+export async function matrixClearCell(slug: string, subjectId: string, classId: string) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [pin] = await db.select().from(teachingAssignments).where(and(
+    eq(teachingAssignments.schoolId, school.id),
+    eq(teachingAssignments.classId, classId), eq(teachingAssignments.subjectId, subjectId)));
+  if (pin) {
+    await db.delete(teachingAssignments).where(eq(teachingAssignments.id, pin.id));
+    revalidatePath("/staff/allocations");
+    return { ok: true as const };
+  }
+  const [c] = await db.select().from(classes)
+    .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  if (!c) return { ok: false as const };
+  const rows = await db.select().from(staffTeaching).where(and(
+    eq(staffTeaching.schoolId, school.id), eq(staffTeaching.kind, "subject"),
+    eq(staffTeaching.subjectId, subjectId)));
+  const parse = (raw: string | null) => {
+    try { const a = JSON.parse(raw || "[]"); return Array.isArray(a) ? (a as string[]) : []; } catch { return []; }
+  };
+  for (const r of rows) {
+    const lv = parse(r.levelIds);
+    if (!lv.includes(c.levelId)) continue;
+    const left = lv.filter((l) => l !== c.levelId);
+    if (left.length) await db.update(staffTeaching)
+      .set({ levelIds: JSON.stringify(left) }).where(eq(staffTeaching.id, r.id));
+    else await db.delete(staffTeaching).where(eq(staffTeaching.id, r.id));
+  }
+  revalidatePath("/staff/allocations");
+  return { ok: true as const };
+}
+
+/** Clear a person off a class column (main seat or an assistant). */
+export async function matrixClearClass(slug: string, classId: string, staffId: string) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [c] = await db.select().from(classes)
+    .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  if (!c) return { ok: false as const };
+  if (c.classTeacherId === staffId) {
+    await db.update(classes).set({ classTeacherId: null }).where(eq(classes.id, classId));
+  } else {
+    await db.delete(staffTeaching).where(and(
+      eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, staffId),
+      eq(staffTeaching.kind, "class"), eq(staffTeaching.classId, classId)));
+  }
+  revalidatePath("/staff/allocations");
+  return { ok: true as const };
+}
