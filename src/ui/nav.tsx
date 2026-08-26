@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
-import { SignOutButton } from "./signout";
+import { SignOutButton, SwitchAccountButton } from "./signout";
 
 const ICONS: Record<string, LucideIcon> = {
   Dashboard: LayoutDashboard, Students: Users, Guardians: HeartHandshake,
@@ -91,7 +91,9 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
             <span className="block text-[12px] capitalize text-ink-text/60">{role.replace("_", " ")}</span>
           </span>
         </Link>
-        <div className="flex items-center justify-between px-2 pt-1"><SignOutButton /><ThemeToggle /></div>
+        <div className="flex items-center justify-between gap-2 px-2 pt-1">
+          <SignOutButton /><SwitchAccountButton /><ThemeToggle />
+        </div>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { getStructure } from "@/core/academics";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { getUnackedAnnouncements } from "@/modules/comms/unacked";
 import { Card, PageHeader, Stat } from "@/ui/kit";
+import { ChildAvatar } from "@/ui/child-avatar";
 import { TermPulseBar } from "@/ui/term-pulse-bar";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
@@ -33,48 +34,40 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
             No children linked to your account yet — please contact the school office.
           </p>
         )}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {kids.map((k) => (
-            <Card key={k.id}>
-              <p className="text-lg font-semibold">{k.firstName} {k.lastName}</p>
-              <p className="text-sm text-muted-foreground">{k.className ?? "—"}</p>
-              <dl className="mt-3 space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Today</dt>
-                  <dd className={k.today === "absent" ? "text-danger" : k.today ? "text-success" : ""}>
-                    {k.today ?? "not marked yet"}
-                  </dd>
+            <Card key={k.id} className="p-4">
+              <div className="flex items-center gap-3">
+                <ChildAvatar photoUrl={k.photoUrl} initials={`${k.firstName[0]}${k.lastName[0]}`}
+                  owing={k.owingPesewas > 0} className="h-11 w-11 text-[13px]" />
+                <div className="min-w-0 flex-1">
+                  <Link href={`/children/${k.id}`}
+                    className="block truncate text-[15px] font-semibold leading-tight hover:text-primary">
+                    {k.firstName} {k.lastName}
+                  </Link>
+                  <p className="truncate text-[12.5px] text-muted-foreground">{k.className ?? "—"}</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">Fees due</dt>
-                  <dd className="flex items-center gap-2">
-                    <span className={k.feeDuePesewas > 0 ? "font-medium text-danger" : "text-success"}>
-                      {k.feeDuePesewas > 0 ? ghs(k.feeDuePesewas) : "cleared"}
-                    </span>
-                    {k.feeDuePesewas > 0 && (
-                      <Link href={`/fees?child=${k.id}`}
-                        className="rounded-md border border-border px-2 py-0.5 text-[12.5px] font-medium text-primary hover:bg-muted">
-                        how to pay →
-                      </Link>
-                    )}
-                  </dd>
-                </div>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  k.today === "absent" ? "bg-danger/10 text-danger"
+                    : k.today ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+                  {k.today ?? "not marked"}
+                </span>
+              </div>
+              <div className="mt-2.5 flex items-center justify-between text-[13px]">
+                <span className="text-muted-foreground">Fees</span>
+                {k.owingPesewas > 0
+                  ? <span className="font-semibold text-danger" data-nums="">{ghs(k.owingPesewas)} owing</span>
+                  : <span className="font-medium text-success">cleared ✓</span>}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-2 text-[12.5px] font-medium">
+                <Link href={`/children/${k.id}`} className="text-primary">Full details →</Link>
+                {k.owingPesewas > 0 && <Link href={`/fees?child=${k.id}`} className="text-primary">How to pay</Link>}
                 {k.reportTermIds.length > 0 && (
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Report card</dt>
-                    <dd>
-                      <Link className="text-primary underline-offset-2 hover:underline"
-                        href={`/students/${k.id}/report/${k.reportTermIds.at(-1)}`}>
-                        View latest
-                      </Link>
-                    </dd>
-                  </div>
+                  <Link href={`/students/${k.id}/report/${k.reportTermIds.at(-1)}`} className="text-primary">
+                    Report card
+                  </Link>
                 )}
-              </dl>
-              <Link href={`/children/${k.id}`}
-                className="mt-3 inline-block text-sm font-medium text-primary">
-                Full details →
-              </Link>
+              </div>
             </Card>
           ))}
         </div>

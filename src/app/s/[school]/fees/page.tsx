@@ -14,6 +14,7 @@ import { HowToPay } from "@/modules/fees/how-to-pay";
 import { generateInvoices, sendFeeReminders } from "./actions";
 import { Card, PageHeader, Stat, Empty, Badge, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
+import { ChildAvatar } from "@/ui/child-avatar";
 
 const ERR: Record<string, string> = {
   notallowed: "Your access doesn't cover that money action — ask a full admin under Settings → Team & access.",
@@ -63,14 +64,24 @@ export default async function Fees({ params, searchParams }: {
     return (
       <div className="max-w-3xl">
         <PageHeader title="Fees" sub="Your children's bills, receipts and history — one place, per child" />
-        <div className="mb-4 flex flex-wrap gap-1.5">
-          {kids.map((k) => (
-            <Link key={k.id} href={`/fees?child=${k.id}`}
-              className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${k.id === active.id
-                ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
-              {k.firstName} · {k.className}
-            </Link>
-          ))}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {kids.map((k) => {
+            const isActive = k.id === active.id;
+            return (
+              <Link key={k.id} href={`/fees?child=${k.id}`} aria-current={isActive ? "true" : undefined}
+                className={`flex items-center gap-2 rounded-full py-1 pl-1 pr-3.5 text-[13.5px] font-medium transition-colors ${isActive
+                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-sm)] ring-2 ring-primary/35 ring-offset-2 ring-offset-background"
+                  : "border border-border hover:bg-muted"}`}>
+                <ChildAvatar photoUrl={k.photoUrl} initials={`${k.firstName[0]}${k.lastName[0]}`}
+                  owing={k.owingPesewas > 0} className="h-7 w-7 text-[11px]" />
+                <span className="min-w-0">
+                  {k.firstName}
+                  <span className={isActive ? "ml-1 opacity-80" : "ml-1 text-muted-foreground"}>· {k.className}</span>
+                  {isActive && <span className="ml-1.5 text-[10.5px] font-bold uppercase tracking-wider opacity-90">open</span>}
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
         <Card className="mb-4">
