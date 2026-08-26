@@ -397,7 +397,7 @@ export async function computeSnapshot(
     rosterByClass.set(s.classId, (rosterByClass.get(s.classId) ?? 0) + 1);
   const load = new Map<string, { periods: number; classes: Set<string> }>();
   for (const e of S.entries) {
-    const tid = S.teacherFor(e.classId, e.subjectId);
+    const tid = S.teacherFor(e.classId, e.subjectId, e.teacherId);
     if (!tid) continue;
     const b = load.get(tid) ?? { periods: 0, classes: new Set() };
     b.periods++; b.classes.add(e.classId); load.set(tid, b);

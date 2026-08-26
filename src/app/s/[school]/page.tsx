@@ -244,7 +244,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     const S = await getStructure(school.id);
     const myLessons = scope && dayKey
       ? S.entries
-          .filter((e) => e.day === dayKey && S.teacherFor(e.classId, e.subjectId) === scope.staffId)
+          .filter((e) => e.day === dayKey && S.teacherFor(e.classId, e.subjectId, e.teacherId) === scope.staffId)
           .map((e) => {
             const sl = S.slotById.get(e.slotId)!;
             return {

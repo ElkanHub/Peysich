@@ -81,23 +81,34 @@ export const getCurrentTerm = cache(async (schoolId: string) => {
 
 
 /** THE teacher capability model — two distinct rights, never blended:
- *  · homeroomIds — classes where they are class teacher (form master):
- *    attendance register, skills sheets, remarks.
- *  · cells — class+subject pairs from teaching allocations: score sheets
- *    and homework for exactly those subjects.
+ *  · homeroomIds — classes in their pastoral care (form master, main class
+ *    teacher, or class assistant): register, skills sheets, remarks.
+ *  · cells — class+subject pairs derived from teacher PROFILES (subject +
+ *    levels, main or assistant): score sheets and homework for exactly those.
  *  Timetable lessons grant NO rights — they only display the schedule. */
 export async function getTeacherScope(schoolId: string, userId: string) {
   const [me] = await db.select().from(staff)
     .where(and(eq(staff.schoolId, schoolId), eq(staff.userId, userId)));
   if (!me) return null; // unlinked account → caller shows the hint
-  const [own, cells] = await Promise.all([
-    db.select({ id: classes.id }).from(classes)
-      .where(and(eq(classes.schoolId, schoolId), eq(classes.classTeacherId, me.id))),
-    db.select({ classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId })
-      .from(teachingAssignments)
-      .where(and(eq(teachingAssignments.schoolId, schoolId), eq(teachingAssignments.teacherId, me.id))),
-  ]);
-  const homeroomIds = new Set(own.map((r) => r.id));
+  // profile-derived: form master OR main class teacher OR class assistant
+  // owns the homeroom; subject cells come from pool membership — mains AND
+  // assistants both work the class, one of them just signs as main.
+  const { getStructure } = await import("./academics");
+  const S = await getStructure(schoolId);
+  const homeroomIds = new Set<string>();
+  const cells: { classId: string; subjectId: string }[] = [];
+  for (const c of S.classes) {
+    if (c.classTeacherId === me.id || S.formMasterOf(c.id) === me.id
+      || (S.classAssistants.get(c.id) ?? []).some((a) => a.staffId === me.id)) {
+      homeroomIds.add(c.id);
+    }
+    if (S.modeBySection.get(S.sectionOfClass(c)) !== "class_teacher") {
+      for (const sid of S.effectiveSubjectIds(c.id)) {
+        if (S.poolFor(c.id, sid).some((p) => p.staffId === me.id))
+          cells.push({ classId: c.id, subjectId: sid });
+      }
+    }
+  }
   const subjectClassIds = new Set(cells.map((c) => c.classId));
   return {
     staffId: me.id, name: me.name,

@@ -3,7 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { staff, classes, subjects, teachingAssignments } from "@/db/schema";
+import { staff, classes, subjects, teachingAssignments, staffTeaching } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { createSchoolLogin } from "@/core/accounts";
 import { uid } from "@/lib/utils";
@@ -199,8 +199,12 @@ export async function markStaffLeft(slug: string, id: string, f: FormData) {
   }).where(eq(staff.id, id));
   await db.update(classes).set({ classTeacherId: null })
     .where(and(eq(classes.schoolId, school.id), eq(classes.classTeacherId, id)));
+  await db.update(classes).set({ formMasterId: null })
+    .where(and(eq(classes.schoolId, school.id), eq(classes.formMasterId, id)));
   await db.delete(teachingAssignments).where(and(
     eq(teachingAssignments.schoolId, school.id), eq(teachingAssignments.teacherId, id)));
+  await db.delete(staffTeaching).where(and(
+    eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, id)));
   revalidatePath("/staff");
   redirect(`/staff/${id}?flash=done`);
 }
@@ -254,4 +258,74 @@ export async function fillClassWithTeacher(slug: string, classId: string) {
   }
   revalidatePath("/staff/allocations");
   redirect(`/staff/allocations?flash=done#class-${classId}`);
+}
+
+/* ── Teacher PROFILES — who a teacher IS, set once, everything derived ── */
+
+/** Add a role to a teacher's profile: main class teacher (one per class),
+ *  class assistant (any number), or subject teacher (subject + levels,
+ *  main/assistant). */
+export async function addTeachingRole(slug: string, staffId: string, f: FormData) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const [me] = await db.select({ id: staff.id }).from(staff)
+    .where(and(eq(staff.id, staffId), eq(staff.schoolId, school.id)));
+  if (!me) redirect(`/staff/allocations`);
+  const what = String(f.get("what") || "");
+  const classId = String(f.get("classId") || "");
+  const subjectId = String(f.get("subjectId") || "");
+  const levelIds = f.getAll("levelIds").map(String).filter(Boolean);
+
+  if (what === "class-main" && classId) {
+    await db.update(classes).set({ classTeacherId: staffId })
+      .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  } else if (what === "class-assist" && classId) {
+    const dup = await db.select({ id: staffTeaching.id }).from(staffTeaching).where(and(
+      eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, staffId),
+      eq(staffTeaching.kind, "class"), eq(staffTeaching.classId, classId)));
+    if (!dup.length) await db.insert(staffTeaching).values({
+      id: uid(), schoolId: school.id, staffId, kind: "class", classId, role: "assistant",
+    });
+  } else if (what === "subject" && subjectId && levelIds.length) {
+    // one row per teacher × subject — re-adding replaces the levels/role
+    await db.delete(staffTeaching).where(and(
+      eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, staffId),
+      eq(staffTeaching.kind, "subject"), eq(staffTeaching.subjectId, subjectId)));
+    await db.insert(staffTeaching).values({
+      id: uid(), schoolId: school.id, staffId, kind: "subject", subjectId,
+      levelIds: JSON.stringify(levelIds),
+      role: String(f.get("role")) === "assistant" ? "assistant" : "main",
+    });
+  } else {
+    redirect(`/staff/allocations?err=roleform`);
+  }
+  revalidatePath("/staff/allocations");
+  redirect(`/staff/allocations?flash=saved`);
+}
+
+export async function removeTeachingRole(slug: string, roleId: string) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  await db.delete(staffTeaching).where(and(
+    eq(staffTeaching.id, roleId), eq(staffTeaching.schoolId, school.id)));
+  revalidatePath("/staff/allocations");
+  redirect(`/staff/allocations?flash=done`);
+}
+
+/** Release the MAIN class-teacher seat of a class. */
+export async function clearMainClassTeacher(slug: string, classId: string) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  await db.update(classes).set({ classTeacherId: null })
+    .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  revalidatePath("/staff/allocations");
+  redirect(`/staff/allocations?flash=done`);
+}
+
+/** The pastoral tag — every class's responsible teacher. Empty means
+ *  "auto": the class teacher carries it (class-teaching mode). */
+export async function setFormMaster(slug: string, classId: string, f: FormData) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  await db.update(classes)
+    .set({ formMasterId: String(f.get("staffId") || "") || null })
+    .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  revalidatePath("/staff/allocations");
+  redirect(`/staff/allocations?flash=saved`);
 }

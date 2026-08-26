@@ -47,8 +47,8 @@ export default async function ClassRegister({ params, searchParams }: {
     db.select().from(attendanceRecords)
       .where(and(eq(attendanceRecords.schoolId, school.id),
         eq(attendanceRecords.classId, classId), eq(attendanceRecords.date, date))),
-    cls.classTeacherId
-      ? db.select().from(staff).where(eq(staff.id, cls.classTeacherId))
+    (cls.formMasterId ?? cls.classTeacherId)
+      ? db.select().from(staff).where(eq(staff.id, (cls.formMasterId ?? cls.classTeacherId)!))
       : Promise.resolve([null]),
   ]);
   const statusMap = Object.fromEntries(existing.map((r) => [r.studentId, r.status]));

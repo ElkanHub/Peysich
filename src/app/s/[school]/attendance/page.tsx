@@ -64,6 +64,7 @@ export default async function Attendance({ params, searchParams }: {
   const [cls, counts, rosters, tchs, absentRows] = await Promise.all([
     db.select({
       id: classes.id, name: classes.name, classTeacherId: classes.classTeacherId,
+      formMasterId: classes.formMasterId,
       levelName: levels.name, sortOrder: levels.sortOrder,
     }).from(classes).innerJoin(levels, eq(classes.levelId, levels.id))
       .where(eq(classes.schoolId, school.id))
@@ -106,17 +107,16 @@ export default async function Attendance({ params, searchParams }: {
     const homerooms = cls.filter((c) => scope?.homeroomIds.has(c.id));
     const subjectOnly = cls.filter((c) =>
       scope?.subjectClassIds.has(c.id) && !scope.homeroomIds.has(c.id));
-    const subjectNames = subjectOnly.length && scope
-      ? await db.select({ classId: teachingAssignments.classId, name: subjects.name })
-          .from(teachingAssignments)
-          .innerJoin(subjects, eq(teachingAssignments.subjectId, subjects.id))
-          .where(and(eq(teachingAssignments.teacherId, scope.staffId),
-            inArray(teachingAssignments.classId, subjectOnly.map((c) => c.id))))
+    const allSubs = subjectOnly.length
+      ? await db.select().from(subjects).where(eq(subjects.schoolId, school.id))
       : [];
+    const subName = new Map(allSubs.map((s) => [s.id, s.name]));
     const subsOf = new Map<string, string[]>();
-    for (const s of subjectNames) {
-      if (!subsOf.has(s.classId)) subsOf.set(s.classId, []);
-      subsOf.get(s.classId)!.push(s.name);
+    for (const cell of scope?.cells ?? []) {
+      if (!subjectOnly.some((c) => c.id === cell.classId)) continue;
+      if (!subsOf.has(cell.classId)) subsOf.set(cell.classId, []);
+      const n = subName.get(cell.subjectId);
+      if (n) subsOf.get(cell.classId)!.push(n);
     }
     return (
       <div>
@@ -179,7 +179,7 @@ export default async function Attendance({ params, searchParams }: {
                       {(subsOf.get(c.id) ?? []).join(", ") || "—"}
                     </p>
                     <p className="mt-1.5 text-[12.5px] text-faint">
-                      Register: {teacherName.get(c.classTeacherId ?? "") ?? "no class teacher"}
+                      Register: {teacherName.get(c.formMasterId ?? c.classTeacherId ?? "") ?? "no form master"}
                       {m && <span className="text-success"> · marked ✓</span>}
                     </p>
                   </Card>
@@ -259,7 +259,7 @@ export default async function Attendance({ params, searchParams }: {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {unmarked.map((c) => {
-              const tname = teacherName.get(c.classTeacherId ?? "");
+              const tname = teacherName.get(c.formMasterId ?? c.classTeacherId ?? "");
               const nudge = nudgedAt.get(c.id);
               return (
                 <Card key={c.id} className="border-warning/60">
@@ -313,7 +313,7 @@ export default async function Attendance({ params, searchParams }: {
                       <div>
                         <p className="text-[15px] font-semibold">{c.name}</p>
                         <p className="text-[13px] text-muted-foreground">
-                          {teacherName.get(c.classTeacherId ?? "") ?? "no class teacher"}
+                          {teacherName.get(c.formMasterId ?? c.classTeacherId ?? "") ?? "no form master"}
                         </p>
                       </div>
                       <span className="rounded-full bg-success/10 px-2 py-0.5 text-[12px] font-medium text-success" data-nums="">

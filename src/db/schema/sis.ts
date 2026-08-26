@@ -31,7 +31,10 @@ export const classes = pgTable("classes", {
   id: text("id").primaryKey(), schoolId: sid(),
   levelId: text("level_id").notNull().references(() => levels.id, { onDelete: "cascade" }),
   name: text("name").notNull(), // "Basic 4 A"
-  classTeacherId: text("class_teacher_id"),
+  classTeacherId: text("class_teacher_id"), // the MAIN class teacher (class-teaching mode)
+  /** The pastoral tag — every class's responsible teacher, separate from
+   *  teaching. Empty ⇒ falls back to the class teacher (class-teaching mode). */
+  formMasterId: text("form_master_id"),
   roomId: text("room_id"), // home room
 }, (t) => [index("classes_school").on(t.schoolId, t.levelId)]);
 
@@ -73,6 +76,10 @@ export const staff = pgTable("staff", {
 /** Subject teaching: teacher → class + subject. The source of truth for who
  *  teaches what — the timetable and score-sheet access derive from it.
  *  (Class-teacher / form-master lives on classes.classTeacherId.) */
+/** Per-cell PINS (class × subject → teacher). In the profile-based model this
+ *  table only breaks TIES: when two teachers carry the same subject over the
+ *  same level, the pin says which one takes this class. Derivation order:
+ *  period override → pin → the sole eligible main → the sole eligible teacher. */
 export const teachingAssignments = pgTable("teaching_assignments", {
   id: text("id").primaryKey(), schoolId: sid(),
   teacherId: text("teacher_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
@@ -82,6 +89,21 @@ export const teachingAssignments = pgTable("teaching_assignments", {
   uniqueIndex("ta_class_subject").on(t.classId, t.subjectId), // one teacher per class-subject
   index("ta_school_teacher").on(t.schoolId, t.teacherId),
 ]);
+
+/** Teacher PROFILE assignments — part of who a teacher is, set once:
+ *  · kind "class"   → an ASSISTANT on a class (the MAIN class teacher lives on
+ *    classes.classTeacherId — one main, any number of assistants);
+ *  · kind "subject" → carries a subject across the levels in levelIds, as
+ *    "main" or "assistant". The timetable derives who teaches what from these. */
+export const staffTeaching = pgTable("staff_teaching", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  staffId: text("staff_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(), // class|subject
+  classId: text("class_id").references(() => classes.id, { onDelete: "cascade" }),
+  subjectId: text("subject_id").references(() => subjects.id, { onDelete: "cascade" }),
+  levelIds: text("level_ids"), // JSON array of level ids (subject kind)
+  role: text("role").notNull().default("main"), // main|assistant
+}, (t) => [index("stch_school_staff").on(t.schoolId, t.staffId)]);
 
 /** Admin → staff nudges ("your register isn't marked yet"): delivered by
  *  SMS/email via notify AND shown on the teacher's dashboard until resolved. */

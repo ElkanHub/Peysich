@@ -7,11 +7,12 @@ import {
 } from "@/core/academics";
 import { PageHeader, Card, Empty, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
-import { placeEntry, clearEntry } from "./actions";
+import { placeEntry, clearEntry, setEntryTeacher } from "./actions";
 
 const ERR: Record<string, string> = {
   clash: "", // detail carries the message
   notsubject: "That subject isn't on this class's list — adjust it under Settings → Day plan & subjects.",
+  notpool: "That teacher isn't on this subject for this class — add it to their profile first.",
 };
 
 /** Short label so a grid cell stays a grid cell. */
@@ -176,8 +177,9 @@ export default async function Timetable({ params, searchParams }: {
       const entry = S.entries.find((e) => e.classId === active.id && e.day === d && e.slotId === slotId);
       if (slot) {
         const effIds = S.effectiveSubjectIds(active.id);
-        const teacherId = entry ? S.teacherFor(active.id, entry.subjectId) : null;
+        const teacherId = entry ? S.teacherFor(active.id, entry.subjectId, entry.teacherId) : null;
         const teacher = teacherId ? S.staffById.get(teacherId) : null;
+        const pool = entry ? S.poolFor(active.id, entry.subjectId) : [];
         detail = (
           <Card className="mb-4 border-primary/40">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -191,8 +193,9 @@ export default async function Timetable({ params, searchParams }: {
                     <p className="text-sm text-muted-foreground">
                       {teacher
                         ? <>Taught by {isAdmin ? <Link href={`/staff/${teacher.id}`} className="text-primary">{teacher.name}</Link> : <b>{teacher.name}</b>}
-                          {mode === "class_teacher" && " (class teacher)"}</>
-                        : <span className="text-warning">No teacher allocated yet — set it on Teaching &amp; allocations.</span>}
+                          {mode === "class_teacher" && " (class teacher)"}
+                          {entry?.teacherId && <span className="ml-1 text-[12px]">(chosen for this period)</span>}</>
+                        : <span className="text-warning">No teacher resolves yet — assign the subject on Teaching &amp; allocations.</span>}
                     </p>
                   </>
                 ) : (
@@ -226,8 +229,25 @@ export default async function Timetable({ params, searchParams }: {
                     </SubmitButton>
                   )}
                 </form>
+                {entry && pool.length > 1 && (
+                  <form action={setEntryTeacher.bind(null, slug, entry.id)}
+                    className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-border pt-2.5">
+                    <input type="hidden" name="back" value={base} />
+                    <span className="text-[13px] text-muted-foreground">Teacher for this period:</span>
+                    <select name="teacherId" defaultValue={entry.teacherId ?? ""}
+                      className="h-8 rounded-md border border-border bg-card px-2 text-[13px]">
+                      <option value="">Auto — {S.staffById.get(S.teacherFor(active.id, entry.subjectId) ?? "")?.name ?? "unresolved"}</option>
+                      {pool.map((p) => (
+                        <option key={p.staffId} value={p.staffId}>
+                          {S.staffById.get(p.staffId)?.name}{p.role === "assistant" ? " (assistant)" : " (main)"}
+                        </option>
+                      ))}
+                    </select>
+                    <SubmitButton className={btnGhostCls + " px-2.5 py-1.5 text-[12.5px]"} pendingText="…">Set teacher</SubmitButton>
+                  </form>
+                )}
                 <p className="mt-2 text-[13px] text-muted-foreground">
-                  The teacher comes from the allocation — a placement that double-books a teacher is refused.
+                  The teacher is derived from profiles — a placement that double-books anyone is refused.
                 </p>
               </div>
             )}
@@ -266,7 +286,7 @@ export default async function Timetable({ params, searchParams }: {
       : S.staffById.get(selfStaffId ?? "");
     if (!activeTeacher) return <div>{header}<Empty title="No staff record" hint="Your login isn't linked to a staff record yet — ask your admin." /></div>;
 
-    const myEntries = S.entries.filter((e) => S.teacherFor(e.classId, e.subjectId) === activeTeacher.id);
+    const myEntries = S.entries.filter((e) => S.teacherFor(e.classId, e.subjectId, e.teacherId) === activeTeacher.id);
     const mySections = [...new Set(myEntries.map((e) => {
       const c = S.classById.get(e.classId); return c ? S.sectionOfClass(c) : null;
     }).filter(Boolean))] as Section[];
@@ -452,7 +472,7 @@ export default async function Timetable({ params, searchParams }: {
                     ? <td colSpan={secClasses.length} className={`px-2 py-1.5 text-center text-[11.5px] uppercase tracking-wider ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.name}</td>
                     : secClasses.map((c) => {
                         const e = entryAt.get(`${c.id}:${sl.id}`);
-                        const tid = e ? S.teacherFor(c.id, e.subjectId) : null;
+                        const tid = e ? S.teacherFor(c.id, e.subjectId, e.teacherId) : null;
                         return (
                           <td key={c.id} className={`px-1 py-1.5 text-center ${e ? "bg-success/5" : ""}`}>
                             {e ? (

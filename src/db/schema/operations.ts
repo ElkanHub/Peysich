@@ -118,6 +118,9 @@ export const timetableEntries = pgTable("timetable_entries", {
   subjectId: text("subject_id").notNull(),
   slotId: text("slot_id").notNull().references(() => periodSlots.id, { onDelete: "cascade" }),
   day: dayEnum("day").notNull(),
+  /** Optional per-period choice among the subject's eligible teachers
+   *  (main + assistants). Empty ⇒ derived from profiles/pins as usual. */
+  teacherId: text("teacher_id"),
 }, (t) => [
   uniqueIndex("tte_class_day_slot").on(t.classId, t.day, t.slotId),
   index("tte_school_class").on(t.schoolId, t.classId),

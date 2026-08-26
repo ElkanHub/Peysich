@@ -29,7 +29,7 @@ export async function placeEntry(slug: string, classId: string, day: string, slo
   if (teacherId) {
     for (const e of S.entries) {
       if (e.day !== day || e.classId === classId) continue;
-      if (S.teacherFor(e.classId, e.subjectId) !== teacherId) continue;
+      if (S.teacherFor(e.classId, e.subjectId, e.teacherId) !== teacherId) continue;
       const other = S.slotById.get(e.slotId);
       if (other && other.startMin < slot.endMin && slot.startMin < other.endMin) {
         const who = S.staffById.get(teacherId)?.name ?? "That teacher";
@@ -46,6 +46,40 @@ export async function placeEntry(slug: string, classId: string, day: string, slo
   await db.insert(timetableEntries).values({
     id: uid(), schoolId: school.id, classId, subjectId, slotId, day: day as Day,
   });
+  revalidatePath("/timetable");
+  redirect(`${backTo}&flash=saved`);
+}
+
+/** Per-period teacher choice among the subject's eligible pool (main +
+ *  assistants). Empty = back to auto (derived). Double-booking is refused
+ *  with a message naming where the teacher already is. */
+export async function setEntryTeacher(slug: string, entryId: string, f: FormData) {
+  const { school } = await requireModule(slug, "timetable", ["admin"]);
+  const teacherId = String(f.get("teacherId") || "");
+  const backTo = String(f.get("back") || "/timetable");
+  const S = await getStructure(school.id);
+  const entry = S.entries.find((e) => e.id === entryId);
+  if (!entry) redirect(backTo);
+  if (teacherId) {
+    const pool = S.poolFor(entry.classId, entry.subjectId);
+    if (!pool.some((p) => p.staffId === teacherId)) redirect(`${backTo}&err=notpool`);
+    const slot = S.slotById.get(entry.slotId);
+    if (slot) {
+      for (const e of S.entries) {
+        if (e.id === entryId || e.day !== entry.day) continue;
+        if (S.teacherFor(e.classId, e.subjectId, e.teacherId) !== teacherId) continue;
+        const other = S.slotById.get(e.slotId);
+        if (other && other.startMin < slot.endMin && slot.startMin < other.endMin) {
+          const who = S.staffById.get(teacherId)?.name ?? "That teacher";
+          const where = S.classById.get(e.classId)?.name ?? "another class";
+          const msg = `${who} is already with ${where} on ${DAY_LABELS[entry.day as Day]} ${fmtMin(other.startMin)}–${fmtMin(other.endMin)}.`;
+          redirect(`${backTo}&err=clash&detail=${encodeURIComponent(msg)}`);
+        }
+      }
+    }
+  }
+  await db.update(timetableEntries).set({ teacherId: teacherId || null })
+    .where(and(eq(timetableEntries.id, entryId), eq(timetableEntries.schoolId, school.id)));
   revalidatePath("/timetable");
   redirect(`${backTo}&flash=saved`);
 }

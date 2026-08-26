@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  levels, classes, subjects, staff, teachingAssignments,
+  levels, classes, subjects, staff, teachingAssignments, staffTeaching,
   sectionConfig, periodSlots, sectionSubjects, classSubjectOverrides, timetableEntries,
   assessmentComponents, skillDomains,
 } from "@/db/schema";
@@ -150,7 +150,7 @@ export type Structure = Awaited<ReturnType<typeof getStructure>>;
 /** Everything the timetable and its sibling screens need, resolved once. */
 export async function getStructure(schoolId: string) {
   await ensureAcademicDefaults(schoolId);
-  const [lvls, cls, subs, confs, slots, secSubs, ovr, tas, tchs, entries, comps, domains] = await Promise.all([
+  const [lvls, cls, subs, confs, slots, secSubs, ovr, tas, tchs, entries, comps, domains, profiles] = await Promise.all([
     db.select().from(levels).where(eq(levels.schoolId, schoolId)),
     db.select().from(classes).where(eq(classes.schoolId, schoolId)),
     db.select().from(subjects).where(eq(subjects.schoolId, schoolId)),
@@ -163,6 +163,7 @@ export async function getStructure(schoolId: string) {
     db.select().from(timetableEntries).where(eq(timetableEntries.schoolId, schoolId)),
     db.select().from(assessmentComponents).where(eq(assessmentComponents.schoolId, schoolId)),
     db.select().from(skillDomains).where(eq(skillDomains.schoolId, schoolId)),
+    db.select().from(staffTeaching).where(eq(staffTeaching.schoolId, schoolId)),
   ]);
 
   const levelById = new Map(lvls.map((l) => [l.id, l]));
@@ -193,12 +194,83 @@ export async function getStructure(schoolId: string) {
     return [...base];
   };
 
-  /** WHO teaches subject X in class Y — never stored on the timetable. */
-  const teacherFor = (classId: string, subjectId: string): string | null => {
+  /* ── the profile-based teacher model ──
+   * A teacher IS either a class teacher (main on classes.classTeacherId,
+   * assistants as kind="class" profile rows) or a subject teacher (kind=
+   * "subject" rows: subject + the levels they carry, main/assistant).
+   * WHO teaches a cell is DERIVED: period override → pin → sole main → sole
+   * eligible. Nothing is repeated per class any more. */
+  const parseLevelIds = (raw: string | null): string[] => {
+    try { const a = JSON.parse(raw || "[]"); return Array.isArray(a) ? a : []; } catch { return []; }
+  };
+  const classAssistants = new Map<string, { staffId: string }[]>();
+  const subjectRows: { staffId: string; subjectId: string; levelIds: string[]; role: string }[] = [];
+  for (const p of profiles) {
+    if (p.kind === "class" && p.classId) {
+      if (!classAssistants.has(p.classId)) classAssistants.set(p.classId, []);
+      classAssistants.get(p.classId)!.push({ staffId: p.staffId });
+    } else if (p.kind === "subject" && p.subjectId) {
+      subjectRows.push({ staffId: p.staffId, subjectId: p.subjectId,
+        levelIds: parseLevelIds(p.levelIds), role: p.role });
+    }
+  }
+
+  /** Everyone eligible for a cell, mains first (class mode: main class teacher
+   *  + class assistants; subject mode: subject carriers covering the level). */
+  const poolFor = (classId: string, subjectId: string): { staffId: string; role: string }[] => {
+    const c = classById.get(classId);
+    if (!c) return [];
+    if (modeBySection.get(sectionOfClass(c)) === "class_teacher") {
+      const out: { staffId: string; role: string }[] = [];
+      if (c.classTeacherId) out.push({ staffId: c.classTeacherId, role: "main" });
+      for (const a of classAssistants.get(classId) ?? [])
+        if (!out.some((x) => x.staffId === a.staffId)) out.push({ staffId: a.staffId, role: "assistant" });
+      return out;
+    }
+    return subjectRows
+      .filter((r) => r.subjectId === subjectId && r.levelIds.includes(c.levelId))
+      .map((r) => ({ staffId: r.staffId, role: r.role }))
+      .sort((a, b) => Number(b.role === "main") - Number(a.role === "main"));
+  };
+
+  /** WHO teaches subject X in class Y (optionally for one period). */
+  const teacherFor = (classId: string, subjectId: string, entryTeacherId?: string | null): string | null => {
+    if (entryTeacherId) return entryTeacherId;
     const c = classById.get(classId);
     if (!c) return null;
     if (modeBySection.get(sectionOfClass(c)) === "class_teacher") return c.classTeacherId;
-    return taByCell.get(`${classId}:${subjectId}`) ?? null;
+    const pin = taByCell.get(`${classId}:${subjectId}`);
+    if (pin) return pin;
+    const pool = poolFor(classId, subjectId);
+    const mains = pool.filter((p) => p.role === "main");
+    if (mains.length === 1) return mains[0].staffId;
+    if (pool.length === 1) return pool[0].staffId;
+    return null; // a tie or nobody — the allocations screen surfaces it
+  };
+
+  /** The pastoral tag: explicit form master, else the class teacher. */
+  const formMasterOf = (classId: string): string | null => {
+    const c = classById.get(classId);
+    return c ? (c.formMasterId ?? c.classTeacherId ?? null) : null;
+  };
+
+  /** Derivation gaps for the allocations screen: cells nobody covers, and
+   *  ties that need a per-class pin. */
+  const allocationIssues = () => {
+    const issues: { classId: string; subjectId: string; kind: "uncovered" | "tie";
+      pool: { staffId: string; role: string }[] }[] = [];
+    for (const c of cls) {
+      if (modeBySection.get(sectionOfClass(c)) === "class_teacher") continue;
+      for (const sid of effectiveSubjectIds(c.id)) {
+        if (taByCell.get(`${c.id}:${sid}`)) continue;
+        const pool = poolFor(c.id, sid);
+        const mains = pool.filter((p) => p.role === "main");
+        if (pool.length === 0) issues.push({ classId: c.id, subjectId: sid, kind: "uncovered", pool });
+        else if (mains.length !== 1 && pool.length > 1)
+          issues.push({ classId: c.id, subjectId: sid, kind: "tie", pool });
+      }
+    }
+    return issues;
   };
 
   /** Teacher double-bookings: same teacher, same day, overlapping slot times
@@ -206,7 +278,7 @@ export async function getStructure(schoolId: string) {
   const findClashes = () => {
     const byTeacherDay = new Map<string, Array<{ entry: typeof entries[number]; start: number; end: number }>>();
     for (const e of entries) {
-      const tid = teacherFor(e.classId, e.subjectId);
+      const tid = teacherFor(e.classId, e.subjectId, e.teacherId);
       const slot = slotById.get(e.slotId);
       if (!tid || !slot) continue;
       const key = `${tid}|${e.day}`;
@@ -241,7 +313,8 @@ export async function getStructure(schoolId: string) {
     levels: lvls, classes: cls, subjects: subs, staff: tchs, entries,
     levelById, classById, subjectById, staffById, slotById,
     sectionOfClass, modeBySection, slotsBySection, subsBySection, overrides: ovr,
-    effectiveSubjectIds, teacherFor, findClashes,
+    effectiveSubjectIds, teacherFor, poolFor, formMasterOf, allocationIssues,
+    classAssistants, subjectProfiles: subjectRows, pins: taByCell, findClashes,
     components: comps, componentsFor, skillScaleFor,
     skillDomains: domains.sort((a, b) => a.sortOrder - b.sortOrder),
   };

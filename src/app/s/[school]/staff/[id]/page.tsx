@@ -2,7 +2,8 @@ import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { staff, classes, subjects, teachingAssignments, timetableEntries } from "@/db/schema";
+import { staff, subjects, staffTeaching } from "@/db/schema";
+import { getStructure } from "@/core/academics";
 import { requireSchool } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Card, Field, PageHeader, Badge, inputCls, btnGhostCls } from "@/ui/kit";
@@ -26,25 +27,29 @@ export default async function StaffFile({ params }: {
   if (!s) notFound();
   const teaching = s.staffType === "teaching";
 
-  const [homeClasses, allocations, [periods], subs] = await Promise.all([
-    db.select({ id: classes.id, name: classes.name }).from(classes)
-      .where(and(eq(classes.schoolId, school.id), eq(classes.classTeacherId, id))),
-    teaching
-      ? db.select({ className: classes.name, subjectName: subjects.name })
-          .from(teachingAssignments)
-          .innerJoin(classes, eq(teachingAssignments.classId, classes.id))
-          .innerJoin(subjects, eq(teachingAssignments.subjectId, subjects.id))
-          .where(eq(teachingAssignments.teacherId, id))
-          .orderBy(classes.name, subjects.name)
-      : [],
-    db.select({ n: sql<number>`count(*)` }).from(timetableEntries)
-      .innerJoin(teachingAssignments, and(
-        eq(teachingAssignments.classId, timetableEntries.classId),
-        eq(teachingAssignments.subjectId, timetableEntries.subjectId),
-        eq(teachingAssignments.teacherId, id)))
-      .where(eq(timetableEntries.schoolId, school.id)),
-    teaching ? db.select().from(subjects).where(eq(subjects.schoolId, school.id)).orderBy(subjects.name) : [],
-  ]);
+  // the teaching card reads the PROFILE model: class roles, subject roles
+  // with their levels, and resolved periods (per-period choices included)
+  const S = await getStructure(school.id);
+  const subs = teaching
+    ? await db.select().from(subjects).where(eq(subjects.schoolId, school.id)).orderBy(subjects.name)
+    : [];
+  const homeClasses = S.classes.filter((c) => c.classTeacherId === id)
+    .map((c) => ({ id: c.id, name: c.name }));
+  const levelNameById = new Map(S.levels.map((l) => [l.id, l.name]));
+  const parseLv = (raw: string | null) => {
+    try { const a = JSON.parse(raw || "[]"); return Array.isArray(a) ? (a as string[]) : []; } catch { return []; }
+  };
+  const myProfiles = await db.select().from(staffTeaching).where(and(
+    eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, id)));
+  const allocations = [
+    ...S.classes.filter((c) => myProfiles.some((r) => r.kind === "class" && r.classId === c.id))
+      .map((c) => ({ className: c.name, subjectName: "class assistant" })),
+    ...myProfiles.filter((r) => r.kind === "subject").map((r) => ({
+      className: parseLv(r.levelIds).map((lid) => levelNameById.get(lid)).filter(Boolean).join(", ") || "—",
+      subjectName: `${S.subjectById.get(r.subjectId ?? "")?.name ?? "?"}${r.role === "assistant" ? " (assistant)" : ""}`,
+    })),
+  ];
+  const periods = { n: S.entries.filter((e) => S.teacherFor(e.classId, e.subjectId, e.teacherId) === id).length };
   const photoUrl = s.photoUrl && r2Enabled ? await presignDownload(s.photoUrl) : null;
   const initials = s.name.split(" ").map((w) => w[0]).slice(0, 2).join("");
 
@@ -161,7 +166,7 @@ export default async function StaffFile({ params }: {
                 <dt className="shrink-0 text-muted-foreground">Subject teaching</dt>
                 <dd className="text-right">
                   {allocations.length
-                    ? allocations.map((a) => `${a.className} · ${a.subjectName}`).join(";  ")
+                    ? allocations.map((a) => `${a.subjectName} — ${a.className}`).join(";  ")
                     : <span className="text-muted-foreground">None yet — assign on Teaching & allocations</span>}
                 </dd>
               </div>

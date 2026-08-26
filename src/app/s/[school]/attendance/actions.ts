@@ -83,8 +83,9 @@ export async function remindClassTeacher(slug: string, classId: string, f?: Form
   const back = f?.get("from") === "wall" ? `/attendance` : `/attendance/${classId}`;
   const [cls] = await db.select().from(classes)
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
-  if (!cls?.classTeacherId) redirect(`${back}?err=noteacher`);
-  const [t] = await db.select().from(staff).where(eq(staff.id, cls.classTeacherId!));
+  const responsibleId = cls?.formMasterId ?? cls?.classTeacherId;
+  if (!responsibleId) redirect(`${back}?err=noteacher`);
+  const [t] = await db.select().from(staff).where(eq(staff.id, responsibleId!));
   if (!t) redirect(`${back}?err=noteacher`);
 
   const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} register for today hasn't been marked yet. Please mark it in Peysich. — ${school.name}`;
