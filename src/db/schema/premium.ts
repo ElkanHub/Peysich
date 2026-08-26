@@ -3,16 +3,46 @@ import { schools } from "./platform";
 
 const sid = () => text("school_id").notNull().references(() => schools.id, { onDelete: "cascade" });
 
-// admissions
+// admissions — the pipeline BEFORE a child is a student. One row per
+// applicant; the stage moves New → Screening → Offer → Admitted (or
+// Waitlist / Rejected), every move stamped so the funnel is honest.
 export const applicants = pgTable("applicants", {
   id: text("id").primaryKey(), schoolId: sid(),
   name: text("name").notNull(), guardianName: text("guardian_name"),
   guardianPhone: text("guardian_phone").notNull(),
   levelId: text("level_id").notNull(),
-  status: text("status").notNull().default("new"), // new|interview|admitted|rejected
+  status: text("status").notNull().default("new"), // new|screening|offer|admitted|waitlist|rejected
   note: text("note"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // the child, before the student file exists
+  dob: date("dob"), sex: text("sex"), // male|female — asked, never assumed
+  prevSchool: text("prev_school"), source: text("source"), // how they heard of us
+  yearId: text("year_id"), // the intake year this application belongs to
+  docs: text("docs"), // JSON {docKey: true} — received documents (checklist in intake settings)
+  interviewAt: date("interview_at"), testScore: integer("test_score"),
+  offerAt: timestamp("offer_at"), offerDeadline: date("offer_deadline"),
+  decidedAt: timestamp("decided_at"), decisionReason: text("decision_reason"),
+  stageAt: timestamp("stage_at").notNull().defaultNow(), // last stage move — powers "days in stage"
+  admittedStudentId: text("admitted_student_id"), // forever-link to the created student file
 }, (t) => [index("app_school").on(t.schoolId, t.status)]);
+
+/** Dated, signed notes on an applicant — the paper margin of the file. */
+export const applicantNotes = pgTable("applicant_notes", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  applicantId: text("applicant_id").notNull().references(() => applicants.id, { onDelete: "cascade" }),
+  body: text("body").notNull(), byName: text("by_name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("apn_applicant").on(t.applicantId)]);
+
+/** Analytics snapshots — one JSON blob per school per day, so dashboards
+ *  read a precomputed document instead of scanning live tables. The first
+ *  admin visit of the day (or "Refresh now") computes it. */
+export const analyticsSnapshots = pgTable("analytics_snapshots", {
+  schoolId: sid(), day: date("day").notNull(),
+  termId: text("term_id"),
+  data: text("data").notNull(), // JSON — see modules/analytics/compute.ts
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [index("ans_school_day").on(t.schoolId, t.day)]);
 
 // library
 export const books = pgTable("books", {

@@ -83,7 +83,7 @@ export default async function Students({ params, searchParams }: {
   return (
     <div>
       <PageHeader title={isAdmin ? "Students" : "My students"} sub={`${count} ${status}`}
-        action={isAdmin ? { href: "/students/new", label: "Admit student" } : undefined} />
+        action={isAdmin ? { href: "/admissions", label: "Admit student" } : undefined} />
 
       {/* data at a glance + the actions an office actually reaches for */}
       {isAdmin && (

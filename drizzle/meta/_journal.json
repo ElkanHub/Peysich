@@ -169,6 +169,13 @@
       "when": 1787746587718,
       "tag": "0023_rich_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1787765038529,
+      "tag": "0024_thin_nighthawk",
+      "breakpoints": true
     }
   ]
 }
