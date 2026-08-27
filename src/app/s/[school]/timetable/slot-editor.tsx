@@ -23,15 +23,24 @@ export function SlotEditor({ slug, classId, day, slotId, base, label, entry, sub
   subjects: SlotSubject[];
 }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [pos, setPos] = useState({ x: 0, y: 0, up: false, maxH: 320 });
   const btn = useRef<HTMLButtonElement>(null);
 
   const toggle = () => {
     const r = btn.current?.getBoundingClientRect();
-    if (r) setPos({
-      x: Math.min(Math.max(8 + 128, r.left + r.width / 2), window.innerWidth - 8 - 128),
-      y: r.bottom + 4,
-    });
+    if (r) {
+      // open downward when there's room, otherwise flip above the cell —
+      // and never let the panel run past the viewport edge
+      const below = window.innerHeight - r.bottom - 12;
+      const above = r.top - 12;
+      const up = below < 280 && above > below;
+      setPos({
+        x: Math.min(Math.max(8 + 128, r.left + r.width / 2), window.innerWidth - 8 - 128),
+        y: up ? r.top - 4 : r.bottom + 4,
+        up,
+        maxH: Math.max(180, Math.min(420, up ? above : below)),
+      });
+    }
     setOpen((o) => !o);
   };
 
@@ -48,15 +57,18 @@ export function SlotEditor({ slug, classId, day, slotId, base, label, entry, sub
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="fixed z-50 w-64 -translate-x-1/2 rounded-lg border border-border bg-card p-1.5 text-left shadow-[var(--shadow-lg)]"
-            style={{ left: pos.x, top: pos.y }}>
+            className="fixed z-50 flex w-64 flex-col rounded-lg border border-border bg-card p-1.5 text-left shadow-[var(--shadow-lg)]"
+            style={{
+              left: pos.x, top: pos.y, maxHeight: pos.maxH,
+              transform: pos.up ? "translate(-50%, -100%)" : "translateX(-50%)",
+            }}>
             {entry?.teacherName && (
               <p className="px-2 pb-1 pt-0.5 text-[11.5px] text-muted-foreground">
                 Taught by <b className="text-foreground">{entry.teacherName}</b>
                 {entry.chosen && " (chosen for this period)"}
               </p>
             )}
-            <div className="max-h-56 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {subjects.map((s) => (
                 <form key={s.id} action={placeEntry.bind(null, slug, classId, day, slotId)}>
                   <input type="hidden" name="subjectId" value={s.id} />
