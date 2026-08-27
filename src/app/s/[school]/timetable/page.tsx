@@ -5,9 +5,8 @@ import {
   getStructure, SECTIONS, SECTION_LABELS, DAYS, DAY_LABELS, fmtMin,
   type Day, type Section, type Structure,
 } from "@/core/academics";
-import { PageHeader, Card, Empty, btnCls, btnGhostCls } from "@/ui/kit";
-import { SubmitButton } from "@/ui/feedback";
-import { placeEntry, clearEntry, setEntryTeacher } from "./actions";
+import { PageHeader, Card, Empty, btnGhostCls } from "@/ui/kit";
+import { SlotEditor } from "./slot-editor";
 
 const ERR: Record<string, string> = {
   clash: "", // detail carries the message
@@ -33,13 +32,22 @@ const KIND_TINT: Record<string, string> = {
 };
 
 /** One class's week: rows = days, columns = the section's period slots. */
-function ClassGrid({ S, classId, base, sel, canEdit, focusSubjectId }: {
-  S: Structure; classId: string; base: string; sel?: string;
+function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
+  S: Structure; slug: string; classId: string; base: string; sel?: string;
   canEdit: boolean; focusSubjectId?: string;
 }) {
   const cls = S.classById.get(classId);
   if (!cls) return null;
   const slots = S.slotsBySection(S.sectionOfClass(cls));
+  const gridSubjects = S.effectiveSubjectIds(classId)
+    .map((id) => {
+      const tid = S.teacherFor(classId, id);
+      return {
+        id, name: S.subjectById.get(id)?.name ?? "?",
+        teacher: tid ? S.staffById.get(tid)?.name ?? null : null,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
   const mine = S.entries.filter((e) => e.classId === classId);
   const at = new Map(mine.map((e) => [`${e.day}:${e.slotId}`, e]));
 
@@ -68,12 +76,28 @@ function ClassGrid({ S, classId, base, sel, canEdit, focusSubjectId }: {
                 const e = at.get(`${d}:${sl.id}`);
                 const isSel = sel === `${d}:${sl.id}`;
                 const dim = focusSubjectId && e && e.subjectId !== focusSubjectId;
-                const inner = e
-                  ? <span className={dim ? "text-faint" : "font-medium"}>{abbr(S.subjectById.get(e.subjectId)?.name ?? "?")}</span>
-                  : canEdit ? <span className="text-faint">+</span> : <span className="text-faint">·</span>;
-                const cell = (e || canEdit)
-                  ? <Link href={`${base}&sel=${d}:${sl.id}`} className="block px-1 py-2">{inner}</Link>
-                  : <span className="block px-1 py-2">{inner}</span>;
+                const tName = e ? (() => {
+                  const tid = S.teacherFor(classId, e.subjectId, e.teacherId);
+                  return tid ? S.staffById.get(tid)?.name ?? null : null;
+                })() : null;
+                const cell = canEdit ? (
+                  <SlotEditor slug={slug} classId={classId} day={d} slotId={sl.id} base={base}
+                    label={e ? abbr(S.subjectById.get(e.subjectId)?.name ?? "?") : null}
+                    subjects={gridSubjects}
+                    entry={e ? {
+                      id: e.id, subjectId: e.subjectId, chosen: !!e.teacherId, teacherName: tName,
+                      pool: S.poolFor(classId, e.subjectId).map((pm) => ({
+                        id: pm.staffId, name: S.staffById.get(pm.staffId)?.name ?? "?", role: pm.role,
+                      })),
+                    } : null} />
+                ) : (
+                  <span className="block px-1 py-2"
+                    title={e ? `${S.subjectById.get(e.subjectId)?.name ?? ""}${tName ? ` — ${tName}` : ""}` : undefined}>
+                    {e
+                      ? <span className={dim ? "text-faint" : "font-medium"}>{abbr(S.subjectById.get(e.subjectId)?.name ?? "?")}</span>
+                      : <span className="text-faint">·</span>}
+                  </span>
+                );
                 return (
                   <td key={sl.id}
                     className={`text-center align-middle ${isSel ? "bg-primary/10 ring-1 ring-inset ring-primary" : e && !dim ? "bg-success/5" : ""} ${focusSubjectId && e?.subjectId === focusSubjectId ? "bg-primary/10" : ""}`}>
@@ -169,93 +193,6 @@ export default async function Timetable({ params, searchParams }: {
     const base = `?view=class&c=${active.id}`;
     const mode = S.modeBySection.get(S.sectionOfClass(active));
 
-    // selected slot detail / editor
-    let detail: React.ReactNode = null;
-    if (sp.sel) {
-      const [d, slotId] = sp.sel.split(":");
-      const slot = S.slotById.get(slotId);
-      const entry = S.entries.find((e) => e.classId === active.id && e.day === d && e.slotId === slotId);
-      if (slot) {
-        const effIds = S.effectiveSubjectIds(active.id);
-        const teacherId = entry ? S.teacherFor(active.id, entry.subjectId, entry.teacherId) : null;
-        const teacher = teacherId ? S.staffById.get(teacherId) : null;
-        const pool = entry ? S.poolFor(active.id, entry.subjectId) : [];
-        detail = (
-          <Card className="mb-4 border-primary/40">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {DAY_LABELS[d as Day]} · {slot.name} · <span data-nums="">{fmtMin(slot.startMin)}–{fmtMin(slot.endMin)}</span>
-                </p>
-                {entry ? (
-                  <>
-                    <p className="mt-1 text-lg font-semibold">{S.subjectById.get(entry.subjectId)?.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {teacher
-                        ? <>Taught by {isAdmin ? <Link href={`/staff/${teacher.id}`} className="text-primary">{teacher.name}</Link> : <b>{teacher.name}</b>}
-                          {mode === "class_teacher" && " (class teacher)"}
-                          {entry?.teacherId && <span className="ml-1 text-[12px]">(chosen for this period)</span>}</>
-                        : <span className="text-warning">No teacher resolves yet — assign the subject on Teaching &amp; allocations.</span>}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">Free period — nothing placed here yet.</p>
-                )}
-              </div>
-              <Link href={base} className={btnGhostCls}>Close</Link>
-            </div>
-            {isAdmin && (
-              <div className="mt-3 border-t border-border pt-3">
-                <form action={placeEntry.bind(null, slug, active.id, d, slotId)} className="flex flex-wrap items-center gap-2">
-                  <input type="hidden" name="back" value={base} />
-                  <select name="subjectId" defaultValue={entry?.subjectId ?? ""} required
-                    className="h-9 rounded-md border border-border bg-card px-2.5 text-sm">
-                    <option value="" disabled>Choose subject…</option>
-                    {effIds.map((sid2) => {
-                      const tid = S.teacherFor(active.id, sid2);
-                      const tn = tid ? S.staffById.get(tid)?.name : null;
-                      return (
-                        <option key={sid2} value={sid2}>
-                          {S.subjectById.get(sid2)?.name}{tn ? ` — ${tn}` : " — no teacher yet"}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <SubmitButton className={btnCls} pendingText="Placing…">{entry ? "Replace" : "Place lesson"}</SubmitButton>
-                  {entry && (
-                    <SubmitButton formAction={clearEntry.bind(null, slug, entry.id)}
-                      className="rounded-md px-3 py-2 text-sm font-medium text-danger hover:bg-danger/10" pendingText="…">
-                      Remove
-                    </SubmitButton>
-                  )}
-                </form>
-                {entry && pool.length > 1 && (
-                  <form action={setEntryTeacher.bind(null, slug, entry.id)}
-                    className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-border pt-2.5">
-                    <input type="hidden" name="back" value={base} />
-                    <span className="text-[13px] text-muted-foreground">Teacher for this period:</span>
-                    <select name="teacherId" defaultValue={entry.teacherId ?? ""}
-                      className="h-8 rounded-md border border-border bg-card px-2 text-[13px]">
-                      <option value="">Auto — {S.staffById.get(S.teacherFor(active.id, entry.subjectId) ?? "")?.name ?? "unresolved"}</option>
-                      {pool.map((p) => (
-                        <option key={p.staffId} value={p.staffId}>
-                          {S.staffById.get(p.staffId)?.name}{p.role === "assistant" ? " (assistant)" : " (main)"}
-                        </option>
-                      ))}
-                    </select>
-                    <SubmitButton className={btnGhostCls + " px-2.5 py-1.5 text-[12.5px]"} pendingText="…">Set teacher</SubmitButton>
-                  </form>
-                )}
-                <p className="mt-2 text-[13px] text-muted-foreground">
-                  The teacher is derived from profiles — a placement that double-books anyone is refused.
-                </p>
-              </div>
-            )}
-          </Card>
-        );
-      }
-    }
-
     return (
       <div>
         {header}
@@ -267,8 +204,7 @@ export default async function Timetable({ params, searchParams }: {
             </Link>
           ))}
         </div>
-        {detail}
-        <ClassGrid S={S} classId={active.id} base={base} sel={sp.sel} canEdit={isAdmin} />
+        <ClassGrid S={S} slug={slug} classId={active.id} base={base} sel={sp.sel} canEdit={isAdmin} />
         {mode === "class_teacher" && (
           <p className="mt-2 text-[13px] text-muted-foreground">
             {SECTION_LABELS[S.sectionOfClass(active)]} runs in class-teacher mode — every lesson here is taught by the class teacher.
@@ -405,7 +341,7 @@ export default async function Timetable({ params, searchParams }: {
               </p>
               <Link href={`?view=subject&sub=${activeSub.id}&c=${next?.id}`} className={btnGhostCls}>{next?.name} ›</Link>
             </div>
-            <ClassGrid S={S} classId={activeCls.id} base={`?view=subject&sub=${activeSub.id}&c=${activeCls.id}`}
+            <ClassGrid S={S} slug={slug} classId={activeCls.id} base={`?view=subject&sub=${activeSub.id}&c=${activeCls.id}`}
               sel={sp.sel} canEdit={isAdmin} focusSubjectId={activeSub.id} />
             <div className="mt-4 flex flex-wrap gap-2">
               {takers.map((c) => (
