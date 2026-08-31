@@ -2,6 +2,7 @@ import { registry } from "@/modules/registry";
 import type { Role } from "@/modules/types";
 import { AppNav, type NavEntry } from "./nav";
 import { Breadcrumbs } from "./breadcrumbs";
+import { RouteProgress } from "./route-progress";
 
 const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
   { label: "Dashboard", href: "", roles: ["admin", "teacher", "student", "parent"] },
@@ -38,6 +39,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
         avatarUrl={avatarUrl} />
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 mt-13 flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:mt-0 lg:px-8">
+          <RouteProgress />
           <Breadcrumbs root={schoolName} />
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
