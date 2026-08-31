@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Peysich",
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html:
           `try{if(localStorage.getItem("peysich-theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}` }} />
       </head>
-      <body className={`${geist.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>{children}</body>
     </html>
   );
 }

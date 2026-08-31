@@ -25,10 +25,12 @@ function abbr(name: string) {
   return name.length > 13 ? name.split(/\s+/).map((w) => w[0]).join("").toUpperCase() : name;
 }
 
+/* Assembly ramp: assembly time keeps the quiet wine wash; breaks are
+ * HATCHED — an absence of teaching, not a state of it. */
 const KIND_TINT: Record<string, string> = {
-  assembly: "bg-primary/5 text-primary/70",
-  break: "bg-warning/10 text-warning",
-  lunch: "bg-warning/10 text-warning",
+  assembly: "bg-brand-soft text-primary/70",
+  break: "hatch",
+  lunch: "hatch",
 };
 
 /** One class's week: rows = days, columns = the section's period slots. */
@@ -98,9 +100,15 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
                       : <span className="text-faint">·</span>}
                   </span>
                 );
+                /* the value ramp: teacher known = container tone with its paired
+                 * text; placed but nobody derivable = needs-one amber; empty stays
+                 * quiet. Selection is a ring so the ramp still reads through it. */
+                const ramp = e && !dim
+                  ? (tName ? "bg-brand-container text-on-brand-container" : "bg-warning-soft text-warning")
+                  : e ? "text-faint" : "";
                 return (
                   <td key={sl.id}
-                    className={`text-center align-middle ${isSel ? "bg-primary/10 ring-1 ring-inset ring-primary" : e && !dim ? "bg-success/5" : ""} ${focusSubjectId && e?.subjectId === focusSubjectId ? "bg-primary/10" : ""}`}>
+                    className={`text-center align-middle ${ramp} ${isSel ? "ring-2 ring-inset ring-primary" : ""} ${focusSubjectId && e?.subjectId === focusSubjectId ? "ring-1 ring-inset ring-primary/50" : ""}`}>
                     {cell}
                   </td>
                 );

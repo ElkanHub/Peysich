@@ -61,10 +61,11 @@ export function Flash() {
   return (
     <div aria-live="polite"
       className={cn(
-        "fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-[var(--shadow-md)]",
-        msg.tone === "success" ? "bg-success text-white" : "bg-danger text-white",
+        "fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background shadow-[var(--shadow-lg)]",
       )}>
-      {msg.tone === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+      {msg.tone === "success"
+        ? <CheckCircle2 size={16} className="text-[#5fcfa2]" />
+        : <AlertTriangle size={16} className="text-[#f2a6a2]" />}
       {msg.text}
     </div>
   );

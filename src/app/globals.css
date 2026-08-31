@@ -113,6 +113,7 @@
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 body {
@@ -128,6 +129,12 @@ h1, h2, h3 { letter-spacing: -0.025em; }
 
 /* data reads better with equal-width digits */
 table, [data-nums] { font-variant-numeric: tabular-nums; }
+
+/* hatched = an absence of business (breaks, blocked), not a state of it */
+.hatch {
+  background: repeating-linear-gradient(-45deg, var(--muted) 0 6px, var(--border) 6px 7px);
+  color: var(--muted-foreground);
+}
 
 /* quiet scrollbars */
 * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }

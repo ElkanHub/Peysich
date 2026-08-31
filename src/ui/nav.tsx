@@ -30,35 +30,60 @@ const ICONS: Record<string, LucideIcon> = {
 
 export type NavEntry = { label: string; href: string; badge?: number };
 
+/* Assembly groups: Learn / Money / Operate. Labels not listed here (the
+ * platform console, portals) fall into an uncaptioned leading group, so
+ * every nav renders correctly whether or not it matches the school map. */
+const NAV_GROUPS: [string, string[]][] = [
+  ["Learn", ["Dashboard", "Students", "Guardians", "Attendance", "Assessment", "Reports", "Timetable", "Homework"]],
+  ["Money", ["Fees", "Billing"]],
+  ["Operate", ["Staff", "Staff HR", "Admissions", "Announcements", "Calendar", "Library", "Transport", "Inventory", "Analytics", "Settings"]],
+];
+
 function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const grouped = new Set(NAV_GROUPS.flatMap(([, ls]) => ls));
+  const groups: [string, NavEntry[]][] = ([
+    ["", items.filter((n) => !grouped.has(n.label))] as [string, NavEntry[]],
+    ...NAV_GROUPS.map(([g, ls]) =>
+      [g, items.filter((n) => ls.includes(n.label))] as [string, NavEntry[]]),
+  ]).filter(([, ls]) => ls.length > 0);
+  const captions = groups.filter(([g]) => g).length > 1; // one lonely group needs no caption
+
   return (
-    <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-      {items.map((n) => {
-        const href = `/${n.href.replace(/^\//, "")}` || "/";
-        const isRoot = href === "/" || href === "/platform";
-        const active = isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
-        const Icon = ICONS[n.label] ?? LayoutDashboard;
-        return (
-          <Link key={n.label + href} href={href} onClick={onNavigate}
-            className={cn(
-              "group relative flex h-9 items-center gap-3 rounded-md px-3 text-[14px] font-medium transition-colors",
-              active
-                ? "bg-ink-active text-ink-text-strong"
-                : "text-ink-text hover:bg-ink-2 hover:text-ink-text-strong")}>
-            {active && <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />}
-            <Icon size={16} strokeWidth={active ? 2.2 : 1.8}
-              className={cn("shrink-0", active ? "text-ink-text-strong" : "text-ink-text/70 group-hover:text-ink-text-strong")} />
-            {n.label}
-            {typeof n.badge === "number" && n.badge > 0 && (
-              <span className="ml-auto rounded-full bg-warning px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink"
-                data-nums="" aria-label={`${n.badge} needing attention`}>
-                {n.badge > 99 ? "99+" : n.badge}
-              </span>
-            )}
-          </Link>
-        );
-      })}
+    <nav className="flex-1 overflow-y-auto px-3 py-3">
+      {groups.map(([g, ls]) => (
+        <div key={g || "core"} className="mb-1.5">
+          {captions && g && (
+            <p className="px-3 pb-1 pt-2 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-ink-text/50">{g}</p>
+          )}
+          <div className="space-y-0.5">
+            {ls.map((n) => {
+              const href = `/${n.href.replace(/^\//, "")}` || "/";
+              const isRoot = href === "/" || href === "/platform";
+              const active = isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
+              const Icon = ICONS[n.label] ?? LayoutDashboard;
+              return (
+                <Link key={n.label + href} href={href} onClick={onNavigate}
+                  className={cn(
+                    "group relative flex h-9 items-center gap-3 rounded-full px-3.5 text-[14px] font-medium transition-colors",
+                    active
+                      ? "bg-ink-active font-semibold text-ink-text-strong"
+                      : "text-ink-text hover:bg-ink-2 hover:text-ink-text-strong")}>
+                  <Icon size={16} strokeWidth={active ? 2.2 : 1.8}
+                    className={cn("shrink-0", active ? "text-ink-text-strong" : "text-ink-text/70 group-hover:text-ink-text-strong")} />
+                  {n.label}
+                  {typeof n.badge === "number" && n.badge > 0 && (
+                    <span className="ml-auto rounded-full bg-warning px-1.5 py-0.5 text-[11px] font-bold leading-none text-white"
+                      data-nums="" aria-label={`${n.badge} needing attention`}>
+                      {n.badge > 99 ? "99+" : n.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }

@@ -16,7 +16,7 @@ export const btnDangerCls =
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="mb-1.5 block font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         {label}
       </span>
       {children}
@@ -51,16 +51,24 @@ export function Card({ children, className }: { children: React.ReactNode; class
   );
 }
 
-/** Stat tile for dashboards. */
+/** Stat tile for dashboards. Toned tiles are FILLED containers (Assembly):
+ *  hero = the school's colour, danger/warning/success = the fixed status
+ *  containers with their paired text — never a coloured number on white. */
 export function Stat({ label, value, tone }: {
-  label: string; value: React.ReactNode; tone?: "success" | "danger" | "warning" | "default";
+  label: string; value: React.ReactNode; tone?: "hero" | "success" | "danger" | "warning" | "default";
 }) {
+  const tones = {
+    hero: "border-transparent bg-brand-container text-on-brand-container",
+    success: "border-transparent bg-success-soft text-success",
+    danger: "border-transparent bg-danger-soft text-danger",
+    warning: "border-transparent bg-warning-soft text-warning",
+    default: "",
+  };
   return (
-    <Card className="hover:shadow-[var(--shadow-md)]">
-      <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p data-nums="" className={cn("mt-1.5 text-[26px] font-bold leading-none tracking-[-0.03em]",
-        tone === "success" && "text-success", tone === "danger" && "text-danger",
-        tone === "warning" && "text-warning")}>
+    <Card className={cn("hover:shadow-[var(--shadow-md)]", tones[tone ?? "default"])}>
+      <p className={cn("font-mono text-[10.5px] font-medium uppercase tracking-[0.08em]",
+        tone && tone !== "default" ? "opacity-80" : "text-muted-foreground")}>{label}</p>
+      <p data-nums="" className="mt-1.5 text-[26px] font-bold leading-none tracking-[-0.03em]">
         {value}
       </p>
     </Card>
@@ -78,7 +86,8 @@ export function Badge({ children, tone = "default" }: {
     default: "bg-muted text-muted-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium capitalize", tones[tone])}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-semibold capitalize", tones[tone])}>
+      {tone !== "default" && <i aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />}
       {children}
     </span>
   );
@@ -103,8 +112,8 @@ export function DataTable({ head, children }: { head: string[]; children: React.
     <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-[var(--shadow-sm)]">
       <table className="w-full min-w-[560px] text-sm">
         <thead className="sticky top-0 z-10">
-          <tr className="border-b border-border bg-muted/60 text-left text-[12px] uppercase tracking-wider text-muted-foreground backdrop-blur">
-            {head.map((h, i) => <th key={i} className="px-4 py-2.5 font-semibold">{h}</th>)}
+          <tr className="border-b border-border bg-muted/60 text-left font-mono text-[10.5px] uppercase tracking-[0.07em] text-muted-foreground backdrop-blur">
+            {head.map((h, i) => <th key={i} className="px-4 py-2.5 font-medium">{h}</th>)}
           </tr>
         </thead>
         <tbody>{children}</tbody>
