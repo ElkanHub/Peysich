@@ -90,6 +90,10 @@ export async function saveBranding(slug: string, f: FormData) {
     },
     updatedAt: new Date(),
   }).where(eq(schools.id, school.id));
+  // the school object is cached per-tenant — without this, the new colour
+  // saves but every page (and every paper) keeps serving the old branding
+  const { invalidateSchool } = await import("@/core/tenant");
+  invalidateSchool(slug);
   revalidatePath(`/settings`);
   redirect(`/settings?flash=saved`);
 }
