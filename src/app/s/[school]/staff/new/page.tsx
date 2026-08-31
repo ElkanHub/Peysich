@@ -51,7 +51,7 @@ export default async function AddStaff({ params, searchParams }: {
               : "border-border text-faint");
           const inner = <>
             <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[11px]",
-              !skipped && n <= maxStep ? "bg-primary text-primary-foreground"
+              !skipped && n <= maxStep ? "bg-brand-container text-on-brand-container"
                 : n === step ? "bg-primary/20 text-primary" : "bg-muted")}>
               {!skipped && n <= maxStep ? "✓" : n}
             </span>

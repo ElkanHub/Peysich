@@ -3,27 +3,31 @@
 /* dark: utilities follow the app's .dark class (ThemeToggle), not the OS */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Peysich design system ─────────────────────────────────────────────
-   One deliberate look: ink sidebar, paper canvas, hairline borders,
-   a single confident accent. Swap the brand block to re-skin (logo colors). */
+/* ── Assembly — the Peysich design language ────────────────────────────
+   Material's token engineering (roles, paired on-colours, tonal surfaces)
+   run with Apple's discipline, on Peysich ground: the wine seed, the ink
+   rail, the paper. Components reference ROLES; no component names a hex.
+   Neutrals carry a 3% wine bias — a school hall, not a server room. */
 :root {
-  /* brand — from the Peysich logo (wine accent) */
+  /* brand — the wine seed (each school reseeds --brand via Branding) */
   --brand: #5e1d3e;
   --brand-strong: #4a1730;
-  --brand-soft: #f7edf3;
+  --brand-container: #f2dce8;    /* primary container — tonal fills */
+  --on-brand-container: #2b0a1c; /* paired on-colour: cannot fail contrast */
+  --brand-soft: #f7edf3;         /* primary quiet — the faintest wash */
 
-  /* canvas */
-  --background: #f7f7f9;
-  --foreground: #16181d;
+  /* canvas — warm, wine-biased neutrals */
+  --background: #fbfafb;
+  --foreground: #191419;
   --card: #ffffff;
-  --card-foreground: #16181d;
-  --muted: #f1f2f4;
-  --muted-foreground: #6b7280;
-  --faint: #9aa1ab;
-  --border: #e6e8ec;
-  --border-strong: #d5d8de;
+  --card-foreground: #191419;
+  --muted: #f0edef;
+  --muted-foreground: #6e6870;
+  --faint: #9c939b;
+  --border: #e9e4e8;
+  --border-strong: #d6cfd4;
 
-  /* ink chrome (sidebar / topbars) — plum-tinted near-black, from the logo */
+  /* ink chrome (sidebar / topbars) — Peysich's fixed mark, never reseeds */
   --ink: #1a1218;
   --ink-2: #251a23;
   --ink-border: #362737;
@@ -31,39 +35,44 @@
   --ink-text-strong: #ffffff;
   --ink-active: #45253c;
 
-  /* semantics */
+  /* status — fixed for every school, forever; container + paired text */
   --primary: var(--brand);
   --primary-foreground: #ffffff;
   --ring: var(--brand);
-  --success: #0d9463;
-  --success-soft: #e7f6ef;
-  --warning: #b45309;
-  --warning-soft: #fdf3e3;
-  --danger: #dc2626;
-  --danger-soft: #fdeeee;
+  --success: #0b7a50;
+  --success-soft: #ddf3e9;
+  --warning: #96490a;
+  --warning-soft: #fbedd8;
+  --danger: #c81e1e;
+  --danger-soft: #fbe2e2;
 
   --radius: 10px;
-  --shadow-sm: 0 1px 2px rgb(22 24 29 / 0.05);
-  --shadow-md: 0 2px 8px -2px rgb(22 24 29 / 0.10), 0 1px 2px rgb(22 24 29 / 0.05);
-  --shadow-lg: 0 12px 32px -8px rgb(22 24 29 / 0.18);
+  --shadow-sm: 0 1px 2px rgb(43 10 28 / 0.06);
+  --shadow-md: 0 2px 8px -2px rgb(43 10 28 / 0.10), 0 1px 2px rgb(43 10 28 / 0.06);
+  --shadow-lg: 0 12px 32px -8px rgb(43 10 28 / 0.18);
 }
 
-/* ── dark mode: conventional near-black/grey canvas; the wine ACCENTS and
-   the ink sidebar stay exactly as they are ── */
+/* ── dark mode: warm near-black; the ink rail and the papers stay as they
+   are. Status lightens so it holds on its dark containers. ── */
 .dark {
-  --background: #101114;
-  --foreground: #e7e9ee;
-  --card: #17181c;
-  --card-foreground: #e7e9ee;
-  --muted: #1f2126;
-  --muted-foreground: #9aa1ab;
-  --faint: #6b7280;
-  --border: #26282e;
-  --border-strong: #33363d;
+  --background: #141115;
+  --foreground: #eae5e9;
+  --card: #1b171c;
+  --card-foreground: #eae5e9;
+  --muted: #221d23;
+  --muted-foreground: #a79fa6;
+  --faint: #6e6870;
+  --border: #2d272e;
+  --border-strong: #3a333b;
+  --brand-container: #5a1c3c;
+  --on-brand-container: #f2dce8;
   --brand-soft: #33202b;
-  --success-soft: #12291f;
-  --warning-soft: #2d2212;
-  --danger-soft: #2e1716;
+  --success: #3fbd8a;
+  --success-soft: #0f3a29;
+  --warning: #de9a44;
+  --warning-soft: #3d2a10;
+  --danger: #ef6660;
+  --danger-soft: #4a1513;
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-md: 0 2px 8px -2px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6);
@@ -78,6 +87,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-brand-soft: var(--brand-soft);
   --color-brand-strong: var(--brand-strong);
+  --color-brand-container: var(--brand-container);
+  --color-on-brand-container: var(--on-brand-container);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-faint: var(--faint);
@@ -112,7 +123,8 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3 { letter-spacing: -0.02em; }
+/* tracking tightens as type grows — the Assembly signature */
+h1, h2, h3 { letter-spacing: -0.025em; }
 
 /* data reads better with equal-width digits */
 table, [data-nums] { font-variant-numeric: tabular-nums; }
@@ -129,7 +141,7 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .skeleton {
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--muted) 25%, #e9eaee 50%, var(--muted) 75%);
+  background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }

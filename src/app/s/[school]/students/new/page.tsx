@@ -61,7 +61,7 @@ export default async function AdmitStudent({ params, searchParams }: {
               : "border-border text-faint");
           const inner = <>
             <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[11px]",
-              n <= maxStep ? "bg-primary text-primary-foreground" : n === step ? "bg-primary/20 text-primary" : "bg-muted")}>
+              n <= maxStep ? "bg-brand-container text-on-brand-container" : n === step ? "bg-primary/20 text-primary" : "bg-muted")}>
               {n <= maxStep ? "✓" : n}
             </span>
             {label}

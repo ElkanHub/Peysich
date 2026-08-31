@@ -70,7 +70,7 @@ export default async function Fees({ params, searchParams }: {
             return (
               <Link key={k.id} href={`/fees?child=${k.id}`} aria-current={isActive ? "true" : undefined}
                 className={`flex items-center gap-2 rounded-full py-1 pl-1 pr-3.5 text-[13.5px] font-medium transition-colors ${isActive
-                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-sm)] ring-2 ring-primary/35 ring-offset-2 ring-offset-background"
+                  ? "bg-brand-container text-on-brand-container shadow-[var(--shadow-sm)] ring-2 ring-primary/35 ring-offset-2 ring-offset-background"
                   : "border border-border hover:bg-muted"}`}>
                 <ChildAvatar photoUrl={k.photoUrl} initials={`${k.firstName[0]}${k.lastName[0]}`}
                   owing={k.owingPesewas > 0} className="h-7 w-7 text-[11px]" />
@@ -304,7 +304,7 @@ export default async function Fees({ params, searchParams }: {
         {clsOrdered.map((c) => (
           <Link key={c.id} href={`/fees?c=${c.id}${sp.f ? `&f=${sp.f}` : ""}`}
             className={`rounded-full px-3 py-1 text-[13px] font-medium ${c.id === activeCls?.id
-              ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+              ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             {c.name}
           </Link>
         ))}

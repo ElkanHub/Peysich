@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/* Peysich UI kit — the premium pass. Hairline borders, quiet shadows,
-   one accent, stable action placement (doc 06 laws). */
+/* Assembly UI kit — capsules for action, calm radii for structure,
+   hairline borders, one accent, stable action placement (doc 06 laws). */
 
 export const inputCls =
   "w-full rounded-md border border-border bg-card px-3 py-2 text-sm shadow-[var(--shadow-sm)] outline-none transition-colors placeholder:text-faint focus:border-primary focus:ring-2 focus:ring-ring/25";
 export const btnCls =
-  "inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] transition-all hover:bg-brand-strong active:scale-[.99] disabled:pointer-events-none disabled:opacity-55";
+  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-4.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-sm)] transition-all hover:bg-brand-strong active:scale-[.98] disabled:pointer-events-none disabled:opacity-55";
 export const btnGhostCls =
-  "inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3.5 text-sm font-medium shadow-[var(--shadow-sm)] transition-colors hover:border-border-strong hover:bg-muted";
+  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-medium shadow-[var(--shadow-sm)] transition-colors hover:border-border-strong hover:bg-muted";
 export const btnDangerCls =
-  "inline-flex h-9 items-center justify-center rounded-md bg-danger px-4 text-sm font-medium text-white shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90";
+  "inline-flex h-9 items-center justify-center rounded-full bg-danger px-4.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90";
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -31,7 +31,7 @@ export function PageHeader({ title, sub, action }: {
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="text-[22px] font-semibold leading-tight tracking-tight">{title}</h1>
+        <h1 className="text-[22px] font-bold leading-tight tracking-[-0.028em]">{title}</h1>
         {sub && <p className="mt-1 text-[14px] text-muted-foreground">{sub}</p>}
       </div>
       {action != null && typeof action === "object" && "href" in action
@@ -58,7 +58,7 @@ export function Stat({ label, value, tone }: {
   return (
     <Card className="hover:shadow-[var(--shadow-md)]">
       <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p data-nums="" className={cn("mt-1.5 text-[26px] font-semibold leading-none tracking-tight",
+      <p data-nums="" className={cn("mt-1.5 text-[26px] font-bold leading-none tracking-[-0.03em]",
         tone === "success" && "text-success", tone === "danger" && "text-danger",
         tone === "warning" && "text-warning")}>
         {value}

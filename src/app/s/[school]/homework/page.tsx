@@ -45,12 +45,12 @@ export default async function Homework({ params, searchParams }: {
       <div className="max-w-2xl">
         <PageHeader title="Homework" sub={`What ${me.firstName}'s class has been set — your own record only`} />
         <div className="mb-4 flex flex-wrap gap-1.5">
-          <Link href="/homework" className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${!sp.subject ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+          <Link href="/homework" className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${!sp.subject ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             All subjects
           </Link>
           {subjectsHere.map(([id, name]) => (
             <Link key={id} href={`/homework?subject=${id}`}
-              className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${sp.subject === id ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+              className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${sp.subject === id ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
               {name}
             </Link>
           ))}
@@ -108,12 +108,12 @@ export default async function Homework({ params, searchParams }: {
         <PageHeader title="Homework"
           sub="What has been set for your children — their classes only, nothing else" />
         <div className="mb-2 flex flex-wrap gap-1.5">
-          <Link href={q(undefined, sp.subject)} className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${!sp.child ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+          <Link href={q(undefined, sp.subject)} className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${!sp.child ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             All children
           </Link>
           {withClass.map((k) => (
             <Link key={k.id} href={q(k.id, sp.subject)}
-              className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${sp.child === k.id ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+              className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${sp.child === k.id ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
               {k.firstName} · {k.className}
             </Link>
           ))}

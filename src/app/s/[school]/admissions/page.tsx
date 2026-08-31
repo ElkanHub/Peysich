@@ -93,13 +93,13 @@ export default async function Admissions({ params, searchParams }: {
 
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
         <Link href="/admissions" className={`rounded-full px-3 py-1 text-[13px] font-medium ${!sp.lvl
-          ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+          ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
           All levels
         </Link>
         {lvs.filter((l) => rows.some((a) => a.levelId === l.id)).map((l) => (
           <Link key={l.id} href={`/admissions?lvl=${l.id}`}
             className={`rounded-full px-3 py-1 text-[13px] font-medium ${sp.lvl === l.id
-              ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+              ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             {l.name}
           </Link>
         ))}

@@ -119,7 +119,7 @@ export default async function Reports({ params, searchParams }: {
               .map((x) => (
                 <Link key={x.id} href={`/reports?t=${x.id}`}
                   className={`rounded-full px-2.5 py-1 text-[13px] font-medium ${x.id === term.id
-                    ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+                    ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
                   {x.name}
                 </Link>
               ))}
@@ -292,7 +292,7 @@ export default async function Reports({ params, searchParams }: {
           {allClasses.map((c) => (
             <Link key={c.id} href={`?c=${c.id}&t=${term.id}`}
               className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === activeClass?.id
-                ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+                ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
               {c.name}
             </Link>
           ))}

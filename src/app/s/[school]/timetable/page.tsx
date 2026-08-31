@@ -177,7 +177,7 @@ export default async function Timetable({ params, searchParams }: {
         <div className="mb-5 flex gap-2">
           {tabs.map((v) => (
             <Link key={v} href={`?view=${v}`}
-              className={`rounded-md border px-3.5 py-1.5 text-sm font-medium capitalize ${v === view ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              className={`rounded-md border px-3.5 py-1.5 text-sm font-medium capitalize ${v === view ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
               {v === "level" ? "Level" : v} timetable
             </Link>
           ))}
@@ -199,7 +199,7 @@ export default async function Timetable({ params, searchParams }: {
         <div className="mb-4 flex flex-wrap gap-1.5">
           {visibleClasses.map((c) => (
             <Link key={c.id} href={`?view=class&c=${c.id}`}
-              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === active.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === active.id ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
               {c.name}
             </Link>
           ))}
@@ -239,7 +239,7 @@ export default async function Timetable({ params, searchParams }: {
           <div className="mb-4 flex flex-wrap gap-1.5">
             {teachers.map((t) => (
               <Link key={t.id} href={`?view=teacher&t=${t.id}`}
-                className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${t.id === activeTeacher.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+                className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${t.id === activeTeacher.id ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
                 {t.name}
               </Link>
             ))}
@@ -323,7 +323,7 @@ export default async function Timetable({ params, searchParams }: {
         <div className="mb-4 flex flex-wrap gap-1.5">
           {subs.map((s) => (
             <Link key={s.id} href={`?view=subject&sub=${s.id}`}
-              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${s.id === activeSub.id ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${s.id === activeSub.id ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
               {s.name}
             </Link>
           ))}
@@ -371,7 +371,7 @@ export default async function Timetable({ params, searchParams }: {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {SECTIONS.map((s) => (
           <Link key={s} href={`?view=level&sec=${s}&d=${day}`}
-            className={`rounded-md border px-3 py-1.5 text-sm font-medium ${s === section ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+            className={`rounded-md border px-3 py-1.5 text-sm font-medium ${s === section ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
             {SECTION_LABELS[s]}
           </Link>
         ))}

@@ -173,7 +173,7 @@ export default async function RecordBook({ params, searchParams }: {
             .map((x) => (
               <Link key={x.id} href={`${base}t=${x.id}`}
                 className={`rounded-full px-2.5 py-1 text-[13px] font-medium ${x.id === term.id
-                  ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+                  ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
                 {x.name}
               </Link>
             ))}
@@ -253,7 +253,7 @@ export default async function RecordBook({ params, searchParams }: {
         {allowed.map((x) => (
           <Link key={x.id} href={`/attendance/register?c=${x.id}&t=${term.id}`}
             className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${x.id === active.id
-              ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}>
+              ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             {x.name}
           </Link>
         ))}

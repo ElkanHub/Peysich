@@ -49,7 +49,7 @@ export default async function DayPlanSettings({ params, searchParams }: {
         {SECTIONS.map((s) => (
           <Link key={s} href={`?s=${s}`}
             className={`rounded-md border px-3.5 py-1.5 text-sm font-medium ${s === section
-              ? "border-primary bg-primary text-primary-foreground"
+              ? "border-primary/40 bg-brand-container text-on-brand-container"
               : "border-border hover:bg-muted"}`}>
             {SECTION_LABELS[s]}
           </Link>

@@ -116,7 +116,7 @@ export default async function Assessment({ params, searchParams }: {
         {(["students", "subjects"] as const).map((v) => (
           <Link key={v} href={`?view=${v}${activeClass ? `&c=${activeClass.id}` : ""}`}
             className={`rounded-md border px-3.5 py-1.5 text-sm font-medium capitalize ${v === view
-              ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
             By {v}
           </Link>
         ))}
@@ -126,7 +126,7 @@ export default async function Assessment({ params, searchParams }: {
         {testClasses.map((c) => (
           <Link key={c.id} href={`?view=${view}&c=${c.id}`}
             className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === activeClass?.id
-              ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+              ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
             {c.name}
           </Link>
         ))}

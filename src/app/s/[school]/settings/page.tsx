@@ -538,9 +538,28 @@ export default async function Settings({ params, searchParams }: {
         hint="Logo, colours, motto and contact lines — on reports, invoices, emails and SMS">
         <form action={saveBranding.bind(null, slug)} className="grid grid-cols-2 gap-3">
           <Field label="Motto"><input name="motto" defaultValue={b.motto} className={inputCls} /></Field>
-          <Field label="Primary color (reports & certificates)">
-            <input name="primaryColor" type="color" defaultValue={b.primaryColor || "#5E1D3E"}
-              className="h-10 w-20 cursor-pointer rounded-md border border-border bg-card p-1" />
+          <Field label="School colour (reports, letters & receipts)">
+            <div className="flex min-h-10 flex-wrap items-center gap-1.5">
+              {(() => {
+                const SEEDS = [["#5E1D3E", "Wine"], ["#126B4A", "Palm"], ["#8A4A21", "Cocoa"],
+                  ["#2F3E7A", "Indigo"], ["#0E5D74", "Lagoon"]] as const;
+                const current = (b.primaryColor || "#5E1D3E").toUpperCase();
+                const known = SEEDS.some(([hex]) => hex === current);
+                const all = known ? SEEDS : ([[current, "Current"], ...SEEDS] as const);
+                return all.map(([hex, name], i) => (
+                  <label key={hex} title={name}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[12.5px] font-medium has-[:checked]:border-primary/50 has-[:checked]:bg-brand-container has-[:checked]:text-on-brand-container">
+                    <input type="radio" name="primaryColor" value={hex} className="sr-only"
+                      defaultChecked={known ? hex === current : i === 0} />
+                    <span className="h-3.5 w-3.5 rounded-full" style={{ background: hex }} />
+                    {name}
+                  </label>
+                ));
+              })()}
+            </div>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              Curated seeds — each checked so papers and portals stay legible. Status colours never change.
+            </p>
           </Field>
           <Field label="Address"><input name="address" defaultValue={b.address} className={inputCls} /></Field>
           <Field label="Phone"><input name="phone" defaultValue={b.phone} className={inputCls} /></Field>

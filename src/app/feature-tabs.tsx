@@ -92,7 +92,7 @@ export function FeatureTabs() {
               onClick={() => setActive(i)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-medium transition-all
                 ${on
-                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-md)]"
+                  ? "bg-brand-container text-on-brand-container shadow-[var(--shadow-md)]"
                   : "border border-border bg-card text-muted-foreground hover:border-border-strong hover:text-foreground"}`}>
               <Icon size={15} />
               {tx.label}

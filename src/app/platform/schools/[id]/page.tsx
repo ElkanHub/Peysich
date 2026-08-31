@@ -118,7 +118,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
                       <button className={cn(
                         "ml-1 rounded-md border px-2 py-1 text-xs",
                         current === mode
-                          ? "border-primary bg-primary text-primary-foreground"
+                          ? "border-primary/40 bg-brand-container text-on-brand-container"
                           : "border-border text-muted-foreground hover:bg-muted")}>
                         {mode}
                       </button>

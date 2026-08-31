@@ -55,7 +55,7 @@ export default async function ApplicantFile({ params }: {
       <div className="mb-5 flex overflow-hidden rounded-lg text-[11px] font-bold tracking-wide">
         {STEPS.map((s, i) => (
           <span key={s} className={`flex-1 border-r-2 border-background py-2 text-center uppercase last:border-r-0 ${
-            a.status === s ? "bg-primary text-primary-foreground"
+            a.status === s ? "bg-brand-container text-on-brand-container"
               : stepIdx > i || a.status === "admitted" ? "bg-brand-soft text-primary"
                 : decided && stepIdx === -1 ? "bg-muted text-faint" : "bg-muted text-faint"}`}>
             {STAGE_LABEL[s]}
