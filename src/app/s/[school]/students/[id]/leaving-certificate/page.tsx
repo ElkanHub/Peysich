@@ -5,6 +5,8 @@ import {
   students, classes, enrollments, academicYears, feeInvoices, attendanceRecords,
 } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
+import { getDocSign } from "@/core/doc-sign";
+import { SignLine } from "@/ui/paper-sign";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 const REASON_LABEL: Record<string, string> = {
@@ -45,6 +47,7 @@ export default async function LeavingCertificate({ params }: {
   ]);
   const b = school.branding;
   const color = b.primaryColor || "#5E1D3E";
+  const ds = await getDocSign(school);
   const balance = Number(fees.billed) - Number(fees.paid);
   const admitted = s.admittedOn ?? s.createdAt.toISOString().slice(0, 10);
 
@@ -126,9 +129,10 @@ export default async function LeavingCertificate({ params }: {
 
       {s.exitNote && <p className="mt-4 text-sm"><span className="text-neutral-500">Remarks:</span> {s.exitNote}</p>}
 
-      <div className="mt-12 grid grid-cols-2 gap-10 text-center text-sm">
-        <div><div className="border-t border-neutral-400 pt-1">Head Teacher — signature & stamp</div></div>
-        <div><div className="border-t border-neutral-400 pt-1">Date issued</div></div>
+      <div className="mt-8 grid grid-cols-2 items-end gap-10 text-sm">
+        <SignLine label="Head Teacher — signature & stamp"
+          sigUrl={ds.headSigUrl} name={ds.headName} stampUrl={ds.stampUrl} />
+        <SignLine label="Date issued" />
       </div>
 
       <p className="mt-8 text-center text-[11px] text-neutral-400 print:hidden">

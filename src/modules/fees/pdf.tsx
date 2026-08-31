@@ -147,7 +147,7 @@ export function InvoicePdf({ d, logo, student }: { d: InvoiceDoc; logo: Img; stu
   );
 }
 
-export function ReceiptPdf({ d, logo }: { d: ReceiptDoc; logo: Img }) {
+export function ReceiptPdf({ d, logo, stamp }: { d: ReceiptDoc; logo: Img; stamp: Img }) {
   const color = d.school.branding.primaryColor || "#5E1D3E";
   const p = d.payment;
   const Row = ({ k, v, bold }: { k: string; v: string; bold?: boolean }) => (
@@ -178,12 +178,20 @@ export function ReceiptPdf({ d, logo }: { d: ReceiptDoc; logo: Img }) {
           <Row k="Method" v={`${p.method}${p.reference && !p.reference.startsWith("pay_") ? ` · ref ${p.reference}` : ""}`} />
           <Row k="Balance after" v={ghs(Math.max(0, d.balanceAfter))} bold />
         </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 38 }} wrap={false}>
-          <View style={{ width: "42%", borderTopWidth: 0.8, borderColor: "#888", paddingTop: 3 }}>
-            <Text style={{ textAlign: "center", fontSize: 8.5, color: "#555" }}>Received by — {d.recordedByName}</Text>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: 16 }} wrap={false}>
+          <View style={{ width: "42%" }}>
+            <View style={{ height: 42 }} />
+            <View style={{ borderTopWidth: 0.8, borderColor: "#888", paddingTop: 3 }}>
+              <Text style={{ textAlign: "center", fontSize: 8.5, color: "#555" }}>Received by — {d.recordedByName}</Text>
+            </View>
           </View>
-          <View style={{ width: "42%", borderTopWidth: 0.8, borderColor: "#888", paddingTop: 3 }}>
-            <Text style={{ textAlign: "center", fontSize: 8.5, color: "#555" }}>School stamp</Text>
+          <View style={{ width: "42%" }}>
+            <View style={{ height: 42, alignItems: "center", justifyContent: "flex-end" }}>
+              {stamp && <Image src={stamp} style={{ maxHeight: 40, maxWidth: 90, objectFit: "contain" }} />}
+            </View>
+            <View style={{ borderTopWidth: 0.8, borderColor: "#888", paddingTop: 3 }}>
+              <Text style={{ textAlign: "center", fontSize: 8.5, color: "#555" }}>School stamp</Text>
+            </View>
           </View>
         </View>
         <Text style={[s.foot, { left: 30, right: 30 }]} fixed>
@@ -199,6 +207,6 @@ export async function invoicePdfBuffer(d: InvoiceDoc) {
   return renderToBuffer(<InvoicePdf d={d} logo={logo} student={student} />);
 }
 export async function receiptPdfBuffer(d: ReceiptDoc) {
-  const logo = await fetchImage(d.logoUrl);
-  return renderToBuffer(<ReceiptPdf d={d} logo={logo} />);
+  const [logo, stamp] = await Promise.all([fetchImage(d.logoUrl), fetchImage(d.stampUrl)]);
+  return renderToBuffer(<ReceiptPdf d={d} logo={logo} stamp={stamp} />);
 }

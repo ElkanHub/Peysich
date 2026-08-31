@@ -7,6 +7,7 @@ import { loadReceiptDoc, amountInWords } from "@/modules/fees/docs";
 import { ghs } from "@/modules/fees/config";
 import { voidPayment } from "../../actions";
 import { PrintButton } from "@/ui/print-button";
+import { SignLine, StampSlot } from "@/ui/paper-sign";
 import { Badge, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 
@@ -82,9 +83,9 @@ export default async function ReceiptPage({ params }: {
               <td className="py-1.5">{ghs(Math.max(0, d.balanceAfter))}</td></tr>
           </tbody>
         </table>
-        <div className="mt-10 flex justify-between text-[11px] text-neutral-600">
-          <p className="w-[42%] border-t border-neutral-400 pt-1 text-center">Received by — {d.recordedByName}</p>
-          <p className="w-[42%] border-t border-neutral-400 pt-1 text-center">School stamp</p>
+        <div className="mt-7 flex items-end justify-between text-[11px]">
+          <div className="w-[42%]"><SignLine label={`Received by — ${d.recordedByName}`} /></div>
+          <div className="w-[42%]"><StampSlot url={d.stampUrl} /></div>
         </div>
         <p className="mt-5 border-t border-neutral-200 pt-2 text-center text-[10px] text-neutral-400">
           Thank you. Keep this receipt — it is your proof of payment. · Peysich

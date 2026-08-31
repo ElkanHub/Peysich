@@ -9,6 +9,8 @@ import { requireSchool, getTeacherScope } from "@/core/school-context";
 import { assertParentOf, getStudentSelf } from "@/core/portal";
 import { getStructure } from "@/core/academics";
 import { getReportConfig } from "@/modules/assessment/report-config";
+import { getDocSign } from "@/core/doc-sign";
+import { SignLine } from "@/ui/paper-sign";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
 const DEFAULT_BANDS = [
@@ -115,6 +117,7 @@ export default async function PerformanceSheet({ params }: {
   const fullScheme = comps.length === allComps.length;
 
   const cfg = getReportConfig(school.settings);
+  const ds = cfg.signatures ? await getDocSign(school) : null;
   const photoUrl = cfg.studentPhoto && s.photoUrl && r2Enabled
     ? await presignDownload(s.photoUrl) : null;
   const logoUrl = cfg.logo && b.logoUrl && r2Enabled
@@ -218,9 +221,14 @@ export default async function PerformanceSheet({ params }: {
       )}
 
       {cfg.signatures && (
-        <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
-          <div className="border-t border-neutral-400 pt-1 text-center text-neutral-600">Class Teacher</div>
-          <div className="border-t border-neutral-400 pt-1 text-center text-neutral-600">Head Teacher</div>
+        <div className="relative mt-6 grid grid-cols-2 items-end gap-8 text-sm">
+          {ds?.stampUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ds.stampUrl} alt="" data-stamp=""
+              className="absolute bottom-4 left-1/2 h-16 -translate-x-1/2 object-contain opacity-90" />
+          )}
+          <SignLine label="Class Teacher" />
+          <SignLine label="Head Teacher" sigUrl={ds?.headSigUrl} name={ds?.headName} />
         </div>
       )}
       {(b.signatureLines ?? []).map((l, i) => (

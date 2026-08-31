@@ -23,6 +23,9 @@ import { Field, PageHeader, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/ki
 import { SubmitButton } from "@/ui/feedback";
 import { GradingEditor } from "./grading";
 import { LogoUploader } from "./logo";
+import { DocImageUploader } from "./doc-sign";
+import { saveDocSignPeople, clearDocImage } from "./docsign-actions";
+import { getDocSignConfig } from "@/core/doc-sign";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
 const ERR: Record<string, string> = {
@@ -109,6 +112,12 @@ export default async function Settings({ params, searchParams }: {
   const hours = getSchoolHours(school.settings);
   const b = school.branding;
   const logoUrl = b.logoUrl && r2Enabled ? await presignDownload(b.logoUrl) : null;
+  const ds = getDocSignConfig(school.settings);
+  const sign = async (key: string | null) =>
+    key && r2Enabled ? await presignDownload(key).catch(() => null) : null;
+  const [headSigUrl, adminSigUrl, stampUrl] = await Promise.all([
+    sign(ds.headSigKey), sign(ds.adminSigKey), sign(ds.stampKey),
+  ]);
   const kidsOf = new Map(kidCounts.map((c) => [c.classId, Number(c.n)]));
   const enrolsOf = new Map(enrolCounts.map((c) => [c.classId, Number(c.n)]));
   const allocsOf = new Map(allocCounts.map((c) => [c.subjectId, Number(c.n)]));
@@ -542,7 +551,60 @@ export default async function Settings({ params, searchParams }: {
         <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>
       </Section>
 
-      {/* ── 10 · year end ── */}
+      {/* ── 10 · signatures & stamp ── */}
+      <div id="signatures" />
+      <Section title="Signatures & school stamp"
+        hint="Collected once, printed on every outgoing paper — report cards, offer letters, receipts, certificates">
+        <form action={saveDocSignPeople.bind(null, slug)} className="grid gap-3 sm:grid-cols-2">
+          <Field label="Head teacher (from Staff)">
+            <select name="headStaffId" defaultValue={ds.headStaffId ?? ""} className={inputCls}>
+              <option value="">— not assigned yet —</option>
+              {tchs.filter((t) => t.status === "active").map((t) => (
+                <option key={t.id} value={t.id}>{t.name}{t.designation ? ` — ${t.designation}` : ""}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Main admin's name (signs when no head teacher yet)">
+            <input name="adminName" defaultValue={ds.adminName} placeholder={user.name ?? ""} className={inputCls} />
+          </Field>
+          <SubmitButton className={btnCls + " sm:col-span-2 sm:justify-self-start"} pendingText="Saving…">
+            Save people
+          </SubmitButton>
+        </form>
+        <p className="mt-3 rounded-md bg-muted/50 px-3 py-2 text-[13px] text-muted-foreground">
+          Papers carry the <b>head teacher&apos;s</b> signature. Until it is collected, the{" "}
+          <b>main admin&apos;s</b> signature signs in its place — so documents always go out ready,
+          printed or digital. A dark-ink signature on white paper, photographed straight on
+          (or a transparent PNG), prints best.
+        </p>
+        <div className="mt-4 grid gap-5 border-t border-border pt-4 sm:grid-cols-3">
+          {([
+            ["headSigKey", "Head teacher's signature", "shown on papers once collected", headSigUrl, false],
+            ["adminSigKey", "Main admin's signature", "stands in until the head teacher's arrives", adminSigUrl, false],
+            ["stampKey", "School stamp", "stamped beside the signature", stampUrl, true],
+          ] as const).map(([slot, label, hint, url, isStamp]) => (
+            <div key={slot}>
+              <DocImageUploader slug={slug} slot={slot} label={label} hint={hint}
+                enabled={r2Enabled} currentUrl={url} stamp={isStamp} />
+              {url && (
+                <form action={clearDocImage.bind(null, slug, slot)} className="mt-1">
+                  <SubmitButton className="text-[12.5px] text-danger underline-offset-2 hover:underline"
+                    pendingText="Removing…">Remove</SubmitButton>
+                </form>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[13px] text-muted-foreground">
+          {ds.headSigKey
+            ? "The head teacher's signature is on papers now."
+            : ds.adminSigKey
+              ? "No head-teacher signature yet — the main admin's signature is standing in on all papers."
+              : "No signature collected yet — papers show a blank signing line until one is uploaded."}
+        </p>
+      </Section>
+
+      {/* ── 11 · year end ── */}
       <Section danger title="Year end — promotion"
         hint="Move every class up, handle repeaters, graduate the top level, open the new year">
         <p className="text-sm text-muted-foreground">

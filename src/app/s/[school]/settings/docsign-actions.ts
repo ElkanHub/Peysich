@@ -1,0 +1,63 @@
+"use server";
+import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { db } from "@/db";
+import { schools, staff } from "@/db/schema";
+import { requireSchool } from "@/core/school-context";
+import { invalidateSchool } from "@/core/tenant";
+import { getDocSignConfig } from "@/core/doc-sign";
+
+/* Signatures & the school stamp (settings.docSign). Two signatures are
+ * collected — the head teacher's and the main admin's. Papers show the head
+ * teacher's; until it's collected the main admin's signs in its place. */
+
+async function writeDocSign(slug: string, patch: Record<string, unknown>) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const cfg = getDocSignConfig(school.settings);
+  const settings = {
+    ...(school.settings as Record<string, unknown>),
+    docSign: { ...cfg, ...patch },
+  };
+  await db.update(schools).set({ settings, updatedAt: new Date() }).where(eq(schools.id, school.id));
+  invalidateSchool(slug);
+  revalidatePath(`/settings`);
+  return school;
+}
+
+/** Designate the Head Teacher (from staff) and name the main admin whose
+ *  signature stands in wherever the head teacher's isn't collected yet. */
+export async function saveDocSignPeople(slug: string, f: FormData) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const headStaffId = String(f.get("headStaffId") ?? "");
+  if (headStaffId) {
+    const [s] = await db.select({ id: staff.id }).from(staff)
+      .where(and(eq(staff.id, headStaffId), eq(staff.schoolId, school.id)));
+    if (!s) redirect(`/settings?flash=error`);
+  }
+  await writeDocSign(slug, {
+    headStaffId: headStaffId || null,
+    adminName: String(f.get("adminName") ?? "").trim(),
+  });
+  redirect(`/settings?flash=saved`);
+}
+
+const IMAGE_SLOTS = ["headSigKey", "adminSigKey", "stampKey"] as const;
+export type DocImageSlot = (typeof IMAGE_SLOTS)[number];
+
+/** Save an uploaded signature/stamp image key into its slot. Called from the
+ *  upload hook, so it returns a result object instead of redirecting. */
+export async function saveDocImage(slug: string, slot: DocImageSlot, key: string) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  if (!IMAGE_SLOTS.includes(slot)) return { error: "Unknown image slot" };
+  if (!key.startsWith(`school/${school.id}/`)) return { error: "Invalid file" };
+  await writeDocSign(slug, { [slot]: key });
+  return { ok: true };
+}
+
+/** Remove a collected image so the fallback (or a blank line) applies again. */
+export async function clearDocImage(slug: string, slot: DocImageSlot) {
+  if (!IMAGE_SLOTS.includes(slot)) redirect(`/settings?flash=error`);
+  await writeDocSign(slug, { [slot]: null });
+  redirect(`/settings?flash=saved`);
+}

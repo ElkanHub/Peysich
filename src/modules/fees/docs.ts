@@ -5,6 +5,7 @@ import {
   academicYears, guardians, studentGuardians,
 } from "@/db/schema";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { getDocSignConfig } from "@/core/doc-sign";
 import { getFeesConfig, type FeesConfig } from "./config";
 
 /* One loader per paper. The page, the PDF and the email all read the SAME
@@ -20,6 +21,7 @@ export type InvoiceDoc = {
   school: { name: string; branding: { motto?: string; address?: string; phone?: string; email?: string; primaryColor?: string } };
   cfg: FeesConfig;
   logoUrl: string | null; photoUrl: string | null;
+  stampUrl: string | null; // the school stamp — papers go out ready
 };
 
 export async function loadInvoiceDoc(school: {
@@ -41,16 +43,18 @@ export async function loadInvoiceDoc(school: {
     db.select().from(academicYears).where(eq(academicYears.id, t.yearId)),
     s.classId ? db.select().from(classes).where(eq(classes.id, s.classId)) : Promise.resolve([null]),
   ]);
-  const [logoUrl, photoUrl] = await Promise.all([
+  const stampKey = getDocSignConfig(school.settings).stampKey;
+  const [logoUrl, photoUrl, stampUrl] = await Promise.all([
     school.branding.logoUrl && r2Enabled ? presignDownload(school.branding.logoUrl) : null,
     s.photoUrl && r2Enabled ? presignDownload(s.photoUrl) : null,
+    stampKey && r2Enabled ? presignDownload(stampKey).catch(() => null) : null,
   ]);
   return {
     invoice: inv, lines, student: s, className: cls?.name ?? null,
     termName: t.name, yearName: y?.name ?? "",
     school: { name: school.name, branding: school.branding },
     cfg: getFeesConfig(school.settings),
-    logoUrl, photoUrl,
+    logoUrl, photoUrl, stampUrl,
   };
 }
 
@@ -65,6 +69,7 @@ export type ReceiptDoc = {
   school: InvoiceDoc["school"];
   cfg: FeesConfig;
   logoUrl: string | null;
+  stampUrl: string | null;
 };
 
 export async function loadReceiptDoc(school: Parameters<typeof loadInvoiceDoc>[0], paymentId: string): Promise<ReceiptDoc | null> {
@@ -88,7 +93,7 @@ export async function loadReceiptDoc(school: Parameters<typeof loadInvoiceDoc>[0
     termName: inv.termName, yearName: inv.yearName,
     balanceAfter: inv.invoice.totalPesewas - upTo,
     recordedByName: rec?.name ?? "School office",
-    school: inv.school, cfg: inv.cfg, logoUrl: inv.logoUrl,
+    school: inv.school, cfg: inv.cfg, logoUrl: inv.logoUrl, stampUrl: inv.stampUrl,
   };
 }
 

@@ -5,6 +5,8 @@ import { db } from "@/db";
 import { applicants, applicantGuardians, levels } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { getDocSign } from "@/core/doc-sign";
+import { SignLine, StampSlot } from "@/ui/paper-sign";
 import { PrintButton } from "@/ui/print-button";
 import { btnGhostCls } from "@/ui/kit";
 
@@ -25,6 +27,7 @@ export default async function OfferLetter({ params }: {
   ]);
   const b = (school.branding ?? {}) as { logoUrl?: string; primaryColor?: string; address?: string; phone?: string; motto?: string };
   const logoUrl = b.logoUrl && r2Enabled ? await presignDownload(b.logoUrl).catch(() => null) : null;
+  const ds = await getDocSign(school);
   const color = b.primaryColor || "#5E1D3E";
   const levelName = lvs.find((l) => l.id === a.levelId)?.name ?? "—";
   const dear = gList[0]?.name ?? a.guardianName ?? "Parent/Guardian";
@@ -71,9 +74,9 @@ export default async function OfferLetter({ params }: {
           <p>We look forward to welcoming your child.</p>
         </div>
 
-        <div className="mt-12 flex justify-between text-[11px] text-neutral-600">
-          <p className="w-[42%] border-t border-neutral-400 pt-1 text-center">Head Teacher</p>
-          <p className="w-[42%] border-t border-neutral-400 pt-1 text-center">School stamp</p>
+        <div className="mt-8 flex items-end justify-between text-[11px]">
+          <div className="w-[42%]"><SignLine label="Head Teacher" sigUrl={ds.headSigUrl} name={ds.headName} /></div>
+          <div className="w-[42%]"><StampSlot url={ds.stampUrl} /></div>
         </div>
         <p className="mt-6 border-t border-neutral-200 pt-2 text-center text-[10px] text-neutral-400">
           {school.name} · Generated with Peysich

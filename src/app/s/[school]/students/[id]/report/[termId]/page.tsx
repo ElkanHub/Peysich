@@ -5,6 +5,8 @@ import { reportCards, students, classes, terms, academicYears } from "@/db/schem
 import { requireSchool } from "@/core/school-context";
 import { assertParentOf, getStudentSelf } from "@/core/portal";
 import { getReportConfig } from "@/modules/assessment/report-config";
+import { getDocSign } from "@/core/doc-sign";
+import { SignLine } from "@/ui/paper-sign";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
 /** School-branded digital report card — print-optimized (browser print → PDF).
@@ -32,6 +34,7 @@ export default async function ReportCard({ params }: {
     ? await presignDownload(s.photoUrl) : null;
   const logoUrl = cfg.logo && b.logoUrl && r2Enabled
     ? await presignDownload(b.logoUrl) : null;
+  const ds = cfg.signatures ? await getDocSign(school) : null;
   return (
     <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">
       <div className="relative border-b-4 pb-4 text-center" style={{ borderColor: color }}>
@@ -105,10 +108,16 @@ export default async function ReportCard({ params }: {
       </table>
       )}
       {cfg.signatures && (
-        <div className="mt-10 grid grid-cols-2 gap-8 text-sm">
-          {(b.signatureLines?.length ? b.signatureLines : ["Class Teacher", "Head Teacher"]).map((l) => (
-            <div key={l} className="border-t border-neutral-400 pt-1 text-center">{l}</div>
-          ))}
+        <div className="relative mt-6 grid grid-cols-2 items-end gap-8 text-sm">
+          {ds?.stampUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ds.stampUrl} alt="" data-stamp=""
+              className="absolute bottom-4 left-1/2 h-16 -translate-x-1/2 object-contain opacity-90" />
+          )}
+          {(b.signatureLines?.length ? b.signatureLines : ["Class Teacher", "Head Teacher"]).map((l) =>
+            /head/i.test(l)
+              ? <SignLine key={l} label={l} sigUrl={ds?.headSigUrl} name={ds?.headName} />
+              : <SignLine key={l} label={l} />)}
         </div>
       )}
       <p className="mt-6 text-center text-[11px] text-neutral-400 print:hidden">
