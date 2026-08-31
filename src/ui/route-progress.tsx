@@ -84,14 +84,8 @@ export function RouteProgress() {
     <div aria-hidden data-progress=""
       className="pointer-events-none absolute inset-x-0 -bottom-px z-40 h-[2px]">
       <div
-        className="h-full rounded-r-full bg-gradient-to-r from-primary/60 via-primary to-primary transition-[width,opacity] duration-300 ease-out"
-        style={{
-          width: `${width}%`,
-          opacity: shown ? 1 : 0,
-          boxShadow: shown
-            ? "0 0 8px color-mix(in srgb, var(--primary) 45%, transparent), 0 0 2px var(--primary)"
-            : "none",
-        }} />
+        className="h-full bg-primary transition-[width,opacity] duration-300 ease-out"
+        style={{ width: `${width}%`, opacity: shown ? 1 : 0 }} />
     </div>
   );
 }
