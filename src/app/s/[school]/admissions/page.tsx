@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { applicants, levels, classes, students, guardians } from "@/db/schema";
+import { applicants, applicantGuardians, levels, classes, students, guardians } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { getIntakeConfig, parseDocs, STAGES, STAGE_LABEL } from "@/modules/admissions/config";
 import { Card, PageHeader, Empty } from "@/ui/kit";
@@ -17,17 +17,26 @@ export default async function Admissions({ params, searchParams }: {
   const { school } = await requireModule(slug, "admissions", ["admin"]);
   const cfg = getIntakeConfig(school.settings);
 
-  const [rows, lvs, cls, roster, allGuardians] = await Promise.all([
+  const [rows, lvs, cls, roster, allGuardians, apgRows] = await Promise.all([
     db.select().from(applicants).where(eq(applicants.schoolId, school.id)),
     db.select().from(levels).where(eq(levels.schoolId, school.id)).orderBy(levels.sortOrder),
     db.select().from(classes).where(eq(classes.schoolId, school.id)),
     db.select({ id: students.id, classId: students.classId }).from(students)
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active"))),
     db.select({ phone: guardians.phone }).from(guardians).where(eq(guardians.schoolId, school.id)),
+    db.select({ applicantId: applicantGuardians.applicantId, phone: applicantGuardians.phone })
+      .from(applicantGuardians).where(eq(applicantGuardians.schoolId, school.id)),
   ]);
   const levelName = new Map(lvs.map((l) => [l.id, l.name]));
   const classLevel = new Map(cls.map((c) => [c.id, c.levelId]));
   const knownPhones = new Set(allGuardians.map((g) => g.phone).filter(Boolean));
+  const apgPhones = new Map<string, string[]>();
+  for (const r of apgRows) {
+    if (!apgPhones.has(r.applicantId)) apgPhones.set(r.applicantId, []);
+    apgPhones.get(r.applicantId)!.push(r.phone);
+  }
+  const hasSibling = (a: { id: string; guardianPhone: string }) =>
+    [a.guardianPhone, ...(apgPhones.get(a.id) ?? [])].some((ph) => ph && knownPhones.has(ph));
   const enrolledByLevel = new Map<string, number>();
   for (const s of roster) {
     const lid = s.classId ? classLevel.get(s.classId) : null;
@@ -132,7 +141,7 @@ export default async function Admissions({ params, searchParams }: {
                         {stage !== "admitted" && docsMissing(a) && (
                           <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10.5px] font-semibold text-danger">docs missing</span>
                         )}
-                        {stage !== "admitted" && knownPhones.has(a.guardianPhone) && (
+                        {stage !== "admitted" && hasSibling(a) && (
                           <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10.5px] font-semibold text-primary">sibling here</span>
                         )}
                         {stage === "offer" && a.offerDeadline && (

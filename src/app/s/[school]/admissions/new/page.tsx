@@ -26,7 +26,7 @@ export default async function NewApplication({ params, searchParams }: {
   return (
     <div className="max-w-xl">
       <PageHeader title="New application"
-        sub="Only the starred fields are needed now — the file grows as you screen" />
+        sub="Only the starred fields are needed now — more guardians can be added on the file" />
       <p className="-mt-3 mb-4">
         <Link href="/admissions" className="text-[13.5px] font-medium text-primary">← Admissions desk</Link>
       </p>
@@ -49,6 +49,15 @@ export default async function NewApplication({ params, searchParams }: {
           </Field>
           <Field label="Guardian name"><input name="guardianName" className={inputCls} /></Field>
           <Field label="Guardian phone *"><input name="guardianPhone" required className={inputCls} /></Field>
+          <Field label="Guardian email (offers go by email too)">
+            <input name="guardianEmail" type="email" className={inputCls} /></Field>
+          <Field label="Relationship">
+            <select name="relation" className={inputCls}>
+              {["parent", "mother", "father", "guardian", "grandparent", "other"].map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="Previous school"><input name="prevSchool" className={inputCls} /></Field>
           <Field label="How they heard of us">
             <input name="source" placeholder="e.g. church member referral" className={inputCls} />

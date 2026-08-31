@@ -2,14 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { applicants, applicantNotes, levels } from "@/db/schema";
+import { applicants, applicantNotes, applicantGuardians, levels } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { getIntakeConfig, parseDocs, STAGE_LABEL } from "@/modules/admissions/config";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import {
   updateApplicant, moveStage, saveScreening, toggleDoc, makeOffer,
-  resendOfferSms, admitApplicant, addNote,
+  resendOffer, admitApplicant, addNote, addApplicantGuardian, removeApplicantGuardian,
 } from "../actions";
 
 const STEPS = ["new", "screening", "offer", "admitted"];
@@ -26,11 +26,17 @@ export default async function ApplicantFile({ params }: {
     .where(and(eq(applicants.id, id), eq(applicants.schoolId, school.id)));
   if (!a) notFound();
   const cfg = getIntakeConfig(school.settings);
-  const [lvs, notes] = await Promise.all([
+  const [lvs, notes, gList] = await Promise.all([
     db.select().from(levels).where(eq(levels.schoolId, school.id)).orderBy(levels.sortOrder),
     db.select().from(applicantNotes).where(eq(applicantNotes.applicantId, a.id))
       .orderBy(desc(applicantNotes.createdAt)).limit(20),
+    db.select().from(applicantGuardians).where(eq(applicantGuardians.applicantId, a.id))
+      .orderBy(applicantGuardians.sortOrder),
   ]);
+  const phones = [...new Set(gList.map((g) => g.phone))];
+  const emails = [...new Set(gList.map((g) => g.email).filter(Boolean))];
+  const defaultOffer = `${school.name}: Good news — ${a.name} has been offered a place. ` +
+    `Please visit the school office to confirm and complete enrolment.`;
   const got = parseDocs(a.docs);
   const stepIdx = STEPS.indexOf(a.status);
   const decided = ["admitted", "rejected", "waitlist"].includes(a.status);
@@ -105,11 +111,50 @@ export default async function ApplicantFile({ params }: {
               </form>
             </details>
             <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
-              <dt className="text-muted-foreground">Guardian</dt>
-              <dd className="font-medium">{a.guardianName ?? "—"} · <span data-nums="">{a.guardianPhone}</span></dd>
               <dt className="text-muted-foreground">Previous school</dt><dd>{a.prevSchool ?? "—"}</dd>
               <dt className="text-muted-foreground">How they heard</dt><dd>{a.source ?? "—"}</dd>
             </dl>
+          </Card>
+
+          <Card>
+            <h2 className="font-semibold">Guardians <span className="text-[12px] font-normal text-muted-foreground">the offer goes to every one of them</span></h2>
+            <ul className="mt-2 divide-y divide-border text-[13.5px]">
+              {gList.map((g) => (
+                <li key={g.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0">
+                    <span className="font-medium">{g.name}</span>
+                    <span className="ml-1.5 text-[11.5px] capitalize text-muted-foreground">{g.relation}</span>
+                    <span className="block text-[12.5px] text-muted-foreground" data-nums="">
+                      {g.phone}{g.email ? ` · ${g.email}` : ""}
+                    </span>
+                  </span>
+                  {gList.length > 1 && (
+                    <form action={removeApplicantGuardian.bind(null, slug, a.id, g.id)}>
+                      <SubmitButton className="text-[12px] font-medium text-danger hover:underline" pendingText="…">
+                        remove
+                      </SubmitButton>
+                    </form>
+                  )}
+                </li>
+              ))}
+              {gList.length === 0 && <li className="py-1.5 text-muted-foreground">No guardian on file yet.</li>}
+            </ul>
+            <details className="mt-2">
+              <summary className="cursor-pointer text-[13px] font-medium text-primary">+ Add a guardian</summary>
+              <form action={addApplicantGuardian.bind(null, slug, a.id)} className="mt-2 grid gap-2 sm:grid-cols-2">
+                <Field label="Name *"><input name="name" required className={inputCls} /></Field>
+                <Field label="Phone *"><input name="phone" required className={inputCls} /></Field>
+                <Field label="Email (for the offer email)"><input name="email" type="email" className={inputCls} /></Field>
+                <Field label="Relationship">
+                  <select name="relation" className={inputCls}>
+                    {["parent", "mother", "father", "guardian", "grandparent", "aunt", "uncle", "other"].map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </Field>
+                <SubmitButton className={btnGhostCls + " sm:col-span-2"} pendingText="Saving…">Add guardian</SubmitButton>
+              </form>
+            </details>
           </Card>
 
           <Card>
@@ -182,26 +227,52 @@ export default async function ApplicantFile({ params }: {
           {a.status === "offer" && (
             <Card className="border-warning/50 bg-warning-soft">
               <h2 className="font-semibold">Offer out{a.offerDeadline ? ` — expires ${a.offerDeadline}` : ""}</h2>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                Sent {a.offerAt?.toISOString().slice(0, 10)} by SMS to {a.guardianPhone}. The guardian confirms
-                at the office; then Admit below.
+              <p className="mt-1 text-[12.5px] text-muted-foreground" data-nums="">
+                Sent {a.offerAt?.toISOString().slice(0, 10)} · SMS to {phones.length} phone{phones.length === 1 ? "" : "s"}
+                {emails.length > 0 && <> · email to {emails.length} address{emails.length === 1 ? "" : "es"}</>}
+                {" "}· printable letter below
               </p>
-              <form action={resendOfferSms.bind(null, slug, a.id)} className="mt-2">
-                <SubmitButton className={btnGhostCls} pendingText="Sending…">Resend the SMS</SubmitButton>
-              </form>
+              {a.offerMessage && (
+                <blockquote className="mt-2 rounded-md border border-warning/40 bg-card px-3 py-2 text-[13px] italic">
+                  {a.offerMessage}
+                </blockquote>
+              )}
+              <details className="mt-2">
+                <summary className="cursor-pointer text-[13px] font-medium text-primary">Resend — edit the wording first if you like</summary>
+                <form action={resendOffer.bind(null, slug, a.id)} className="mt-2">
+                  <textarea name="message" rows={3} defaultValue={a.offerMessage ?? defaultOffer}
+                    className={inputCls + " w-full"} />
+                  <SubmitButton className={btnGhostCls + " mt-2"} pendingText="Sending…">
+                    Send to every guardian
+                  </SubmitButton>
+                </form>
+              </details>
+              <Link href={`/admissions/${a.id}/offer`}
+                className="mt-2 inline-block text-[13px] font-medium text-primary">
+                Print the offer letter →
+              </Link>
             </Card>
           )}
           {!decided && a.status !== "offer" && (
             <Card>
               <h2 className="font-semibold">Make an offer</h2>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Sends an SMS to the guardian and moves the card to Offer.
+                Sends it to every guardian on the list and moves the card to Offer.
               </p>
-              <form action={makeOffer.bind(null, slug, a.id)} className="mt-2 flex flex-wrap items-end gap-2">
-                <Field label="Accept by (optional)">
-                  <input name="deadline" type="date" className={inputCls} />
+              <form action={makeOffer.bind(null, slug, a.id)} className="mt-2 space-y-2.5">
+                <Field label="The message — edit it before it goes">
+                  <textarea name="message" rows={3} defaultValue={defaultOffer} className={inputCls + " w-full"} />
                 </Field>
-                <SubmitButton className={btnCls} pendingText="Sending…">Send offer</SubmitButton>
+                <div className="flex flex-wrap items-end gap-2">
+                  <Field label="Accept by (optional)">
+                    <input name="deadline" type="date" className={inputCls} />
+                  </Field>
+                  <SubmitButton className={btnCls} pendingText="Sending…">Send offer</SubmitButton>
+                </div>
+                <p className="text-[12px] text-muted-foreground" data-nums="">
+                  Goes by SMS to {phones.length} phone{phones.length === 1 ? "" : "s"}
+                  {emails.length > 0 ? ` and by email to ${emails.length} address${emails.length === 1 ? "" : "es"}` : ""} on the guardian list.
+                </p>
               </form>
             </Card>
           )}

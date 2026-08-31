@@ -24,7 +24,20 @@ export const applicants = pgTable("applicants", {
   decidedAt: timestamp("decided_at"), decisionReason: text("decision_reason"),
   stageAt: timestamp("stage_at").notNull().defaultNow(), // last stage move — powers "days in stage"
   admittedStudentId: text("admitted_student_id"), // forever-link to the created student file
+  /** The exact offer text that was sent — viewable forever, editable on resend. */
+  offerMessage: text("offer_message"),
 }, (t) => [index("app_school").on(t.schoolId, t.status)]);
+
+/** An applicant's guardians — as many as the family has. The offer goes to
+ *  every phone (SMS) and every email on this list, and Admit carries each
+ *  one onto the student file (reusing an existing guardian by phone). */
+export const applicantGuardians = pgTable("applicant_guardians", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  applicantId: text("applicant_id").notNull().references(() => applicants.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), phone: text("phone").notNull(),
+  email: text("email"), relation: text("relation").notNull().default("parent"),
+  sortOrder: integer("sort_order").notNull().default(0),
+}, (t) => [index("apg_applicant").on(t.applicantId)]);
 
 /** Dated, signed notes on an applicant — the paper margin of the file. */
 export const applicantNotes = pgTable("applicant_notes", {

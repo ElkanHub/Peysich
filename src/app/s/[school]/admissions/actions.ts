@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
-  applicants, applicantNotes, students, guardians, studentGuardians,
-  academicYears, schools,
+  applicants, applicantNotes, applicantGuardians, students, guardians,
+  studentGuardians, academicYears, schools,
 } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
-import { sendSms } from "@/lib/notify";
+import { sendSms, sendEmail } from "@/lib/notify";
 import { getIntakeConfig, parseDocs, type IntakeDoc } from "@/modules/admissions/config";
 
 const touch = (extra?: string) => {
@@ -40,6 +40,11 @@ export async function addApplicant(slug: string, f: FormData) {
     guardianName: str(f, "guardianName"), guardianPhone: phone,
     dob: str(f, "dob"), sex: str(f, "sex"), prevSchool: str(f, "prevSchool"),
     source: str(f, "source"), yearId: year?.id ?? null,
+  });
+  await db.insert(applicantGuardians).values({
+    id: uid(), schoolId: school.id, applicantId: id,
+    name: str(f, "guardianName") ?? "Guardian", phone,
+    email: str(f, "guardianEmail"), relation: str(f, "relation") ?? "parent",
   });
   touch();
   redirect(`/admissions/${id}?flash=saved`);
@@ -97,31 +102,79 @@ export async function toggleDoc(slug: string, id: string, key: string) {
   redirect(`/admissions/${id}`);
 }
 
-// ── offer ──────────────────────────────────────────────────────────────
+// ── offer — the exact text is the admin's to edit; it goes through every
+//    channel the guardian list carries: SMS to each phone, email to each
+//    address. The sent text is stored for viewing and editable on resend. ──
+async function sendOfferEverywhere(
+  school: { id: string; name: string }, applicantId: string, message: string,
+) {
+  const gs = await db.select().from(applicantGuardians)
+    .where(eq(applicantGuardians.applicantId, applicantId));
+  const phones = [...new Set(gs.map((g) => g.phone).filter(Boolean))];
+  const emails = [...new Set(gs.map((g) => g.email).filter((e): e is string => Boolean(e)))];
+  for (const to of phones) {
+    await sendSms({ schoolId: school.id, to, kind: "admission-offer", body: message, senderId: school.name });
+  }
+  for (const to of emails) {
+    await sendEmail(to, `Admission offer — ${school.name}`,
+      `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">
+        <h2 style="margin:0 0 8px">${school.name}</h2>
+        <p style="font-size:15px;line-height:1.6;white-space:pre-line">${message}</p>
+        <p style="color:#888;font-size:12px;margin-top:20px">Sent via Peysich on behalf of ${school.name}.</p>
+      </div>`, school.name);
+  }
+  return { phones: phones.length, emails: emails.length };
+}
+
 export async function makeOffer(slug: string, id: string, f: FormData) {
   const { school, a } = await ownApplicant(slug, id);
   const deadline = str(f, "deadline");
+  const message = str(f, "message")
+    ?? `${school.name}: Good news — ${a.name} has been offered a place. Please visit the school office to confirm${deadline ? ` by ${deadline}` : ""}.`;
   await db.update(applicants).set({
-    status: "offer", stageAt: new Date(), offerAt: new Date(), offerDeadline: deadline,
+    status: "offer", stageAt: new Date(), offerAt: new Date(),
+    offerDeadline: deadline, offerMessage: message,
   }).where(and(eq(applicants.id, id), eq(applicants.schoolId, school.id)));
-  await sendSms({
-    schoolId: school.id, to: a.guardianPhone, kind: "admission-offer",
-    body: `${school.name}: good news — ${a.name} has been offered a place. ` +
-      `Please visit the school office to confirm${deadline ? ` by ${deadline}` : ""}.`,
-    senderId: school.name,
-  });
+  await sendOfferEverywhere(school, id, message);
   touch(`/admissions/${id}`);
   redirect(`/admissions/${id}?flash=done`);
 }
 
-export async function resendOfferSms(slug: string, id: string) {
+/** Resend — the message arrives prefilled with what was sent and can be
+ *  reworded before it goes out again. */
+export async function resendOffer(slug: string, id: string, f: FormData) {
   const { school, a } = await ownApplicant(slug, id);
-  await sendSms({
-    schoolId: school.id, to: a.guardianPhone, kind: "admission-offer",
-    body: `${school.name}: reminder — ${a.name}'s place is reserved. ` +
-      `Please confirm at the school office${a.offerDeadline ? ` by ${a.offerDeadline}` : ""}.`,
-    senderId: school.name,
-  });
+  const message = str(f, "message") ?? a.offerMessage
+    ?? `${school.name}: reminder — ${a.name}'s place is reserved. Please confirm at the school office${a.offerDeadline ? ` by ${a.offerDeadline}` : ""}.`;
+  await db.update(applicants).set({ offerMessage: message })
+    .where(and(eq(applicants.id, id), eq(applicants.schoolId, school.id)));
+  await sendOfferEverywhere(school, id, message);
+  touch(`/admissions/${id}`);
+  redirect(`/admissions/${id}?flash=done`);
+}
+
+// ── the guardian list — as many as the family has ──────────────────────
+export async function addApplicantGuardian(slug: string, id: string, f: FormData) {
+  const { school } = await ownApplicant(slug, id);
+  const name = str(f, "name"), phone = str(f, "phone");
+  if (name && phone) {
+    await db.insert(applicantGuardians).values({
+      id: uid(), schoolId: school.id, applicantId: id, name, phone,
+      email: str(f, "email"), relation: str(f, "relation") ?? "parent", sortOrder: 1,
+    });
+  }
+  touch(`/admissions/${id}`);
+  redirect(`/admissions/${id}?flash=saved`);
+}
+
+export async function removeApplicantGuardian(slug: string, id: string, guardianRowId: string) {
+  const { school } = await ownApplicant(slug, id);
+  const rows = await db.select().from(applicantGuardians)
+    .where(eq(applicantGuardians.applicantId, id));
+  if (rows.length > 1) { // the file always keeps at least one contact
+    await db.delete(applicantGuardians).where(and(
+      eq(applicantGuardians.id, guardianRowId), eq(applicantGuardians.schoolId, school.id)));
+  }
   touch(`/admissions/${id}`);
   redirect(`/admissions/${id}?flash=done`);
 }
@@ -143,14 +196,19 @@ export async function admitApplicant(slug: string, id: string) {
     sex: a.sex === "female" ? "female" : "male",
     dob: a.dob, status: "draft", admissionStep: 1,
   });
-  // carry the guardian over — reuse an existing guardian with this phone
-  // (that's what made the "sibling here" chip light up)
-  if (a.guardianPhone) {
+  // carry EVERY guardian over — reuse an existing guardian with the same
+  // phone (that's what made the "sibling here" chip light up)
+  const apgs = await db.select().from(applicantGuardians)
+    .where(eq(applicantGuardians.applicantId, id));
+  const carry = apgs.length ? apgs : (a.guardianPhone
+    ? [{ name: a.guardianName ?? "Guardian", phone: a.guardianPhone, email: null, relation: "parent" }] : []);
+  for (const g of carry) {
     const [existing] = await db.select().from(guardians).where(and(
-      eq(guardians.schoolId, school.id), eq(guardians.phone, a.guardianPhone)));
+      eq(guardians.schoolId, school.id), eq(guardians.phone, g.phone)));
     const gid = existing?.id ?? uid();
     if (!existing) await db.insert(guardians).values({
-      id: gid, schoolId: school.id, name: a.guardianName ?? "Guardian", phone: a.guardianPhone,
+      id: gid, schoolId: school.id, name: g.name, phone: g.phone,
+      email: g.email ?? null, relation: g.relation ?? "parent",
     });
     await db.insert(studentGuardians).values({ studentId: sid, guardianId: gid })
       .onConflictDoNothing();

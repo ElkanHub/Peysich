@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   report: "Report card", reports: "Reports", performance: "Performance",
   calendar: "Calendar", register: "Record book",
   setup: "Catalog & settings", invoice: "Invoice", receipt: "Receipt",
+  offer: "Offer letter",
   "no-access": "No access",
   platform: "Console", schools: "Schools", audit: "Audit log",
   onboarding: "Onboarding", leads: "Leads", subscriptions: "Subscriptions",
