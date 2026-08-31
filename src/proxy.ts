@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
-const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/t/", "/s/", "/go"];
+const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go"];
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
@@ -66,7 +66,8 @@ export function proxy(req: NextRequest) {
 
   if (host.endsWith(`.${ROOT}`)) {
     const sub = host.slice(0, -(ROOT.length + 1));
-    if (!sub.includes(".")) {
+    // /sign/<token> (phone signing) is a global page — never a school route
+    if (!sub.includes(".") && !pathname.startsWith("/sign/")) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${sub}${pathname === "/" ? "" : pathname}`;
       return NextResponse.rewrite(url, pass);

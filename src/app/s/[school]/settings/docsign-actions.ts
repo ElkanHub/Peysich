@@ -1,9 +1,10 @@
 "use server";
+import { randomBytes } from "crypto";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { schools, staff } from "@/db/schema";
+import { schools, staff, signTokens } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { invalidateSchool } from "@/core/tenant";
 import { getDocSignConfig } from "@/core/doc-sign";
@@ -60,4 +61,18 @@ export async function clearDocImage(slug: string, slot: DocImageSlot) {
   if (!IMAGE_SLOTS.includes(slot)) redirect(`/settings?flash=error`);
   await writeDocSign(slug, { [slot]: null });
   redirect(`/settings?flash=saved`);
+}
+
+/** Mint a sign-on-phone token: the PC shows it as a QR code, the phone opens
+ *  /sign/<token> and draws (or photographs) straight into this slot. Long,
+ *  random, 15-minute, single-use — the token is the whole credential. */
+export async function createSignToken(slug: string, slot: DocImageSlot) {
+  const { school, user } = await requireSchool(slug, ["admin"]);
+  if (!IMAGE_SLOTS.includes(slot)) return { error: "Unknown image slot" };
+  const token = randomBytes(24).toString("base64url");
+  await db.insert(signTokens).values({
+    id: token, schoolId: school.id, slot, createdBy: user.id,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+  });
+  return { token };
 }

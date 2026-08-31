@@ -95,3 +95,17 @@ export const leaveRequests = pgTable("leave_requests", {
   reason: text("reason"),
   status: text("status").notNull().default("pending"), // pending|approved|declined
 }, (t) => [index("leave_school").on(t.schoolId, t.status)]);
+
+/* Remote signing — "sign on your phone". A short-lived, single-use token
+ * bridges the PC (shows a QR code) and the phone (draws the signature or
+ * photographs the stamp). The token IS the credential for the public
+ * /sign/<token> page, so it is long, random, expiring and one-shot. */
+export const signTokens = pgTable("sign_tokens", {
+  id: text("id").primaryKey(), // the token itself — 32 bytes of randomness
+  schoolId: sid(),
+  slot: text("slot").notNull(), // headSigKey | adminSigKey | stampKey
+  createdBy: text("created_by").notNull(), // admin user id
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+}, (t) => [index("signtok_school").on(t.schoolId)]);

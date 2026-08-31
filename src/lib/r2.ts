@@ -43,3 +43,10 @@ export async function presignDownload(key: string) {
   if (!client) throw new Error("File storage not configured");
   return getSignedUrl(client, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 3600 });
 }
+
+/** Server-side PUT — for the few flows where the bytes pass through the app
+ *  anyway (phone-signed signatures land here, small by construction). */
+export async function r2Put(key: string, body: Buffer, contentType: string) {
+  if (!client) throw new Error("File storage not configured");
+  await client.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: body, ContentType: contentType }));
+}
