@@ -44,21 +44,49 @@ export async function saveDocSignPeople(slug: string, f: FormData) {
 }
 
 const IMAGE_SLOTS = ["headSigKey", "adminSigKey", "stampKey"] as const;
-export type DocImageSlot = (typeof IMAGE_SLOTS)[number];
+/** School-level slots, or `staff:<id>` — a teacher's own signature,
+ *  collected on their staff file and stored on their row. */
+export type DocImageSlot = (typeof IMAGE_SLOTS)[number] | `staff:${string}`;
+
+function staffIdOfSlot(slot: string): string | null {
+  return slot.startsWith("staff:") ? slot.slice(6) : null;
+}
+function validSlot(slot: string) {
+  return (IMAGE_SLOTS as readonly string[]).includes(slot) || !!staffIdOfSlot(slot);
+}
+
+async function writeStaffSig(schoolId: string, staffId: string, key: string | null) {
+  const [s] = await db.update(staff).set({ signatureKey: key })
+    .where(and(eq(staff.id, staffId), eq(staff.schoolId, schoolId))).returning({ id: staff.id });
+  return !!s;
+}
 
 /** Save an uploaded signature/stamp image key into its slot. Called from the
  *  upload hook, so it returns a result object instead of redirecting. */
 export async function saveDocImage(slug: string, slot: DocImageSlot, key: string) {
   const { school } = await requireSchool(slug, ["admin"]);
-  if (!IMAGE_SLOTS.includes(slot)) return { error: "Unknown image slot" };
+  if (!validSlot(slot)) return { error: "Unknown image slot" };
   if (!key.startsWith(`school/${school.id}/`)) return { error: "Invalid file" };
-  await writeDocSign(slug, { [slot]: key });
+  const staffId = staffIdOfSlot(slot);
+  if (staffId) {
+    if (!(await writeStaffSig(school.id, staffId, key))) return { error: "Staff member not found" };
+    revalidatePath(`/staff/${staffId}`);
+  } else {
+    await writeDocSign(slug, { [slot]: key });
+  }
   return { ok: true };
 }
 
 /** Remove a collected image so the fallback (or a blank line) applies again. */
 export async function clearDocImage(slug: string, slot: DocImageSlot) {
-  if (!IMAGE_SLOTS.includes(slot)) redirect(`/settings?flash=error`);
+  const { school } = await requireSchool(slug, ["admin"]);
+  if (!validSlot(slot)) redirect(`/settings?flash=error`);
+  const staffId = staffIdOfSlot(slot);
+  if (staffId) {
+    await writeStaffSig(school.id, staffId, null);
+    revalidatePath(`/staff/${staffId}`);
+    redirect(`/staff/${staffId}?flash=saved`);
+  }
   await writeDocSign(slug, { [slot]: null });
   redirect(`/settings?flash=saved`);
 }
@@ -68,7 +96,13 @@ export async function clearDocImage(slug: string, slot: DocImageSlot) {
  *  random, 15-minute, single-use — the token is the whole credential. */
 export async function createSignToken(slug: string, slot: DocImageSlot) {
   const { school, user } = await requireSchool(slug, ["admin"]);
-  if (!IMAGE_SLOTS.includes(slot)) return { error: "Unknown image slot" };
+  if (!validSlot(slot)) return { error: "Unknown image slot" };
+  const staffId = staffIdOfSlot(slot);
+  if (staffId) {
+    const [s] = await db.select({ id: staff.id }).from(staff)
+      .where(and(eq(staff.id, staffId), eq(staff.schoolId, school.id)));
+    if (!s) return { error: "Staff member not found" };
+  }
   const token = randomBytes(24).toString("base64url");
   await db.insert(signTokens).values({
     id: token, schoolId: school.id, slot, createdBy: user.id,

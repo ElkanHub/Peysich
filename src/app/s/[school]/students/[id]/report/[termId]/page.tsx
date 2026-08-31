@@ -5,7 +5,7 @@ import { reportCards, students, classes, terms, academicYears } from "@/db/schem
 import { requireSchool } from "@/core/school-context";
 import { assertParentOf, getStudentSelf } from "@/core/portal";
 import { getReportConfig } from "@/modules/assessment/report-config";
-import { getDocSign } from "@/core/doc-sign";
+import { getDocSign, getClassSigner } from "@/core/doc-sign";
 import { SignLine } from "@/ui/paper-sign";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
@@ -35,6 +35,7 @@ export default async function ReportCard({ params }: {
   const logoUrl = cfg.logo && b.logoUrl && r2Enabled
     ? await presignDownload(b.logoUrl) : null;
   const ds = cfg.signatures ? await getDocSign(school) : null;
+  const signer = cfg.signatures ? await getClassSigner(school.id, s?.classId ?? null) : null;
   return (
     <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">
       <div className="relative border-b-4 pb-4 text-center" style={{ borderColor: color }}>
@@ -117,7 +118,9 @@ export default async function ReportCard({ params }: {
           {(b.signatureLines?.length ? b.signatureLines : ["Class Teacher", "Head Teacher"]).map((l) =>
             /head/i.test(l)
               ? <SignLine key={l} label={l} sigUrl={ds?.headSigUrl} name={ds?.headName} />
-              : <SignLine key={l} label={l} />)}
+              : /class teacher|form master/i.test(l) && signer
+                ? <SignLine key={l} label={signer.label} sigUrl={signer.sigUrl} name={signer.name} />
+                : <SignLine key={l} label={l} />)}
         </div>
       )}
       <p className="mt-6 text-center text-[11px] text-neutral-400 print:hidden">

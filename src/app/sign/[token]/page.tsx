@@ -19,6 +19,12 @@ export default async function SignOnPhone({ params }: { params: Promise<{ token:
     ? (await db.select().from(signTokens).where(eq(signTokens.id, token)))[0] ?? null
     : null;
   const school = t ? (await db.select().from(schools).where(eq(schools.id, t.schoolId)))[0] : null;
+  let slotLabel = t ? SLOT_LABEL[t.slot] ?? t.slot : "";
+  if (t?.slot.startsWith("staff:")) {
+    const { staff } = await import("@/db/schema");
+    const [s] = await db.select({ name: staff.name }).from(staff).where(eq(staff.id, t.slot.slice(6)));
+    slotLabel = s ? `${s.name} — signature` : "Teacher's signature";
+  }
 
   const shell = (children: React.ReactNode) => (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col px-4 py-6">
@@ -60,6 +66,6 @@ export default async function SignOnPhone({ params }: { params: Promise<{ token:
     );
 
   return shell(
-    <PhoneSign token={token} slotLabel={SLOT_LABEL[t.slot] ?? t.slot} stamp={t.slot === "stampKey"} />,
+    <PhoneSign token={token} slotLabel={slotLabel} stamp={t.slot === "stampKey"} />,
   );
 }

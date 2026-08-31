@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { schools, signTokens } from "@/db/schema";
+import { schools, signTokens, staff } from "@/db/schema";
 import { r2Enabled, r2Put, presignDownload } from "@/lib/r2";
 import { getDocSignConfig } from "@/core/doc-sign";
 import { invalidateSchool } from "@/core/tenant";
@@ -27,8 +27,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   if (!t) return NextResponse.json({ state: "invalid" });
   if (t.usedAt) {
     // hand the PC a preview of what the phone saved
-    const [school] = await db.select().from(schools).where(eq(schools.id, t.schoolId));
-    const key = school ? getDocSignConfig(school.settings)[t.slot as "headSigKey" | "adminSigKey" | "stampKey"] : null;
+    let key: string | null = null;
+    if (t.slot.startsWith("staff:")) {
+      const [s] = await db.select({ k: staff.signatureKey }).from(staff)
+        .where(and(eq(staff.id, t.slot.slice(6)), eq(staff.schoolId, t.schoolId)));
+      key = s?.k ?? null;
+    } else {
+      const [school] = await db.select().from(schools).where(eq(schools.id, t.schoolId));
+      key = school ? getDocSignConfig(school.settings)[t.slot as "headSigKey" | "adminSigKey" | "stampKey"] : null;
+    }
     const url = key && r2Enabled ? await presignDownload(key).catch(() => null) : null;
     return NextResponse.json({ state: "done", url });
   }
@@ -60,13 +67,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     if (!school) throw new Error("school gone");
     const key = `school/${school.id}/sign/${uid()}.${ext}`;
     await r2Put(key, body, contentType);
-    const cfg = getDocSignConfig(school.settings);
-    const settings = {
-      ...(school.settings as Record<string, unknown>),
-      docSign: { ...cfg, [t.slot]: key },
-    };
-    await db.update(schools).set({ settings, updatedAt: new Date() }).where(eq(schools.id, school.id));
-    invalidateSchool(school.slug);
+    if (t.slot.startsWith("staff:")) {
+      const [s] = await db.update(staff).set({ signatureKey: key })
+        .where(and(eq(staff.id, t.slot.slice(6)), eq(staff.schoolId, school.id)))
+        .returning({ id: staff.id });
+      if (!s) throw new Error("staff gone");
+    } else {
+      const cfg = getDocSignConfig(school.settings);
+      const settings = {
+        ...(school.settings as Record<string, unknown>),
+        docSign: { ...cfg, [t.slot]: key },
+      };
+      await db.update(schools).set({ settings, updatedAt: new Date() }).where(eq(schools.id, school.id));
+      invalidateSchool(school.slug);
+    }
     return NextResponse.json({ ok: true });
   } catch {
     // give the token back so the person can simply try again

@@ -10,6 +10,8 @@ import { Card, Field, PageHeader, Badge, inputCls, btnGhostCls } from "@/ui/kit"
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { SubmitButton } from "@/ui/feedback";
 import { StaffPhotoUploader } from "../photo";
+import { DocImageUploader } from "../../settings/doc-sign";
+import { clearDocImage } from "../../settings/docsign-actions";
 import { updateStaffCard, markStaffLeft, reinstateStaff } from "../staff-actions";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -106,6 +108,18 @@ export default async function StaffFile({ params }: {
           </form>
           <div className="mt-4 border-t border-border pt-4">
             <StaffPhotoUploader slug={slug} staffId={id} enabled={r2Enabled} currentUrl={photoUrl} initials={initials} />
+          </div>
+          <div className="mt-4 border-t border-border pt-4">
+            <DocImageUploader slug={slug} slot={`staff:${id}`} label="Signature"
+              hint="signs report cards as Class Teacher / Form Master — draw it, sign on a phone, or upload"
+              enabled={r2Enabled}
+              currentUrl={s.signatureKey && r2Enabled ? await presignDownload(s.signatureKey).catch(() => null) : null} />
+            {s.signatureKey && (
+              <form action={clearDocImage.bind(null, slug, `staff:${id}` as const)} className="mt-1">
+                <SubmitButton className="text-[12.5px] text-danger underline-offset-2 hover:underline"
+                  pendingText="Removing…">Remove signature</SubmitButton>
+              </form>
+            )}
           </div>
         </Card>
 

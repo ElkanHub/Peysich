@@ -9,7 +9,7 @@ import { requireSchool, getTeacherScope } from "@/core/school-context";
 import { assertParentOf, getStudentSelf } from "@/core/portal";
 import { getStructure } from "@/core/academics";
 import { getReportConfig } from "@/modules/assessment/report-config";
-import { getDocSign } from "@/core/doc-sign";
+import { getDocSign, getClassSigner } from "@/core/doc-sign";
 import { SignLine } from "@/ui/paper-sign";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 
@@ -118,6 +118,7 @@ export default async function PerformanceSheet({ params }: {
 
   const cfg = getReportConfig(school.settings);
   const ds = cfg.signatures ? await getDocSign(school) : null;
+  const signer = cfg.signatures ? await getClassSigner(school.id, s.classId) : null;
   const photoUrl = cfg.studentPhoto && s.photoUrl && r2Enabled
     ? await presignDownload(s.photoUrl) : null;
   const logoUrl = cfg.logo && b.logoUrl && r2Enabled
@@ -227,7 +228,7 @@ export default async function PerformanceSheet({ params }: {
             <img src={ds.stampUrl} alt="" data-stamp=""
               className="absolute bottom-4 left-1/2 h-16 -translate-x-1/2 object-contain opacity-90" />
           )}
-          <SignLine label="Class Teacher" />
+          <SignLine label={signer?.label ?? "Class Teacher"} sigUrl={signer?.sigUrl} name={signer?.name} />
           <SignLine label="Head Teacher" sigUrl={ds?.headSigUrl} name={ds?.headName} />
         </div>
       )}

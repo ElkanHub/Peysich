@@ -56,6 +56,7 @@ export const staff = pgTable("staff", {
   idNumber: text("id_number"), address: text("address"),
   emergencyName: text("emergency_name"), emergencyPhone: text("emergency_phone"),
   photoUrl: text("photo_url"), // R2 key
+  signatureKey: text("signature_key"), // R2 key — collected once, signs the papers
   employmentType: text("employment_type").notNull().default("full_time"), // full_time|part_time|contract
   joinedOn: date("joined_on"), probationEnd: date("probation_end"),
   // teachers only

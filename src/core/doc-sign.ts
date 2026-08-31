@@ -37,6 +37,29 @@ export type DocSign = {
   stampUrl: string | null;
 };
 
+/** Who signs the class line on a paper. Class-teaching classes: the class
+ *  teacher. Subject-teaching classes: the FORM MASTER is in charge, so their
+ *  signature signs — and the label says which office it is, with the name
+ *  shown clearly under it. */
+export type ClassSigner = { label: "Class Teacher" | "Form Master"; name: string | null; sigUrl: string | null };
+
+export async function getClassSigner(schoolId: string, classId: string | null): Promise<ClassSigner> {
+  const fallback: ClassSigner = { label: "Class Teacher", name: null, sigUrl: null };
+  if (!classId) return fallback;
+  const { getStructure } = await import("@/core/academics");
+  const S = await getStructure(schoolId);
+  const cls = S.classById.get(classId);
+  if (!cls) return fallback;
+  const classMode = S.modeBySection.get(S.sectionOfClass(cls)) === "class_teacher";
+  const staffId = classMode ? cls.classTeacherId : S.formMasterOf(classId);
+  const label = classMode ? "Class Teacher" as const : "Form Master" as const;
+  if (!staffId) return { label, name: null, sigUrl: null };
+  const [s] = await db.select({ name: staff.name, sigKey: staff.signatureKey }).from(staff)
+    .where(and(eq(staff.id, staffId), eq(staff.schoolId, schoolId)));
+  const sigUrl = s?.sigKey && r2Enabled ? await presignDownload(s.sigKey).catch(() => null) : null;
+  return { label, name: s?.name ?? null, sigUrl };
+}
+
 export async function getDocSign(school: { id: string; settings: unknown }): Promise<DocSign> {
   const cfg = getDocSignConfig(school.settings);
   let headStaffName: string | null = null;

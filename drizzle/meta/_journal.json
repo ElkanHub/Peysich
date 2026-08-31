@@ -197,6 +197,13 @@
       "when": 1788180417162,
       "tag": "0027_peaceful_wallop",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1788202513399,
+      "tag": "0028_fearless_flatman",
+      "breakpoints": true
     }
   ]
 }
