@@ -1,145 +1,201 @@
-<!doctype html>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html> <meta charset="utf-8" /><meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+/>
 <title>Peysich — new hero preview</title>
 <style>
-:root{
-  --brand:#5e1d3e; --brand-strong:#4a1730; --brand-container:#f2dce8; --brand-soft:#f7edf3;
-  --background:#fbfafb; --foreground:#191419; --card:#fff; --muted:#f0edef;
-  --muted-foreground:#6e6870; --faint:#9c939b; --border:#e9e4e8; --border-strong:#d6cfd4;
-  --shadow-sm:0 1px 2px rgb(25 20 25/.06); --shadow-lg:0 18px 40px -18px rgb(55 2 60/.28);
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--background);color:var(--foreground);
-  font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Inter,sans-serif;-webkit-font-smoothing:antialiased}
-a{text-decoration:none;color:inherit}
-.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
-/* nav (unchanged) */
-header{position:sticky;top:0;z-index:40;border-bottom:1px solid rgb(233 228 232/.7);
-  background:rgb(251 250 251/.8);backdrop-filter:blur(10px)}
-header .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
-.logo{display:flex;align-items:center;gap:9px;font-weight:600;font-size:17px}
-.logo i{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#37023c,#5e1d3e 55%,#4a1730);display:block}
-nav{display:flex;gap:24px;font-size:14px;font-weight:500;color:var(--muted-foreground)}
-.actions{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500}
-.ghost{padding:8px 14px;color:var(--muted-foreground)}
-.outline{padding:8px 16px;border:1px solid var(--border);background:var(--card);border-radius:6px;box-shadow:var(--shadow-sm)}
-.solid{padding:8px 16px;border-radius:6px;background:var(--brand);color:#fff;box-shadow:var(--shadow-sm)}
-/* hero */
-.hero{position:relative;overflow:hidden;background:var(--background)}
-.hero::before,.hero::after{content:"";position:absolute;pointer-events:none}
-.hero::after{left:0;right:0;bottom:0;height:1px;background:var(--border)}
+  :root{
+    --brand:#5e1d3e; --brand-strong:#4a1730; --brand-container:#f2dce8; --brand-soft:#f7edf3;
+    --background:#fbfafb; --foreground:#191419; --card:#fff; --muted:#f0edef;
+    --muted-foreground:#6e6870; --faint:#9c939b; --border:#e9e4e8; --border-strong:#d6cfd4;
+    --shadow-sm:0 1px 2px rgb(25 20 25/.06); --shadow-lg:0 18px 40px -18px rgb(55 2 60/.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--background);color:var(--foreground);
+    font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Inter,sans-serif;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  /* nav (unchanged) */
+  header{position:sticky;top:0;z-index:40;border-bottom:1px solid rgb(233 228 232/.7);
+    background:rgb(251 250 251/.8);backdrop-filter:blur(10px)}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:600;font-size:17px}
+  .logo i{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#37023c,#5e1d3e 55%,#4a1730);display:block}
+  nav{display:flex;gap:24px;font-size:14px;font-weight:500;color:var(--muted-foreground)}
+  .actions{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500}
+  .ghost{padding:8px 14px;color:var(--muted-foreground)}
+  .outline{padding:8px 16px;border:1px solid var(--border);background:var(--card);border-radius:6px;box-shadow:var(--shadow-sm)}
+  .solid{padding:8px 16px;border-radius:6px;background:var(--brand);color:#fff;box-shadow:var(--shadow-sm)}
+  /* hero */
+  .hero{position:relative;overflow:hidden;background:var(--background)}
+  .hero::before,.hero::after{content:"";position:absolute;pointer-events:none}
+  .hero::after{left:0;right:0;bottom:0;height:1px;background:var(--border)}
 
-/* two-tier drafting grid: 16px whisper, 96px structure */
-.hero::before{inset:0;z-index:1;
-  background-image:
-    linear-gradient(var(--border) 1px,transparent 1px),
-    linear-gradient(90deg,var(--border) 1px,transparent 1px),
-    linear-gradient(#f4f1f3 1px,transparent 1px),
-    linear-gradient(90deg,#f4f1f3 1px,transparent 1px);
-  background-size:96px 96px,96px 96px,16px 16px,16px 16px}
-/* checkered cells, dense at the right edge, thinning out by 30% in */
-.checkers{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.checkers i{position:absolute;width:96px;height:96px}
-.hero .grid{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;
-  padding:24px 24px 32px;min-height:calc(100svh - 61px)}
-.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgb(94 29 62/.2);background:var(--card);
-  border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500;box-shadow:var(--shadow-sm);margin-bottom:20px}
-.grad{background:linear-gradient(100deg,#5e1d3e,#8a2f5c 55%,#b0447a);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:600}
-h1{font-size:clamp(30px,3.6vw + 6px,50px);line-height:1.06;letter-spacing:-.02em;font-weight:600;margin:0}
-.sub{margin:18px 0 0;font-size:clamp(15px,1vw + 7px,17px);line-height:1.6;color:var(--muted-foreground);max-width:34em}
-.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
-.cta .big{padding:14px 26px;border-radius:10px;color:#fff;font-weight:600;font-size:15px;
-  background:linear-gradient(135deg,#37023c,#5e1d3e 55%,#4a1730);box-shadow:var(--shadow-lg)}
-.cta .alt{padding:14px 26px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-weight:500;font-size:15px;box-shadow:var(--shadow-sm)}
-.fine{margin-top:16px;font-size:13px;color:var(--faint)}
-/* the logo shape: the P becomes a photo mask, the wine block stays wine */
-.shape{position:relative}
-.shape svg{position:relative;width:auto;height:min(84svh,700px);margin:0 auto;display:block;
-  filter:drop-shadow(0 18px 44px rgb(25 20 25/.14))}
-  border-radius:12px;padding:14px;box-shadow:var(--shadow-lg);font-size:12.5px}
-/* alt copy strip */
-.alts{border-top:1px solid var(--border);background:var(--card);padding:40px 0 56px}
-.alts h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 16px;font-weight:600}
-.alts ol{margin:0;padding-left:20px;display:grid;gap:14px}
-.alts li{max-width:60ch}
-.alts strong{font-size:19px;font-weight:600}
-.alts em{display:block;font-style:normal;color:var(--muted-foreground);font-size:14px;margin-top:4px}
-@media(max-width:900px){.hero .grid{grid-template-columns:1fr;gap:32px;min-height:0;padding:40px 24px 56px}.shape svg{position:relative;height:min(58svh,480px)}h1{font-size:38px}nav,.ghost{display:none}}
+  /* two-tier drafting grid: 16px whisper, 96px structure */
+  .hero::before{inset:0;z-index:1;
+    background-image:
+      linear-gradient(var(--border) 1px,transparent 1px),
+      linear-gradient(90deg,var(--border) 1px,transparent 1px),
+      linear-gradient(#f4f1f3 1px,transparent 1px),
+      linear-gradient(90deg,#f4f1f3 1px,transparent 1px);
+    background-size:96px 96px,96px 96px,16px 16px,16px 16px}
+  /* checkered cells, dense at the right edge, thinning out by 30% in */
+  .checkers{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .checkers i{position:absolute;width:96px;height:96px}
+  .hero .grid{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;
+    padding:24px 24px 32px;min-height:calc(100svh - 61px)}
+  .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgb(94 29 62/.2);background:var(--card);
+    border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500;box-shadow:var(--shadow-sm);margin-bottom:20px}
+  .grad{background:linear-gradient(100deg,#5e1d3e,#8a2f5c 55%,#b0447a);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:600}
+  h1{font-size:clamp(30px,3.6vw + 6px,50px);line-height:1.06;letter-spacing:-.02em;font-weight:600;margin:0}
+  .sub{margin:18px 0 0;font-size:clamp(15px,1vw + 7px,17px);line-height:1.6;color:var(--muted-foreground);max-width:34em}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .cta .big{padding:14px 26px;border-radius:10px;color:#fff;font-weight:600;font-size:15px;
+    background:linear-gradient(135deg,#37023c,#5e1d3e 55%,#4a1730);box-shadow:var(--shadow-lg)}
+  .cta .alt{padding:14px 26px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-weight:500;font-size:15px;box-shadow:var(--shadow-sm)}
+  .fine{margin-top:16px;font-size:13px;color:var(--faint)}
+  /* the logo shape: the P becomes a photo mask, the wine block stays wine */
+  .shape{position:relative}
+  .shape svg{position:relative;width:auto;height:min(84svh,700px);margin:0 auto;display:block;
+    filter:drop-shadow(0 18px 44px rgb(25 20 25/.14))}
+    border-radius:12px;padding:14px;box-shadow:var(--shadow-lg);font-size:12.5px}
+  /* alt copy strip */
+  .alts{border-top:1px solid var(--border);background:var(--card);padding:40px 0 56px}
+  .alts h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 16px;font-weight:600}
+  .alts ol{margin:0;padding-left:20px;display:grid;gap:14px}
+  .alts li{max-width:60ch}
+  .alts strong{font-size:19px;font-weight:600}
+  .alts em{display:block;font-style:normal;color:var(--muted-foreground);font-size:14px;margin-top:4px}
+  @media(max-width:900px){.hero .grid{grid-template-columns:1fr;gap:32px;min-height:0;padding:40px 24px 56px}.shape svg{position:relative;height:min(58svh,480px)}h1{font-size:38px}nav,.ghost{display:none}}
 </style>
 
-<header><div class="wrap">
-  <div class="logo"><i></i>Peysich</div>
-  <nav><a>Features</a><a>For your school</a><a>Pricing</a><a>Security</a></nav>
-  <div class="actions"><a class="ghost">Sign in</a><a class="outline">Get a demo</a><a class="solid">Start free trial</a></div>
-</div></header>
+<header>
+  <div class="wrap">
+    <div class="logo"><i></i>Peysich</div>
+    <nav>
+      <a>Features</a><a>For your school</a><a>Pricing</a><a>Security</a>
+    </nav>
+    <div class="actions">
+      <a class="ghost">Sign in</a><a class="outline">Get a demo</a
+      ><a class="solid">Start free trial</a>
+    </div>
+  </div>
+</header>
 
 <section class="hero">
   <div class="checkers" id="checkers"></div>
   <div class="wrap grid">
     <div>
-      <h1>Every register marked,<br>every cedi accounted for<br><span class="grad">before assembly ends.</span></h1>
-      <p class="sub">Peysich runs the whole school from one place — attendance, results, fees and parent
-        SMS on your own subdomain. Owners see the money, heads see the day, teachers stop pushing paper.</p>
+      <h1>
+        Every register marked,<br />every cedi accounted for<br /><span
+          class="grad"
+          >before assembly ends.</span
+        >
+      </h1>
+      <p class="sub">
+        Peysich runs the whole school from one place — attendance, results, fees
+        and parent SMS on your own subdomain. Owners see the money, heads see
+        the day, teachers stop pushing paper.
+      </p>
       <div class="cta">
         <a class="big">Start your 14-day free trial →</a>
         <a class="alt">Get a demo</a>
       </div>
-      <p class="fine">No card required · set up in under an hour · cancel any time</p>
+      <p class="fine">
+        No card required · set up in under an hour · cancel any time
+      </p>
     </div>
 
     <div class="shape">
       <!-- geometry lifted straight from LogoMark (viewBox 0 0 375 375) -->
-      <svg viewBox="88 -8 198 391" role="img" aria-label="Peysich mark holding a school photo">
+      <svg
+        viewBox="88 -8 198 391"
+        role="img"
+        aria-label="Peysich mark holding a school photo"
+      >
         <defs>
-          <clipPath id="pmask"><path d="M96 0H278V193H188V375H96V0Z"/></clipPath>
+          <clipPath id="pmask">
+            <path d="M96 0H278V193H188V375H96V0Z" />
+          </clipPath>
         </defs>
         <!-- the ink half of the P, filled with the photo -->
         <g clip-path="url(#pmask)">
-          <rect x="96" y="0" width="182" height="375" fill="#efe4f1"/>
-          <image href="shots/hero-dashboard.png" x="96" y="0" width="182" height="375"
-                 preserveAspectRatio="xMidYMid slice"/>
+          <rect x="96" y="0" width="182" height="375" fill="#efe4f1" />
+          <image
+            href="shots/pexels-yomi-solomon-623557805-20719271.jpg"
+            x="96"
+            y="0"
+            width="182"
+            height="375"
+            preserveAspectRatio="xMidYMid slice"
+          />
         </g>
         <!-- the wine block stays wine -->
-        <rect x="198" y="209" width="80" height="166" rx="17" fill="#5E1D3E"/>
+        <rect x="198" y="209" width="80" height="166" rx="17" fill="#5E1D3E" />
       </svg>
     </div>
   </div>
 </section>
 
 <script>
-/* ponytail: painted in JS because the density ramp is per-cell, not a repeat */
-const C = 96, TINTS = ['#f3e3ec','#e7cddc'];
-const paint = () => {
-  const host = document.getElementById('checkers');
-  const { width: w, height: h } = host.getBoundingClientRect();
-  const cols = Math.ceil(w / C), rows = Math.ceil(h / C);
-  const reach = w * 0.5;                       // checkers live in the right 50%
-  let html = '';
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      if ((x + y) % 2) continue;               // checkerboard
-      const inset = w - (x + 1) * C;           // px from the right edge
-      if (inset > reach) continue;
-      const keep = 1 - inset / reach;          // 1 at the edge → 0 at 30% in
-      const n = Math.abs(Math.sin((x * 12.9898 + y * 78.233)) * 43758.5453) % 1;
-      if (n > keep) continue;
-      const tint = TINTS[n < keep * 0.35 ? 1 : 0];
-      html += `<i style="left:${x*C}px;top:${y*C}px;background:${tint}"></i>`;
+  /* ponytail: painted in JS because the density ramp is per-cell, not a repeat */
+  const C = 96,
+    TINTS = ["#f3e3ec", "#e7cddc"];
+  const paint = () => {
+    const host = document.getElementById("checkers");
+    const { width: w, height: h } = host.getBoundingClientRect();
+    const cols = Math.ceil(w / C),
+      rows = Math.ceil(h / C);
+    const reach = w * 0.5; // checkers live in the right 50%
+    let html = "";
+    for (let x = 0; x < cols; x++) {
+      for (let y = 0; y < rows; y++) {
+        if ((x + y) % 2) continue; // checkerboard
+        const inset = w - (x + 1) * C; // px from the right edge
+        if (inset > reach) continue;
+        const keep = 1 - inset / reach; // 1 at the edge → 0 at 30% in
+        const n = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
+        if (n > keep) continue;
+        const tint = TINTS[n < keep * 0.35 ? 1 : 0];
+        html += `<i style="left:${x * C}px;top:${y * C}px;background:${tint}"></i>`;
+      }
     }
-  }
-  host.innerHTML = html;
-};
-addEventListener('resize', paint); paint();
+    host.innerHTML = html;
+  };
+  addEventListener("resize", paint);
+  paint();
 </script>
 
-<section class="alts"><div class="wrap">
-  <h2>Headline options — pick one</h2>
-  <ol>
-    <li><strong>Every register marked, every cedi accounted for before assembly ends.</strong>
-      <em>Shown above. Speaks to owners (money) and heads (the day) in one line.</em></li>
-    <li><strong>Run the school from your phone. Collect the fees from theirs.</strong>
-      <em>Sharper on revenue — good if Mobile Money collection is the strongest selling point.</em></li>
-    <li><strong>Stop chasing fees, registers and report cards. Peysich already has them.</strong>
-      <em>Pain-first. Names the three jobs an admin loses days to.</em></li>
-  </ol>
-</div></section>
+<section class="alts">
+  <div class="wrap">
+    <h2>Headline options — pick one</h2>
+    <ol>
+      <li>
+        <strong
+          >Every register marked, every cedi accounted for before assembly
+          ends.</strong
+        >
+        <em
+          >Shown above. Speaks to owners (money) and heads (the day) in one
+          line.</em
+        >
+      </li>
+      <li>
+        <strong
+          >Run the school from your phone. Collect the fees from theirs.</strong
+        >
+        <em
+          >Sharper on revenue — good if Mobile Money collection is the strongest
+          selling point.</em
+        >
+      </li>
+      <li>
+        <strong
+          >Stop chasing fees, registers and report cards. Peysich already has
+          them.</strong
+        >
+        <em>Pain-first. Names the three jobs an admin loses days to.</em>
+      </li>
+    </ol>
+  </div>
+</section>

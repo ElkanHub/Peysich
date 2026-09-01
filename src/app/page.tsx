@@ -1,8 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  CalendarCheck, GraduationCap, Wallet, Megaphone, ShieldCheck, Layers,
-  Users, BookOpen, HeartHandshake, Sparkles, Check, Lock, Server, History,
+  CalendarCheck,
+  GraduationCap,
+  Wallet,
+  Megaphone,
+  ShieldCheck,
+  Layers,
+  Users,
+  BookOpen,
+  HeartHandshake,
+  Sparkles,
+  Check,
+  Lock,
+  Server,
+  History,
   ArrowRight,
 } from "lucide-react";
 import { LogoLockup } from "@/ui/logo";
@@ -24,43 +36,122 @@ const STATS = [
 ] as const;
 
 const BENEFITS = [
-  { icon: CalendarCheck, t: "30-second attendance", d: "Everyone starts present — teachers tap only the exceptions. Guardians get absence SMS instantly, and the GES-style record book keeps the whole year." },
-  { icon: GraduationCap, t: "Report cards in one click", d: "Continuous assessment + exams on your own grading scheme, released test by test, printed beautifully under your school's brand." },
-  { icon: Wallet, t: "Fees parents actually pay", d: "Mobile money from any phone, partial payments welcome, receipts kept forever — and the dashboard shows collected vs outstanding live." },
-  { icon: Megaphone, t: "Reach every parent", d: "Announcements that must be acknowledged, events on a shared calendar, SMS and email blasts signed with your school's name." },
-  { icon: Layers, t: "Pay only for what you use", d: "Modules switch on and off per school. Start with records and attendance, grow into timetables, admissions, transport and more." },
-  { icon: ShieldCheck, t: "Your school, your subdomain", d: "yourschool.peysich.com — isolated data, daily backups, and records archived term by term, year by year." },
+  {
+    icon: CalendarCheck,
+    t: "30-second attendance",
+    d: "Everyone starts present — teachers tap only the exceptions. Guardians get absence SMS instantly, and the GES-style record book keeps the whole year.",
+  },
+  {
+    icon: GraduationCap,
+    t: "Report cards in one click",
+    d: "Continuous assessment + exams on your own grading scheme, released test by test, printed beautifully under your school's brand.",
+  },
+  {
+    icon: Wallet,
+    t: "Fees parents actually pay",
+    d: "Mobile money from any phone, partial payments welcome, receipts kept forever — and the dashboard shows collected vs outstanding live.",
+  },
+  {
+    icon: Megaphone,
+    t: "Reach every parent",
+    d: "Announcements that must be acknowledged, events on a shared calendar, SMS and email blasts signed with your school's name.",
+  },
+  {
+    icon: Layers,
+    t: "Pay only for what you use",
+    d: "Modules switch on and off per school. Start with records and attendance, grow into timetables, admissions, transport and more.",
+  },
+  {
+    icon: ShieldCheck,
+    t: "Your school, your subdomain",
+    d: "yourschool.peysich.com — isolated data, daily backups, and records archived term by term, year by year.",
+  },
 ];
 
 const ROLES = [
-  { icon: Users, t: "Admins run the morning in 90 seconds", d: "A live board of every register, fees collected vs outstanding, one-tap teacher reminders and decision-ready KPIs." },
-  { icon: BookOpen, t: "Teachers get their day, not paperwork", d: "Their registers, their lessons, their score sheets — scoped to exactly the classes they teach, nothing else." },
-  { icon: HeartHandshake, t: "Parents see their children, only theirs", d: "Attendance, homework, released results and fees per child — strictly scoped, with SMS when it matters." },
-  { icon: Sparkles, t: "Students get a dashboard that moves them", d: "\"Do today\" pulls overdue homework and unread notices to the top — personal, official, action-first." },
+  {
+    icon: Users,
+    t: "Admins run the morning in 90 seconds",
+    d: "A live board of every register, fees collected vs outstanding, one-tap teacher reminders and decision-ready KPIs.",
+  },
+  {
+    icon: BookOpen,
+    t: "Teachers get their day, not paperwork",
+    d: "Their registers, their lessons, their score sheets — scoped to exactly the classes they teach, nothing else.",
+  },
+  {
+    icon: HeartHandshake,
+    t: "Parents see their children, only theirs",
+    d: "Attendance, homework, released results and fees per child — strictly scoped, with SMS when it matters.",
+  },
+  {
+    icon: Sparkles,
+    t: "Students get a dashboard that moves them",
+    d: '"Do today" pulls overdue homework and unread notices to the top — personal, official, action-first.',
+  },
 ];
 
 const TRUST = [
-  { icon: Lock, t: "Isolated per school", d: "Every school lives on its own subdomain with bank-grade separation — one school can never see another's data." },
-  { icon: ShieldCheck, t: "Role-scoped everywhere", d: "Teachers see their classes, parents their children, students themselves. Scoping is enforced on every page and every action." },
-  { icon: Server, t: "Backed up daily", d: "Your records are backed up every day, and published report cards are immutable snapshots that keep their history." },
-  { icon: History, t: "An archive that lasts", d: "Attendance books, score sheets and reports stay findable per term and per academic year — reference for years to come." },
+  {
+    icon: Lock,
+    t: "Isolated per school",
+    d: "Every school lives on its own subdomain with bank-grade separation — one school can never see another's data.",
+  },
+  {
+    icon: ShieldCheck,
+    t: "Role-scoped everywhere",
+    d: "Teachers see their classes, parents their children, students themselves. Scoping is enforced on every page and every action.",
+  },
+  {
+    icon: Server,
+    t: "Backed up daily",
+    d: "Your records are backed up every day, and published report cards are immutable snapshots that keep their history.",
+  },
+  {
+    icon: History,
+    t: "An archive that lasts",
+    d: "Attendance books, score sheets and reports stay findable per term and per academic year — reference for years to come.",
+  },
 ];
 
 const PLANS = [
   {
-    name: "Starter", price: "99", popular: false,
+    name: "Starter",
+    price: "99",
+    popular: false,
     tagline: "The office essentials, digital at last",
-    feats: ["Student records & files", "30-second attendance + record book", "Report cards & releases", "Announcements & acknowledgements"],
+    feats: [
+      "Student records & files",
+      "30-second attendance + record book",
+      "Report cards & releases",
+      "Announcements & acknowledgements",
+    ],
   },
   {
-    name: "Standard", price: "249", popular: true,
+    name: "Standard",
+    price: "249",
+    popular: true,
     tagline: "The whole school day, connected",
-    feats: ["Everything in Starter", "Timetable, calendar & clash detection", "Homework records for parents", "Fees with Mobile Money", "SMS & email blasts"],
+    feats: [
+      "Everything in Starter",
+      "Timetable, calendar & clash detection",
+      "Homework records for parents",
+      "Fees with Mobile Money",
+      "SMS & email blasts",
+    ],
   },
   {
-    name: "Premium", price: "499", popular: false,
+    name: "Premium",
+    price: "499",
+    popular: false,
     tagline: "Every department on one platform",
-    feats: ["Everything in Standard", "Admissions pipeline", "Library & transport", "Staff HR", "Advanced analytics"],
+    feats: [
+      "Everything in Standard",
+      "Admissions pipeline",
+      "Library & transport",
+      "Staff HR",
+      "Advanced analytics",
+    ],
   },
 ] as const;
 
@@ -72,19 +163,48 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <LogoLockup size={30} />
           <nav className="hidden items-center gap-6 text-[14px] font-medium text-muted-foreground md:flex">
-            <a href="#features" className="transition-colors hover:text-foreground">Features</a>
-            <a href="#roles" className="transition-colors hover:text-foreground">For your school</a>
-            <a href="#pricing" className="transition-colors hover:text-foreground">Pricing</a>
-            <a href="#trust" className="transition-colors hover:text-foreground">Security</a>
+            <a
+              href="#features"
+              className="transition-colors hover:text-foreground"
+            >
+              Features
+            </a>
+            <a
+              href="#roles"
+              className="transition-colors hover:text-foreground"
+            >
+              For your school
+            </a>
+            <a
+              href="#pricing"
+              className="transition-colors hover:text-foreground"
+            >
+              Pricing
+            </a>
+            <a
+              href="#trust"
+              className="transition-colors hover:text-foreground"
+            >
+              Security
+            </a>
           </nav>
           <div className="flex items-center gap-2.5">
-            <Link href="/sign-in" className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href="/sign-in"
+              className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
               Sign in
             </Link>
-            <a href="#demo" className="hidden rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted sm:block">
+            <a
+              href="#demo"
+              className="hidden rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted sm:block"
+            >
               Get a demo
             </a>
-            <Link href="/signup" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-brand-strong">
+            <Link
+              href="/signup"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-brand-strong"
+            >
               Start free trial
             </Link>
           </div>
@@ -98,30 +218,44 @@ export default function Home() {
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-6 py-8 md:min-h-[calc(100svh-61px)] md:grid-cols-2">
           <div>
             <h1 className="text-[clamp(30px,3.6vw+6px,50px)] font-semibold leading-[1.06] tracking-tight">
-              Every register marked,<br />every cedi accounted for<br />
+              Every register marked,
+              <br />
+              every cedi accounted for
+              <br />
               <span className={GRAD_TEXT}>before assembly ends.</span>
             </h1>
             <p className="mt-[18px] max-w-[34em] text-[clamp(15px,1vw+7px,17px)] leading-relaxed text-muted-foreground">
-              Peysich runs the whole school from one place — attendance, results, fees and
-              parent SMS on your school&apos;s own subdomain. Owners see the money, heads see
-              the day, teachers stop pushing paper.
+              Peysich runs the whole school from one place — attendance,
+              results, fees and parent SMS on your school&apos;s own subdomain.
+              Owners see the money, heads see the day, teachers stop pushing
+              paper.
             </p>
             <div className="mt-[26px] flex flex-wrap items-center gap-3">
-              <Link href="/signup"
-                className={`group inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-[15px] font-semibold text-white shadow-[var(--shadow-lg)] transition-transform hover:scale-[1.02] ${GRAD_PANEL}`}>
+              <Link
+                href="/signup"
+                className={`group inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-[15px] font-semibold text-white shadow-[var(--shadow-lg)] transition-transform hover:scale-[1.02] ${GRAD_PANEL}`}
+              >
                 Start your 14-day free trial
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
               </Link>
-              <a href="#demo" className="rounded-lg border border-border bg-card px-7 py-3.5 text-[15px] font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted">
+              <a
+                href="#demo"
+                className="rounded-lg border border-border bg-card px-7 py-3.5 text-[15px] font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted"
+              >
                 Get a demo
               </a>
             </div>
-            <p className="mt-4 text-[13px] text-faint">No card required · set up in under an hour · cancel any time</p>
+            <p className="mt-4 text-[13px] text-faint">
+              No card required · set up in under an hour · cancel any time
+            </p>
           </div>
 
           {/* the mark itself: the P is a window onto the school, the wine block stays wine.
               Geometry lifted from LogoMark — same path, same rect. */}
-          <div className="relative">
+          {/* <div className="relative">
             <svg viewBox="88 -8 198 391" role="img"
               aria-label="A Peysich school, seen through the mark"
               className="mx-auto h-[min(58svh,480px)] w-auto drop-shadow-[0_18px_44px_rgb(25_20_25/0.14)] md:h-[min(84svh,700px)]">
@@ -135,7 +269,7 @@ export default function Home() {
               </g>
               <rect x="198" y="209" width="80" height="166" rx="17" fill="#5E1D3E" />
             </svg>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -144,7 +278,12 @@ export default function Home() {
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-8 px-6 py-10 md:grid-cols-4">
           {STATS.map(([n, l]) => (
             <div key={l} className="text-center">
-              <p className={`text-[32px] font-semibold tracking-tight ${GRAD_TEXT}`} data-nums="">{n}</p>
+              <p
+                className={`text-[32px] font-semibold tracking-tight ${GRAD_TEXT}`}
+                data-nums=""
+              >
+                {n}
+              </p>
               <p className="mt-1 text-[13.5px] text-muted-foreground">{l}</p>
             </div>
           ))}
@@ -152,38 +291,61 @@ export default function Home() {
       </section>
 
       {/* ── feature tabs ── */}
-      <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20">
+      <section
+        id="features"
+        className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20"
+      >
         <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}>The platform</p>
+          <p
+            className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
+          >
+            The platform
+          </p>
           <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
             Everything a school runs on, flowing together.
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-            No patchwork of spreadsheets and WhatsApp groups. One source of truth for the
-            registers, the marks, the money and the messages.
+            No patchwork of spreadsheets and WhatsApp groups. One source of
+            truth for the registers, the marks, the money and the messages.
           </p>
         </div>
         <FeatureTabs />
       </section>
 
       {/* ── roles ── */}
-      <section id="roles" className="relative scroll-mt-20 overflow-hidden border-y border-border bg-card">
-        <div aria-hidden className="absolute -left-40 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,var(--brand-soft),transparent)]" />
+      <section
+        id="roles"
+        className="relative scroll-mt-20 overflow-hidden border-y border-border bg-card"
+      >
+        <div
+          aria-hidden
+          className="absolute -left-40 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,var(--brand-soft),transparent)]"
+        />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-[6fr_6fr]">
           <div>
-            <p className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}>One school, four experiences</p>
+            <p
+              className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
+            >
+              One school, four experiences
+            </p>
             <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-              Everyone opens the same app.<br />Nobody sees the same thing.
+              Everyone opens the same app.
+              <br />
+              Nobody sees the same thing.
             </h2>
             <div className="mt-7 space-y-5">
               {ROLES.map(({ icon: Icon, t, d }) => (
                 <div key={t} className="flex items-start gap-3.5">
-                  <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[var(--shadow-md)] ${GRAD_PANEL}`}>
+                  <span
+                    className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[var(--shadow-md)] ${GRAD_PANEL}`}
+                  >
                     <Icon size={17} />
                   </span>
                   <div>
                     <p className="font-semibold leading-snug">{t}</p>
-                    <p className="mt-0.5 text-[14px] leading-relaxed text-muted-foreground">{d}</p>
+                    <p className="mt-0.5 text-[14px] leading-relaxed text-muted-foreground">
+                      {d}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -191,12 +353,25 @@ export default function Home() {
           </div>
           <div className="relative">
             <figure className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
-              <Image src="/shots/student-dashboard.png" alt="The student dashboard: identity card, KPIs and a Do-today list"
-                width={2040} height={1275} className="w-full" />
+              <Image
+                src="/shots/student-dashboard.png"
+                alt="The student dashboard: identity card, KPIs and a Do-today list"
+                width={2040}
+                height={1275}
+                className="w-full"
+              />
             </figure>
             <figure className="absolute -bottom-8 -left-6 hidden w-64 overflow-hidden rounded-lg border border-border shadow-[var(--shadow-lg)] md:block">
-              <Image src="/shots/dark-dashboard.png" alt="Peysich in dark mode" width={2040} height={1275} className="w-full" />
-              <figcaption className="bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground">Dark mode included</figcaption>
+              <Image
+                src="/shots/dark-dashboard.png"
+                alt="Peysich in dark mode"
+                width={2040}
+                height={1275}
+                className="w-full"
+              />
+              <figcaption className="bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground">
+                Dark mode included
+              </figcaption>
             </figure>
           </div>
         </div>
@@ -205,19 +380,28 @@ export default function Home() {
       {/* ── benefits grid ── */}
       <section className="mx-auto max-w-6xl px-6 py-20">
         <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}>Why schools switch</p>
+          <p
+            className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
+          >
+            Why schools switch
+          </p>
           <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
             Streamlined school days, smarter decisions.
           </h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {BENEFITS.map(({ icon: Icon, t, d }) => (
-            <div key={t} className="group rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--shadow-lg)]">
+            <div
+              key={t}
+              className="group rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--shadow-lg)]"
+            >
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon size={18} />
               </span>
               <h3 className="mt-4 font-semibold">{t}</h3>
-              <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">{d}</p>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
+                {d}
+              </p>
             </div>
           ))}
         </div>
@@ -227,19 +411,26 @@ export default function Home() {
       <section id="trust" className={`scroll-mt-20 ${GRAD_PANEL}`}>
         <div className="mx-auto max-w-6xl px-6 py-16">
           <div className="mx-auto mb-10 max-w-2xl text-center">
-            <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60">Trust & security</p>
+            <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60">
+              Trust & security
+            </p>
             <h2 className="mt-2 text-[30px] font-semibold leading-tight tracking-tight text-white">
               A school&apos;s records deserve a vault, not a folder.
             </h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {TRUST.map(({ icon: Icon, t, d }) => (
-              <div key={t} className="rounded-xl border border-white/15 bg-white/[0.06] p-5 backdrop-blur-sm">
+              <div
+                key={t}
+                className="rounded-xl border border-white/15 bg-white/[0.06] p-5 backdrop-blur-sm"
+              >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white">
                   <Icon size={16} />
                 </span>
                 <h3 className="mt-3.5 font-semibold text-white">{t}</h3>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/70">{d}</p>
+                <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/70">
+                  {d}
+                </p>
               </div>
             ))}
           </div>
@@ -247,33 +438,58 @@ export default function Home() {
       </section>
 
       {/* ── pricing ── */}
-      <section id="pricing" className="mx-auto max-w-5xl scroll-mt-20 px-6 py-20">
+      <section
+        id="pricing"
+        className="mx-auto max-w-5xl scroll-mt-20 px-6 py-20"
+      >
         <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}>Pricing</p>
-          <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">Simple pricing, per month.</h2>
+          <p
+            className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
+          >
+            Pricing
+          </p>
+          <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
+            Simple pricing, per month.
+          </h2>
           <p className="mt-3 text-[14.5px] text-muted-foreground">
             Pay monthly, or yearly with two months free. Cancel any time.
           </p>
         </div>
         <div className="grid items-stretch gap-5 md:grid-cols-3">
           {PLANS.map(({ name, price, tagline, feats, popular }) => (
-            <div key={name}
-              className={`relative flex flex-col rounded-2xl p-[1.5px] ${popular ? GRAD_PANEL + " shadow-[var(--shadow-lg)]" : ""}`}>
-              <div className={`flex h-full flex-col rounded-[15px] bg-card p-6 ${popular ? "" : "border border-border shadow-[var(--shadow-sm)]"}`}>
+            <div
+              key={name}
+              className={`relative flex flex-col rounded-2xl p-[1.5px] ${popular ? GRAD_PANEL + " shadow-[var(--shadow-lg)]" : ""}`}
+            >
+              <div
+                className={`flex h-full flex-col rounded-[15px] bg-card p-6 ${popular ? "" : "border border-border shadow-[var(--shadow-sm)]"}`}
+              >
                 {popular && (
-                  <span className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11.5px] font-semibold text-white shadow-[var(--shadow-md)] ${GRAD_PANEL}`}>
+                  <span
+                    className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11.5px] font-semibold text-white shadow-[var(--shadow-md)] ${GRAD_PANEL}`}
+                  >
                     Most popular
                   </span>
                 )}
                 <p className="font-semibold">{name}</p>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">{tagline}</p>
-                <p className="mt-4 text-[34px] font-semibold tracking-tight" data-nums="">
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
+                  {tagline}
+                </p>
+                <p
+                  className="mt-4 text-[34px] font-semibold tracking-tight"
+                  data-nums=""
+                >
                   <span className={popular ? GRAD_TEXT : ""}>GHS {price}</span>
-                  <span className="text-[14px] font-normal text-muted-foreground">/month</span>
+                  <span className="text-[14px] font-normal text-muted-foreground">
+                    /month
+                  </span>
                 </p>
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {feats.map((f2) => (
-                    <li key={f2} className="flex items-start gap-2 text-[13.5px] leading-snug">
+                    <li
+                      key={f2}
+                      className="flex items-start gap-2 text-[13.5px] leading-snug"
+                    >
                       <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
                         <Check size={11} strokeWidth={3} />
                       </span>
@@ -281,10 +497,15 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/signup"
-                  className={`mt-6 block rounded-lg py-2.5 text-center text-sm font-semibold transition-all ${popular
-                    ? "text-white shadow-[var(--shadow-md)] hover:scale-[1.01] " + GRAD_PANEL
-                    : "border border-border hover:bg-muted"}`}>
+                <Link
+                  href="/signup"
+                  className={`mt-6 block rounded-lg py-2.5 text-center text-sm font-semibold transition-all ${
+                    popular
+                      ? "text-white shadow-[var(--shadow-md)] hover:scale-[1.01] " +
+                        GRAD_PANEL
+                      : "border border-border hover:bg-muted"
+                  }`}
+                >
                   Get started
                 </Link>
               </div>
@@ -292,25 +513,44 @@ export default function Home() {
           ))}
         </div>
         <p className="mt-7 text-center text-[14px] text-muted-foreground">
-          Bigger school or specific needs? <span className="font-medium text-foreground">Custom plans</span> compose exactly the modules you want.
+          Bigger school or specific needs?{" "}
+          <span className="font-medium text-foreground">Custom plans</span>{" "}
+          compose exactly the modules you want.
         </p>
       </section>
 
       {/* ── final CTA + lead capture ── */}
-      <section id="demo" className="relative scroll-mt-20 overflow-hidden border-t border-border bg-card">
-        <div aria-hidden className="absolute -right-52 -top-40 h-[480px] w-[480px] rounded-full bg-[radial-gradient(closest-side,var(--brand-soft),transparent)]" />
+      <section
+        id="demo"
+        className="relative scroll-mt-20 overflow-hidden border-t border-border bg-card"
+      >
+        <div
+          aria-hidden
+          className="absolute -right-52 -top-40 h-[480px] w-[480px] rounded-full bg-[radial-gradient(closest-side,var(--brand-soft),transparent)]"
+        />
         <div className="relative mx-auto grid max-w-5xl items-center gap-10 px-6 py-20 md:grid-cols-2">
           <div>
-            <p className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}>Get a demo</p>
+            <p
+              className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
+            >
+              Get a demo
+            </p>
             <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-              Ready to see Peysich<br />in action?
+              Ready to see Peysich
+              <br />
+              in action?
             </h2>
             <p className="mt-3 max-w-sm text-[14.5px] leading-relaxed text-muted-foreground">
-              Leave your number and we&apos;ll call to walk you through Peysich on your own
-              school&apos;s structure — classes, report cards, fees, everything.
+              Leave your number and we&apos;ll call to walk you through Peysich
+              on your own school&apos;s structure — classes, report cards, fees,
+              everything.
             </p>
             <ul className="mt-6 space-y-2.5">
-              {["A walkthrough on your school's real structure", "Honest advice on which plan fits", "Set up and live in under an hour"].map((f2) => (
+              {[
+                "A walkthrough on your school's real structure",
+                "Honest advice on which plan fits",
+                "Set up and live in under an hour",
+              ].map((f2) => (
                 <li key={f2} className="flex items-start gap-2.5 text-[14px]">
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
                     <Check size={12} strokeWidth={3} />
@@ -336,20 +576,73 @@ export default function Home() {
               </p>
             </div>
             <div>
-              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-faint">Product</p>
+              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-faint">
+                Product
+              </p>
               <ul className="mt-3 space-y-2 text-[13.5px] text-muted-foreground">
-                <li><a href="#features" className="transition-colors hover:text-foreground">Features</a></li>
-                <li><a href="#roles" className="transition-colors hover:text-foreground">For your school</a></li>
-                <li><a href="#pricing" className="transition-colors hover:text-foreground">Pricing</a></li>
-                <li><a href="#trust" className="transition-colors hover:text-foreground">Security</a></li>
+                <li>
+                  <a
+                    href="#features"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#roles"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    For your school
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#pricing"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#trust"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    Security
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-faint">Get started</p>
+              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-faint">
+                Get started
+              </p>
               <ul className="mt-3 space-y-2 text-[13.5px] text-muted-foreground">
-                <li><Link href="/signup" className="transition-colors hover:text-foreground">Start free trial</Link></li>
-                <li><a href="#demo" className="transition-colors hover:text-foreground">Get a demo</a></li>
-                <li><Link href="/sign-in" className="transition-colors hover:text-foreground">Sign in</Link></li>
+                <li>
+                  <Link
+                    href="/signup"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    Start free trial
+                  </Link>
+                </li>
+                <li>
+                  <a
+                    href="#demo"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    Get a demo
+                  </a>
+                </li>
+                <li>
+                  <Link
+                    href="/sign-in"
+                    className="transition-colors hover:text-foreground"
+                  >
+                    Sign in
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
