@@ -42,7 +42,7 @@ export default function SignIn() {
   }
 
   return (
-    <main className="flex min-h-screen">
+    <main className="light-scope flex min-h-screen bg-background text-foreground">
       {/* brand panel */}
       <div className="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-ink p-10 lg:flex">
         <div aria-hidden className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />

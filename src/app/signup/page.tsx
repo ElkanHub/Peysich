@@ -35,7 +35,7 @@ export default function Signup() {
   const host = typeof window !== "undefined" ? window.location.host : "";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted p-4">
+    <main className="light-scope flex min-h-screen items-center justify-center bg-muted p-4 text-foreground">
       <Card className="w-full max-w-md">
         <h1 className="text-xl font-semibold">Start with Peysich</h1>
         <p className="mt-1 text-sm text-muted-foreground">Step {step} of 3</p>

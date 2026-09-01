@@ -3,11 +3,12 @@ import Image from "next/image";
 import {
   CalendarCheck, GraduationCap, Wallet, Megaphone, ShieldCheck, Layers,
   Users, BookOpen, HeartHandshake, Sparkles, Check, Lock, Server, History,
-  MessageSquareText, ArrowRight,
+  ArrowRight,
 } from "lucide-react";
 import { LogoLockup } from "@/ui/logo";
 import { LeadForm } from "./lead-form";
 import { FeatureTabs } from "./feature-tabs";
+import { HeroBackdrop } from "./hero-backdrop";
 
 /* The wine the whole app runs on, as marketing gradients. */
 const GRAD_TEXT =
@@ -65,7 +66,7 @@ const PLANS = [
 
 export default function Home() {
   return (
-    <main className="bg-background">
+    <main className="light-scope bg-background text-foreground">
       {/* ── nav ── */}
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
@@ -90,66 +91,50 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── hero ── */}
-      <section className="relative overflow-hidden">
-        <div aria-hidden className="absolute -top-40 left-1/2 h-[560px] w-[1100px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,#f0dbe7,transparent)] dark:bg-[radial-gradient(closest-side,#33202b,transparent)]" />
-        <div aria-hidden className="absolute -right-40 top-64 h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,#efe4f1,transparent)] opacity-80 dark:bg-[radial-gradient(closest-side,#2a1c30,transparent)]" />
+      {/* ── hero: the mark holds the photograph, the grid holds the page ── */}
+      <section className="relative overflow-hidden border-b border-border">
+        <HeroBackdrop />
 
-        <div className="relative mx-auto max-w-4xl px-6 pt-16 text-center lg:pt-24">
-          <p className="mx-auto mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-card px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)]">
-            <span className={`font-semibold ${GRAD_TEXT}`}>Built for Ghana 🇬🇭</span>
-            <span className="text-faint">·</span>
-            <span className="text-muted-foreground">GES structure, Creche → JHS</span>
-          </p>
-          <h1 className="text-[42px] font-semibold leading-[1.08] tracking-tight lg:text-[58px]">
-            Discover the calmer way<br />
-            to run <span className={GRAD_TEXT}>your whole school.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-muted-foreground">
-            Attendance, assessment, report cards, fees and parent communication flowing
-            together on your school&apos;s own subdomain — a next-generation platform
-            at a price that makes sense every month.
-          </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/signup"
-              className={`group inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-[15px] font-semibold text-white shadow-[var(--shadow-lg)] transition-transform hover:scale-[1.02] ${GRAD_PANEL}`}>
-              Start your 14-day free trial
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <a href="#demo" className="rounded-lg border border-border bg-card px-7 py-3.5 text-[15px] font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted">
-              Get a demo
-            </a>
-          </div>
-          <p className="mt-4 text-[13px] text-faint">No card required · set up in under an hour · cancel any time</p>
-        </div>
-
-        {/* the product, front and centre */}
-        <div className="relative mx-auto mt-14 max-w-5xl px-6 pb-10">
-          <div aria-hidden className={`absolute inset-x-10 top-8 -bottom-2 rounded-[36px] opacity-[0.16] blur-2xl ${GRAD_PANEL}`} />
-          <figure className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_80px_-24px_rgb(55_2_60/0.45)]">
-            <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-4 py-3">
-              <span className="h-3 w-3 rounded-full bg-danger/50" />
-              <span className="h-3 w-3 rounded-full bg-warning/50" />
-              <span className="h-3 w-3 rounded-full bg-success/50" />
-              <span className="ml-3 rounded-md bg-card px-3 py-1 text-[12px] text-faint" data-nums="">stmarys.peysich.com</span>
+        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-6 py-8 md:min-h-[calc(100svh-61px)] md:grid-cols-2">
+          <div>
+            <h1 className="text-[clamp(30px,3.6vw+6px,50px)] font-semibold leading-[1.06] tracking-tight">
+              Every register marked,<br />every cedi accounted for<br />
+              <span className={GRAD_TEXT}>before assembly ends.</span>
+            </h1>
+            <p className="mt-[18px] max-w-[34em] text-[clamp(15px,1vw+7px,17px)] leading-relaxed text-muted-foreground">
+              Peysich runs the whole school from one place — attendance, results, fees and
+              parent SMS on your school&apos;s own subdomain. Owners see the money, heads see
+              the day, teachers stop pushing paper.
+            </p>
+            <div className="mt-[26px] flex flex-wrap items-center gap-3">
+              <Link href="/signup"
+                className={`group inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-[15px] font-semibold text-white shadow-[var(--shadow-lg)] transition-transform hover:scale-[1.02] ${GRAD_PANEL}`}>
+                Start your 14-day free trial
+                <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <a href="#demo" className="rounded-lg border border-border bg-card px-7 py-3.5 text-[15px] font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted">
+                Get a demo
+              </a>
             </div>
-            <Image src="/shots/hero-dashboard.png" alt="The Peysich admin dashboard: live attendance, fees and the term pulse"
-              width={2040} height={1275} priority className="w-full" />
-          </figure>
-          {/* floating proof chips */}
-          <div className="absolute -left-2 top-1/3 hidden w-56 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-lg)] lg:block">
-            <p className="flex items-center gap-2 text-[12.5px] font-semibold">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-success-soft text-success"><MessageSquareText size={13} /></span>
-              Absence SMS sent ✓
-            </p>
-            <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground">3 guardians alerted the moment the register was saved.</p>
+            <p className="mt-4 text-[13px] text-faint">No card required · set up in under an hour · cancel any time</p>
           </div>
-          <div className="absolute -right-2 top-2/3 hidden w-56 rounded-xl border border-border bg-card p-3.5 shadow-[var(--shadow-lg)] lg:block">
-            <p className="flex items-center gap-2 text-[12.5px] font-semibold">
-              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-white ${GRAD_PANEL}`}><ClockIcon /></span>
-              Week 4 of 13 · Term 1
-            </p>
-            <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground">Every dashboard knows where the term stands — and when school closes today.</p>
+
+          {/* the mark itself: the P is a window onto the school, the wine block stays wine.
+              Geometry lifted from LogoMark — same path, same rect. */}
+          <div className="relative">
+            <svg viewBox="88 -8 198 391" role="img"
+              aria-label="A Peysich school, seen through the mark"
+              className="mx-auto h-[min(58svh,480px)] w-auto drop-shadow-[0_18px_44px_rgb(25_20_25/0.14)] md:h-[min(84svh,700px)]">
+              <defs>
+                <clipPath id="peysich-p"><path d="M96 0H278V193H188V375H96V0Z" /></clipPath>
+              </defs>
+              <g clipPath="url(#peysich-p)">
+                <rect x="96" y="0" width="182" height="375" fill="var(--brand-container)" />
+                <image href="/shots/hero-dashboard.png" x="96" y="0" width="182" height="375"
+                  preserveAspectRatio="xMidYMid slice" />
+              </g>
+              <rect x="198" y="209" width="80" height="166" rx="17" fill="#5E1D3E" />
+            </svg>
           </div>
         </div>
       </section>
@@ -374,15 +359,5 @@ export default function Home() {
         </div>
       </footer>
     </main>
-  );
-}
-
-/** Tiny clock glyph for the floating chip (keeps lucide imports lean). */
-function ClockIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-    </svg>
   );
 }

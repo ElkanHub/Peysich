@@ -7,8 +7,10 @@
    Material's token engineering (roles, paired on-colours, tonal surfaces)
    run with Apple's discipline, on Peysich ground: the wine seed, the ink
    rail, the paper. Components reference ROLES; no component names a hex.
-   Neutrals carry a 3% wine bias — a school hall, not a server room. */
-:root {
+   Neutrals carry a 3% wine bias — a school hall, not a server room.
+   `.light-scope` re-declares the same light values on a subtree, so the
+   public face (marketing, the doors) stays light inside a .dark document. */
+:root, .light-scope {
   /* brand — the wine seed (each school reseeds --brand via Branding) */
   --brand: #5e1d3e;
   --brand-strong: #4a1730;
