@@ -25,7 +25,7 @@ export function GradingEditor({ slug, caWeight, examWeight, bands }: {
         <span>%</span>
         <span className="text-muted-foreground">+ Exam {100 - ca}% = 100%</span>
       </div>
-      <table className="mt-3 w-full text-sm">
+      <div className="overflow-x-auto"><table className="min-w-[460px] mt-3 w-full text-sm">
         <thead><tr className="text-left text-xs text-muted-foreground">
           <th className="py-1">From score</th><th>Grade</th><th>Remark</th><th /></tr></thead>
         <tbody>
@@ -39,7 +39,7 @@ export function GradingEditor({ slug, caWeight, examWeight, bands }: {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       <div className="mt-3 flex items-center gap-2">
         <button type="button" onClick={() => setRows([...rows, { min: 0, grade: "", remark: "" }])}
           className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">Add band</button>

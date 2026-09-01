@@ -47,7 +47,7 @@ export default async function IntakeSetup({ params }: { params: Promise<{ school
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
             Leave a level blank if you don&apos;t cap it. &quot;Left&quot; = capacity − currently enrolled.
           </p>
-          <table className="mt-3 w-full text-sm" data-nums="">
+          <div className="overflow-x-auto"><table className="min-w-[460px] mt-3 w-full text-sm" data-nums="">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
               <th className="py-1">Level</th><th className="text-right">Enrolled</th>
               <th className="text-right">Capacity</th><th className="text-right">Applying</th>
@@ -75,7 +75,7 @@ export default async function IntakeSetup({ params }: { params: Promise<{ school
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         </Card>
 
         <Card className="mb-4">

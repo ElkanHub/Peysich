@@ -177,7 +177,7 @@ export default async function Fees({ params, searchParams }: {
           </ul>
           <details className="mt-3">
             <summary className="cursor-pointer text-[13px] font-medium text-primary">Full statement</summary>
-            <table className="mt-2 w-full text-[13px]" data-nums="">
+            <div className="overflow-x-auto"><table className="min-w-[520px] mt-2 w-full text-[13px]" data-nums="">
               <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="py-1">Date</th><th>Item</th><th className="text-right">Debit</th><th className="text-right">Credit</th><th className="text-right">Balance</th></tr></thead>
               <tbody>
@@ -194,7 +194,7 @@ export default async function Fees({ params, searchParams }: {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           </details>
         </Card>
       </div>
@@ -316,7 +316,7 @@ export default async function Fees({ params, searchParams }: {
       </div>
 
       <Card>
-        <table className="w-full text-sm" data-nums="">
+        <div className="overflow-x-auto"><table className="min-w-[600px] w-full text-sm" data-nums="">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
             <th className="py-1.5">Student</th><th className="text-right">Billed</th>
             <th className="text-right">Paid</th><th className="text-right">Balance</th>
@@ -356,7 +356,7 @@ export default async function Fees({ params, searchParams }: {
               <tr><td colSpan={6} className="py-3 text-muted-foreground">Nothing here — try another class or filter.</td></tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </Card>
 
       <Card className="mt-5">
@@ -368,7 +368,7 @@ export default async function Fees({ params, searchParams }: {
           Who collected what — the drawer count, by name. Voided receipts are excluded.
         </p>
         {byCashier.size ? (
-          <table className="mt-2 w-full text-sm" data-nums="">
+          <div className="overflow-x-auto"><table className="min-w-[460px] mt-2 w-full text-sm" data-nums="">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
               <th className="py-1">Cashier</th><th className="text-right">Cash</th>
               <th className="text-right">MoMo / bank</th><th className="text-right">Receipts</th></tr></thead>
@@ -382,7 +382,7 @@ export default async function Fees({ params, searchParams }: {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         ) : <p className="mt-2 text-sm text-muted-foreground">No payments recorded today yet.</p>}
       </Card>
 

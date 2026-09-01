@@ -113,7 +113,7 @@ export default async function Analytics({ params, searchParams }: {
             <Card>
               <H color="var(--danger)">At risk — falling grades × missed days</H>
               {L.atRisk.length ? (
-                <table className="w-full text-[13px]" data-nums="">
+                <div className="overflow-x-auto"><table className="min-w-[440px] w-full text-[13px]" data-nums="">
                   <thead><tr className="text-left text-[10.5px] uppercase tracking-wider text-muted-foreground">
                     <th className="py-1">Student</th><th>Class</th><th className="text-right">Avg</th><th className="text-right">Missed</th></tr></thead>
                   <tbody>
@@ -126,7 +126,7 @@ export default async function Analytics({ params, searchParams }: {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               ) : <p className="text-sm text-muted-foreground">Nobody is flagged — scores and attendance are both healthy.</p>}
               {L.atRisk.length > 5 && (
                 <Link href="/analytics?tab=learning" className="mt-2 inline-block text-[13px] font-medium text-primary">
@@ -230,7 +230,7 @@ export default async function Analytics({ params, searchParams }: {
           <Card>
             <H color={PILLAR.learning}>Class outcomes by teacher <span className="text-[12px] font-normal text-muted-foreground">same subject only — never across subjects</span></H>
             {L.teachers.length ? (
-              <table className="w-full text-[13px]" data-nums="">
+              <div className="overflow-x-auto"><table className="min-w-[440px] w-full text-[13px]" data-nums="">
                 <thead><tr className="text-left text-[10.5px] uppercase tracking-wider text-muted-foreground">
                   <th className="py-1">Teacher · subject</th><th>Classes</th><th className="text-right">Avg</th><th className="text-right">vs subject</th></tr></thead>
                 <tbody>
@@ -245,13 +245,13 @@ export default async function Analytics({ params, searchParams }: {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             ) : <p className="text-sm text-muted-foreground">Needs marks plus teaching allocations in the timetable.</p>}
           </Card>
           <Card>
             <H color="var(--danger)">At risk — all {L.atRisk.length}</H>
             {L.atRisk.length ? (
-              <table className="w-full text-[13px]" data-nums="">
+              <div className="overflow-x-auto"><table className="min-w-[440px] w-full text-[13px]" data-nums="">
                 <thead><tr className="text-left text-[10.5px] uppercase tracking-wider text-muted-foreground">
                   <th className="py-1">Student</th><th>Class</th><th className="text-right">Avg</th><th className="text-right">Missed</th></tr></thead>
                 <tbody>
@@ -264,7 +264,7 @@ export default async function Analytics({ params, searchParams }: {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             ) : <p className="text-sm text-muted-foreground">Nobody flagged. The bar: average below 55% AND more than 10% of days missed.</p>}
             <p className="mt-2 text-[12px] text-muted-foreground">Open the student file for the class teacher and guardian contacts.</p>
           </Card>
@@ -333,14 +333,14 @@ export default async function Analytics({ params, searchParams }: {
               { label: "Girls", v: P.gender.female, color: PILLAR.money, display: `${P.gender.female}` },
               { label: "Boys", v: P.gender.male, color: PILLAR.attendance, display: `${P.gender.male}` },
             ]} />
-            <table className="mt-3 w-full text-[13px]" data-nums="">
+            <div className="overflow-x-auto"><table className="min-w-[440px] mt-3 w-full text-[13px]" data-nums="">
               <tbody>
                 <tr className="border-t border-border"><td className="py-1.5">On school transport</td>
                   <td className="text-right font-medium">{P.transportRiders} riders</td></tr>
                 <tr className="border-t border-border"><td className="py-1.5">Guardians on file (SMS-reachable)</td>
                   <td className="text-right font-medium text-success">{P.smsReachablePct !== null ? `${P.smsReachablePct}%` : "—"}</td></tr>
               </tbody>
-            </table>
+            </table></div>
           </Card>
           <Card>
             <H color={PILLAR.people}>Enrolment by level {P.seats.length > 0 && <span className="text-[12px] font-normal text-muted-foreground">vs seats</span>}</H>
@@ -364,7 +364,7 @@ export default async function Analytics({ params, searchParams }: {
           <Card>
             <H>Teacher load <span className="text-[12px] font-normal text-muted-foreground">from the timetable · school average {O.avgPeriods}/wk</span></H>
             {O.teacherLoad.length ? (
-              <table className="w-full text-[13px]" data-nums="">
+              <div className="overflow-x-auto"><table className="min-w-[440px] w-full text-[13px]" data-nums="">
                 <thead><tr className="text-left text-[10.5px] uppercase tracking-wider text-muted-foreground">
                   <th className="py-1">Teacher</th><th className="text-right">Periods/wk</th><th className="text-right">Students</th></tr></thead>
                 <tbody>
@@ -376,21 +376,21 @@ export default async function Analytics({ params, searchParams }: {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             ) : <p className="text-sm text-muted-foreground">Build the timetable to see who carries what.</p>}
             <p className="mt-2 text-[12px] text-muted-foreground">Red = more than 25% above the school average.</p>
           </Card>
           <div className="space-y-4">
             <Card>
               <H>Library</H>
-              <table className="w-full text-[13px]" data-nums="">
+              <div className="overflow-x-auto"><table className="min-w-[440px] w-full text-[13px]" data-nums="">
                 <tbody>
                   <tr><td className="py-1.5">Copies in the library</td><td className="text-right font-medium">{O.library.books}</td></tr>
                   <tr className="border-t border-border"><td className="py-1.5">Out on loan</td><td className="text-right font-medium">{O.library.out}</td></tr>
                   <tr className="border-t border-border"><td className="py-1.5">Overdue (3+ weeks)</td>
                     <td className={`text-right font-medium ${O.library.overdue ? "text-danger" : "text-success"}`}>{O.library.overdue}</td></tr>
                 </tbody>
-              </table>
+              </table></div>
             </Card>
             <Card>
               <H>Transport routes</H>

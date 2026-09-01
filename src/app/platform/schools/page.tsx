@@ -35,7 +35,7 @@ export default async function PlatformHome() {
         ))}
       </div>
       <p className="mt-3 text-sm"><Link href="/platform/audit" className="text-primary underline-offset-2 hover:underline">View audit log →</Link></p>
-      <table className="mt-4 w-full text-sm">
+      <div className="overflow-x-auto"><table className="min-w-[520px] mt-4 w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">
             <th className="py-2">Name</th><th>Slug</th><th>Status</th><th>Plan</th><th></th>
@@ -52,7 +52,7 @@ export default async function PlatformHome() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       {rows.length === 0 && (
         <p className="mt-4 text-muted-foreground">No schools yet. Run `npm run db:seed`.</p>
       )}

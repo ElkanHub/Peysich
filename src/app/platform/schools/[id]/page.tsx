@@ -96,7 +96,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
       <p className="text-sm text-muted-foreground">
         Plan default · Force ON · Force OFF — every flip is audited. Data is never deleted.
       </p>
-      <table className="mt-3 w-full text-sm">
+      <div className="overflow-x-auto"><table className="min-w-[520px] mt-3 w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">
             <th className="py-2">Module</th><th>In plan</th><th>Effective</th><th className="text-right">Override</th>
@@ -129,7 +129,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             );
           })}
         </tbody>
-      </table>
+      </table></div>
 
       <h2 className="mt-8 text-lg font-semibold">Custom plan</h2>
       <p className="text-sm text-muted-foreground">Compose exactly the modules this school pays for, at your price. Overrides above still apply on top.</p>
