@@ -35,7 +35,7 @@ export function SkillsGrid({ slug, classId, domains, roster, initial, scale }: {
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div className="overflow-x-auto rounded-lg bg-card shadow-[var(--shadow-md)]">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">

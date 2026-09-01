@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -124,16 +124,51 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
   );
 }
 
-/** Responsive chrome: fixed ink sidebar ≥lg, slide-in drawer below. */
+const DRAWER_W = 288;
+
+/** Responsive chrome: fixed ink sidebar ≥lg; below, a drawer that behaves
+ *  like a native one — swipe in from the left edge, it follows the finger,
+ *  springs open past the threshold, and swipes back closed. */
 export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[]; subtitle?: string; accountHref?: string; avatarUrl?: string | null }) {
   const [open, setOpen] = useState(false);
+  const [dragX, setDragX] = useState<number | null>(null); // live finger position
+  const touch = useRef<{ x: number; y: number; horizontal: boolean | null; from: "edge" | "drawer"; at: number | null } | null>(null);
+
+  const start = (e: React.TouchEvent, from: "edge" | "drawer") => {
+    const t = e.touches[0];
+    touch.current = { x: t.clientX, y: t.clientY, horizontal: null, from, at: null };
+  };
+  const move = (e: React.TouchEvent) => {
+    const s = touch.current;
+    if (!s) return;
+    const t = e.touches[0];
+    const dx = t.clientX - s.x, dy = t.clientY - s.y;
+    if (s.horizontal === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8))
+      s.horizontal = Math.abs(dx) > Math.abs(dy); // decide intent once
+    if (!s.horizontal) return;
+    s.at = s.from === "edge"
+      ? Math.max(0, Math.min(DRAWER_W, dx))
+      : Math.max(0, Math.min(DRAWER_W, DRAWER_W + dx));
+    setDragX(s.at);
+  };
+  const end = () => {
+    const s = touch.current;
+    touch.current = null;
+    if (!s || s.at === null) return;
+    setOpen(s.from === "edge" ? s.at > 72 : s.at > DRAWER_W - 72);
+    setDragX(null);
+  };
+
+  const x = dragX ?? (open ? DRAWER_W : 0); // 0 = closed, DRAWER_W = open
+  const dragging = dragX !== null;
+
   return (
     <>
       <aside className="hidden w-60 shrink-0 print:hidden lg:block">
         <div className="fixed inset-y-0 w-60"><SidebarInner {...props} /></div>
       </aside>
       {/* mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-13 items-center gap-3 border-b border-ink-border bg-ink px-4 py-2.5 print:hidden lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 flex h-13 items-center gap-3 bg-ink px-4 py-2.5 print:hidden lg:hidden">
         <button onClick={() => setOpen(true)} aria-label="Open menu"
           className="rounded-md p-1.5 text-ink-text hover:bg-ink-2">
           <Menu size={20} />
@@ -141,18 +176,26 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
         <LogoMark size={24} variant="light" />
         <span className="truncate text-[14px] font-semibold text-ink-text-strong">{props.schoolName}</span>
       </div>
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-72 shadow-[var(--shadow-lg)]">
-            <SidebarInner {...props} onNavigate={() => setOpen(false)} />
-            <button onClick={() => setOpen(false)} aria-label="Close menu"
-              className="absolute right-3 top-4 rounded-md p-1.5 text-ink-text hover:bg-ink-2">
-              <X size={18} />
-            </button>
-          </div>
+      {/* the edge you swipe from — invisible, always there */}
+      <div className="fixed inset-y-0 left-0 z-40 w-6 print:hidden lg:hidden" style={{ touchAction: "pan-y" }}
+        onTouchStart={(e) => start(e, "edge")} onTouchMove={move} onTouchEnd={end} />
+      {/* drawer + scrim, always mounted so the gesture can drive them */}
+      <div className={`fixed inset-0 z-50 lg:hidden print:hidden ${x === 0 && !dragging ? "pointer-events-none" : ""}`}>
+        <div className="absolute inset-0 bg-black/50"
+          style={{ opacity: x / DRAWER_W, transition: dragging ? "none" : "opacity 260ms cubic-bezier(.32,.72,0,1)" }}
+          onClick={() => setOpen(false)} />
+        <div className="absolute inset-y-0 left-0 w-72 shadow-[var(--shadow-lg)]"
+          style={{ transform: `translateX(${x - DRAWER_W}px)`,
+            transition: dragging ? "none" : "transform 260ms cubic-bezier(.32,.72,0,1)",
+            touchAction: "pan-y" }}
+          onTouchStart={(e) => start(e, "drawer")} onTouchMove={move} onTouchEnd={end}>
+          <SidebarInner {...props} onNavigate={() => setOpen(false)} />
+          <button onClick={() => setOpen(false)} aria-label="Close menu"
+            className="absolute right-3 top-4 rounded-md p-1.5 text-ink-text hover:bg-ink-2">
+            <X size={18} />
+          </button>
         </div>
-      )}
+      </div>
     </>
   );
 }

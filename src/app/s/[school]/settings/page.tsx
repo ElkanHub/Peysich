@@ -57,7 +57,7 @@ function Section({ title, hint, children, defaultOpen, danger }: {
   title: string; hint: string; children: React.ReactNode; defaultOpen?: boolean; danger?: boolean;
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-xl border border-border bg-card shadow-[var(--shadow-sm)]">
+    <details open={defaultOpen} className="group rounded-xl bg-card shadow-[var(--shadow-md)]">
       <summary className="flex cursor-pointer select-none items-center justify-between gap-3 rounded-xl px-4 py-3.5 transition-colors hover:bg-muted/40 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">
           <span className={`font-semibold ${danger ? "text-danger" : ""}`}>{title}</span>

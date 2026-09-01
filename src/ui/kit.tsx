@@ -44,7 +44,7 @@ export function PageHeader({ title, sub, action }: {
 export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn(
-      "rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-sm)] transition-shadow",
+      "rounded-lg bg-card p-5 shadow-[var(--shadow-md)] transition-shadow",
       className)}>
       {children}
     </div>
@@ -109,7 +109,7 @@ export function Empty({ title, hint, action }: {
  *  Scrolls inside its frame on small screens — the page never scrolls sideways. */
 export function DataTable({ head, children }: { head: string[]; children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-[var(--shadow-sm)]">
+    <div className="overflow-x-auto rounded-lg bg-card shadow-[var(--shadow-md)]">
       <table className="w-full min-w-[560px] text-sm">
         <thead className="sticky top-0 z-10">
           <tr className="border-b border-border bg-muted/60 text-left font-mono text-[10.5px] uppercase tracking-[0.07em] text-muted-foreground backdrop-blur">
@@ -135,7 +135,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function TableSkeleton({ rows = 8, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-sm)]">
+    <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow-md)]">
       <div className="border-b border-border bg-muted/60 px-4 py-3">
         <Skeleton className="h-3 w-48" />
       </div>
@@ -161,7 +161,7 @@ export function PageSkeleton({ table = true }: { table?: boolean }) {
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-lg border border-border bg-card p-5">
+            <div key={i} className="rounded-lg bg-card p-5 shadow-[var(--shadow-md)]">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="mt-3 h-7 w-14" />
             </div>

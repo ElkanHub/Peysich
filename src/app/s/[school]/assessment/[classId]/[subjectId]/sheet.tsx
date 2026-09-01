@@ -78,7 +78,7 @@ export function Sheet({ slug, classId, subjectId, roster, comps, initial, bands,
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div className="overflow-x-auto rounded-lg bg-card shadow-[var(--shadow-md)]">
         <table className="w-full border-collapse text-[14px]">
           <thead>
             <tr className="bg-muted/60 text-left">

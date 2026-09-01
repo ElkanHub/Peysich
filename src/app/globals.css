@@ -122,6 +122,15 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* native feel on touch: no grey tap flash, no sideways rubber-banding,
+     no accidental text-zoom on rotate */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-x: none;
+  -webkit-text-size-adjust: 100%;
+}
+/* press feedback everywhere something is pressable — the state layer */
+@media (hover: none) {
+  a:active, button:active { opacity: .82; }
 }
 
 /* tracking tightens as type grows — the Assembly signature */

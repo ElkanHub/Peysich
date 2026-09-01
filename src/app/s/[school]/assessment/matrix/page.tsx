@@ -42,7 +42,7 @@ export default async function Matrix({ params }: { params: Promise<{ school: str
       {Number(published[0]?.n) > 0 && (
         <p className="mb-3 text-sm text-success">{String(published[0].n)} report cards published — parents can view them. Scores are locked.</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div className="overflow-x-auto rounded-lg bg-card shadow-[var(--shadow-md)]">
         <table className="text-xs">
           <thead>
             <tr><th className="px-3 py-2 text-left">Class</th>

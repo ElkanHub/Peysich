@@ -54,7 +54,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="rounded-lg bg-card p-4 shadow-[var(--shadow-md)]">
           <h2 className="font-semibold">Onboarding progress</h2>
           <ul className="mt-2 space-y-1.5 text-sm">
             {stages.map((st) => (
@@ -72,7 +72,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             </form>
           )}
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="rounded-lg bg-card p-4 shadow-[var(--shadow-md)]">
           <h2 className="font-semibold">People & contacts</h2>
           <ul className="mt-2 space-y-1.5 text-sm">
             {people.slice(0, 8).map((u) => (
@@ -133,7 +133,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
 
       <h2 className="mt-8 text-lg font-semibold">Custom plan</h2>
       <p className="text-sm text-muted-foreground">Compose exactly the modules this school pays for, at your price. Overrides above still apply on top.</p>
-      <form action={setCustomPlan.bind(null, id)} className="mt-3 rounded-lg border border-border bg-card p-4">
+      <form action={setCustomPlan.bind(null, id)} className="mt-3 rounded-lg bg-card p-4 shadow-[var(--shadow-md)]">
         <div className="grid grid-cols-3 gap-2 text-sm">
           {MODULE_CATALOG.map((m) => (
             <label key={m.key} className="flex items-center gap-2">

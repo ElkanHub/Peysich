@@ -28,7 +28,7 @@ export default async function PlatformHome() {
         {[["Active schools", active.length], ["Trials", rows.filter((s) => s.status === "trial").length],
           ["Suspended/past due", rows.filter((s) => ["suspended", "past_due"].includes(s.status)).length],
           ["MRR", `GHS ${(mrr / 100).toLocaleString()}`]].map(([l, v]) => (
-          <div key={String(l)} className="rounded-lg border border-border bg-card p-3">
+          <div key={String(l)} className="rounded-lg bg-card p-3 shadow-[var(--shadow-md)]">
             <p className="text-xs text-muted-foreground">{l}</p>
             <p className="mt-0.5 text-xl font-semibold">{String(v)}</p>
           </div>
