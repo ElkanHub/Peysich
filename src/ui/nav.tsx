@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -159,6 +159,71 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
     setDragX(null);
   };
 
+  /* Whole-screen swipe-to-open (phones own the edges for their OS gestures).
+   * A gesture is NOT claimed when it starts inside anything that scrolls or
+   * pans horizontally itself — tables, the timetable, chip rows, canvases,
+   * form controls — so those keep their native behaviour. */
+  const openRef = useRef(open);
+  openRef.current = open;
+  const settledAt = useRef(0); // swallow the ghost click a touch gesture leaves behind
+  useEffect(() => {
+    const ownsHorizontal = (el: EventTarget | null) => {
+      for (let n = el instanceof Element ? el : null; n && n !== document.body; n = n.parentElement) {
+        if (/^(CANVAS|INPUT|TEXTAREA|SELECT)$/.test(n.tagName)) return true;
+        const st = getComputedStyle(n);
+        if (/(auto|scroll)/.test(st.overflowX) && n.scrollWidth > n.clientWidth + 4) return true;
+        if (/none|pan-x/.test(st.touchAction)) return true;
+      }
+      return false;
+    };
+    const onStart = (e: TouchEvent) => {
+      if (window.innerWidth >= 1024 || openRef.current) return;
+      if (ownsHorizontal(e.target)) return;
+      const t = e.touches[0];
+      touch.current = { x: t.clientX, y: t.clientY, horizontal: null, from: "edge", at: null };
+    };
+    const onMove = (e: TouchEvent) => {
+      const s = touch.current;
+      if (!s || s.from !== "edge" || openRef.current) return;
+      const t = e.touches[0];
+      const dx = t.clientX - s.x, dy = t.clientY - s.y;
+      if (s.horizontal === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        s.horizontal = Math.abs(dx) > Math.abs(dy) && dx > 0; // rightward only
+        if (!s.horizontal) { touch.current = null; return; }
+      }
+      if (!s.horizontal) return;
+      s.at = Math.max(0, Math.min(DRAWER_W, dx));
+      setDragX(s.at);
+    };
+    const onEnd = () => {
+      const s = touch.current;
+      if (!s || s.from !== "edge") return;
+      touch.current = null;
+      if (s.at === null) return;
+      settledAt.current = Date.now();
+      if (s.at > 10) {
+        // a touch gesture leaves one synthesized click behind — swallow it
+        // before it "taps" whatever sits under the finger's release point
+        const swallow = (ev: MouseEvent) => { ev.preventDefault(); ev.stopPropagation(); cleanup(); };
+        const cleanup = () => { document.removeEventListener("click", swallow, true); clearTimeout(tm); };
+        document.addEventListener("click", swallow, true);
+        const tm = setTimeout(cleanup, 500);
+      }
+      setOpen(s.at > 72);
+      setDragX(null);
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("touchend", onEnd, { passive: true });
+    document.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+  }, []);
+
   const x = dragX ?? (open ? DRAWER_W : 0); // 0 = closed, DRAWER_W = open
   const dragging = dragX !== null;
 
@@ -176,19 +241,16 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
         <LogoMark size={24} variant="light" />
         <span className="truncate text-[14px] font-semibold text-ink-text-strong">{props.schoolName}</span>
       </div>
-      {/* the edge you swipe from — invisible, always there */}
-      <div className="fixed inset-y-0 left-0 z-40 w-6 print:hidden lg:hidden" style={{ touchAction: "pan-y" }}
-        onTouchStart={(e) => start(e, "edge")} onTouchMove={move} onTouchEnd={end} />
       {/* drawer + scrim, always mounted so the gesture can drive them */}
-      <div className={`fixed inset-0 z-50 lg:hidden print:hidden ${x === 0 && !dragging ? "pointer-events-none" : ""}`}>
+      <div className={`fixed inset-0 z-50 lg:hidden print:hidden ${x === 0 && !dragging ? "pointer-events-none" : ""}`}
+        onTouchStart={(e) => start(e, "drawer")} onTouchMove={move} onTouchEnd={end}>
         <div className="absolute inset-0 bg-black/50"
           style={{ opacity: x / DRAWER_W, transition: dragging ? "none" : "opacity 260ms cubic-bezier(.32,.72,0,1)" }}
-          onClick={() => setOpen(false)} />
+          onClick={() => { if (Date.now() - settledAt.current > 450) setOpen(false); }} />
         <div className="absolute inset-y-0 left-0 w-72 shadow-[var(--shadow-lg)]"
           style={{ transform: `translateX(${x - DRAWER_W}px)`,
             transition: dragging ? "none" : "transform 260ms cubic-bezier(.32,.72,0,1)",
-            touchAction: "pan-y" }}
-          onTouchStart={(e) => start(e, "drawer")} onTouchMove={move} onTouchEnd={end}>
+            touchAction: "pan-y" }}>
           <SidebarInner {...props} onNavigate={() => setOpen(false)} />
           <button onClick={() => setOpen(false)} aria-label="Close menu"
             className="absolute right-3 top-4 rounded-md p-1.5 text-ink-text hover:bg-ink-2">

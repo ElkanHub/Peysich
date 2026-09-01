@@ -125,9 +125,11 @@ body {
   /* native feel on touch: no grey tap flash, no sideways rubber-banding,
      no accidental text-zoom on rotate */
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-x: none;
   -webkit-text-size-adjust: 100%;
 }
+/* on html, not body — this is what stops the browser's own swipe-back
+   gesture from hijacking an in-app swipe */
+html { overscroll-behavior-x: none; }
 /* press feedback everywhere something is pressable — the state layer */
 @media (hover: none) {
   a:active, button:active { opacity: .82; }
