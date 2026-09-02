@@ -73,7 +73,7 @@ export default async function EnrollStudent({ params }: {
             </label>
           </Field>
           <div className="col-span-2 mt-1 flex items-center justify-between border-t border-border pt-4">
-            <Link href={`/students/${id}`} className={btnGhostCls}>Cancel</Link>
+            <Link href={`/students/${id}`} className={btnGhostCls}>Back to the file</Link>
             <SubmitButton className={btnCls} pendingText="Enrolling…">Enrol student</SubmitButton>
           </div>
         </form>

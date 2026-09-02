@@ -19,7 +19,7 @@ import { updateMemberGrants, revokeTeamMember } from "./team-actions";
 import { AddTeamMember } from "./team";
 import { adminAccess, user as userTable } from "@/db/schema";
 import { TAB_KEYS, FEE_ACTION_LABELS, type FeeActionKey } from "@/core/access-const";
-import { Field, PageHeader, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { Field, PageHeader, Badge, Tabs, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { GradingEditor } from "./grading";
 import { LogoUploader } from "./logo";
@@ -72,10 +72,11 @@ function Section({ title, hint, children, defaultOpen, danger }: {
 
 export default async function Settings({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ err?: string }>;
+  searchParams: Promise<{ err?: string; tab?: string }>;
 }) {
   const { school: slug } = await params;
-  const { err } = await searchParams;
+  const { err, tab: rawTab } = await searchParams;
+  const tab = ["school", "academics", "team", "yearend"].includes(rawTab ?? "") ? rawTab! : "academics";
   const { school, user } = await requireSchool(slug, ["admin"]);
   const [teamUsers, teamGrants] = await Promise.all([
     db.select({ id: userTable.id, name: userTable.name, email: userTable.email, username: userTable.username })
@@ -139,6 +140,15 @@ export default async function Settings({ params, searchParams }: {
         <p className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[err]}</p>
       )}
 
+      {/* one page, one job — settings split by decision, tab in the URL */}
+      <Tabs active={tab} tabs={[
+        { key: "academics", label: "Academics", href: "/settings" },
+        { key: "school", label: "School & identity", href: "/settings?tab=school" },
+        { key: "team", label: "Team & access", href: "/settings?tab=team" },
+        { key: "yearend", label: "Year end", href: "/settings?tab=yearend" },
+      ]} />
+
+      {tab === "academics" && <>
       {/* ── 1 · academic calendar ── */}
       <Section title="Academic calendar" defaultOpen={!current}
         hint="Years, terms and their start/end dates — the active term, week numbers and registers follow these">
@@ -189,6 +199,9 @@ export default async function Settings({ params, searchParams }: {
         </form>
       </Section>
 
+      </>}
+
+      {tab === "school" && <>
       {/* ── 2 · school hours ── */}
       <Section title="School hours"
         hint={`The school day runs ${hours.open}–${hours.close} — dashboards count down to closing from this`}>
@@ -203,6 +216,9 @@ export default async function Settings({ params, searchParams }: {
         </p>
       </Section>
 
+      </>}
+
+      {tab === "team" && <>
       {/* ── team & access ── */}
       <div id="team" />
       <Section title="Team & access"
@@ -275,6 +291,9 @@ export default async function Settings({ params, searchParams }: {
         </div>
       </Section>
 
+      </>}
+
+      {tab === "academics" && <>
       {/* ── 3 · structure: levels & classes ── */}
       <Section title="Structure — levels & classes"
         hint="The GES ladder your school runs, each level's classes, class teachers and rooms">
@@ -397,6 +416,9 @@ export default async function Settings({ params, searchParams }: {
         )}
       </Section>
 
+      </>}
+
+      {tab === "academics" && <>
       {/* ── 4 · subjects ── */}
       <Section title="Subjects"
         hint="The curriculum catalogue — renames flow into score sheets, allocations and the timetable">
@@ -458,6 +480,9 @@ export default async function Settings({ params, searchParams }: {
         </p>
       </Section>
 
+      </>}
+
+      {tab === "academics" && <>
       {/* ── 5 · day plan ── */}
       <Section title="Day plan & timetable"
         hint="Per section: teaching mode, the school day's periods and breaks, and section subjects">
@@ -469,6 +494,9 @@ export default async function Settings({ params, searchParams }: {
         <a href="/settings/timetable" className={btnCls + " mt-3 inline-block"}>Open day plan</a>
       </Section>
 
+      </>}
+
+      {tab === "academics" && <>
       {/* ── 6 · assessment scheme ── */}
       <Section title="Assessment scheme"
         hint="Name your class tests, set weights to 100, or shape the preschool skills list">
@@ -480,6 +508,9 @@ export default async function Settings({ params, searchParams }: {
         <a href="/settings/assessment" className={btnCls + " mt-3 inline-block"}>Open assessment scheme</a>
       </Section>
 
+      </>}
+
+      {tab === "academics" && <>
       {/* ── 7 · rooms ── */}
       <Section title="Rooms & facilities"
         hint="Classrooms, labs and halls — seat counts feed enrolment capacity">
@@ -521,6 +552,9 @@ export default async function Settings({ params, searchParams }: {
         </form>
       </Section>
 
+      </>}
+
+      {tab === "academics" && <>
       {/* ── 8 · grading ── */}
       <Section title="Grading scale"
         hint="CA/exam split and the grade bands printed on report cards">
@@ -534,6 +568,9 @@ export default async function Settings({ params, searchParams }: {
             { min: 0, grade: "9", remark: "Fail" }]} />
       </Section>
 
+      </>}
+
+      {tab === "school" && <>
       {/* ── 9 · branding ── */}
       <Section title="Branding & identity"
         hint="Logo, colours, motto and contact lines — on reports, invoices, emails and SMS">
@@ -555,6 +592,9 @@ export default async function Settings({ params, searchParams }: {
         <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>
       </Section>
 
+      </>}
+
+      {tab === "school" && <>
       {/* ── 10 · signatures & stamp ── */}
       <div id="signatures" />
       <Section title="Signatures & school stamp"
@@ -608,6 +648,9 @@ export default async function Settings({ params, searchParams }: {
         </p>
       </Section>
 
+      </>}
+
+      {tab === "yearend" && <>
       {/* ── 11 · year end ── */}
       <Section danger title="Year end — promotion"
         hint="Move every class up, handle repeaters, graduate the top level, open the new year">
@@ -617,6 +660,7 @@ export default async function Settings({ params, searchParams }: {
         </p>
         <a href="/settings/promotion" className={btnCls + " mt-3 inline-block bg-danger"}>Start year-end promotion</a>
       </Section>
+      </>}
     </div>
   );
 }

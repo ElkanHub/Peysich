@@ -149,7 +149,7 @@ export default async function ExitStudent({ params, searchParams }: {
             </label>
           )}
           <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-            <Link href={`/students/${id}`} className={btnGhostCls}>Cancel</Link>
+            <Link href={`/students/${id}`} className={btnGhostCls}>Keep them enrolled</Link>
             <SubmitButton className={btnCls + " bg-danger"} pendingText="Exiting…">Exit student</SubmitButton>
           </div>
         </Card>

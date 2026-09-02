@@ -93,11 +93,34 @@ export function Badge({ children, tone = "default" }: {
   );
 }
 
-export function Empty({ title, hint, action }: {
-  title: string; hint?: string; action?: React.ReactNode;
+/** URL-backed tabs — one page, one job (Assembly v2 §09). Pass hrefs that
+ *  carry the tab in the query string so refresh, back and shared links all
+ *  keep their place. */
+export function Tabs({ tabs, active }: {
+  tabs: { key: string; label: string; href: string }[]; active: string;
+}) {
+  return (
+    <div className="mb-5 flex gap-1 overflow-x-auto border-b border-border">
+      {tabs.map((t) => (
+        <Link key={t.key} href={t.href}
+          className={cn("whitespace-nowrap border-b-2 px-3.5 py-2 text-[14px] font-medium transition-colors",
+            active === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
+          {t.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/** An empty screen is a fork: it either teaches or it loses someone. Icon,
+ *  one line of why this screen will matter, and the action — never bare
+ *  "no data". The dashed outline reads as an invitation, not a box. */
+export function Empty({ title, hint, action, icon }: {
+  title: string; hint?: string; action?: React.ReactNode; icon?: React.ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-dashed border-border-strong bg-card/60 px-8 py-14 text-center">
+      {icon && <div className="mb-3 flex justify-center text-muted-foreground">{icon}</div>}
       <p className="font-medium">{title}</p>
       {hint && <p className="mx-auto mt-1.5 max-w-sm text-[14px] text-muted-foreground">{hint}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}

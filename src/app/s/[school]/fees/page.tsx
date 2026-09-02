@@ -12,7 +12,7 @@ import { canFeeAction } from "@/core/access";
 import { getFeesConfig, ghs } from "@/modules/fees/config";
 import { HowToPay } from "@/modules/fees/how-to-pay";
 import { generateInvoices, sendFeeReminders } from "./actions";
-import { Card, PageHeader, Stat, Empty, Badge, btnCls, btnGhostCls } from "@/ui/kit";
+import { Card, PageHeader, Stat, Empty, Badge, Tabs, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { ChildAvatar } from "@/ui/child-avatar";
 
@@ -22,7 +22,7 @@ const ERR: Record<string, string> = {
 
 export default async function Fees({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ c?: string; f?: string; child?: string; err?: string }>;
+  searchParams: Promise<{ c?: string; f?: string; child?: string; err?: string; tab?: string }>;
 }) {
   const { school: slug } = await params;
   const sp = await searchParams;
@@ -255,6 +255,16 @@ export default async function Fees({ params, searchParams }: {
     row.n++; byCashier.set(k, row);
   }
 
+  // one page, one job: Today (the drawer), Ledger (the roster), Reminders (the chase)
+  const tab = ["today", "ledger", "reminders"].includes(sp.tab ?? "") ? sp.tab! : "today";
+  const studentById = new Map(roster.map((r) => [r.id, r]));
+  const classNameById = new Map(cls.map((c) => [c.id, c.name]));
+  const overdueRows = overdue
+    .map((i) => ({ i, s: studentById.get(i.studentId) }))
+    .filter((x) => x.s)
+    .sort((a, b) => (a.i.dueDate! < b.i.dueDate! ? -1 : 1));
+  const daysLate = (due: string) => Math.max(1, Math.floor((Date.now() - new Date(due + "T00:00:00").getTime()) / 86400000));
+
   return (
     <div className="max-w-4xl">
       <PageHeader title="Fees"
@@ -264,6 +274,13 @@ export default async function Fees({ params, searchParams }: {
         <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[sp.err]}</p>
       )}
 
+      <Tabs active={tab} tabs={[
+        { key: "today", label: "Today", href: "/fees" },
+        { key: "ledger", label: "Ledger", href: "/fees?tab=ledger" },
+        { key: "reminders", label: overdue.length ? `Reminders · ${overdue.length}` : "Reminders", href: "/fees?tab=reminders" },
+      ]} />
+
+      {tab === "today" && <>
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Collected this term" value={ghs(Number(t.paid))} tone="success" />
         <Stat label="Outstanding" value={ghs(Number(t.billed) - Number(t.paid))}
@@ -274,14 +291,12 @@ export default async function Fees({ params, searchParams }: {
       </div>
 
       {overdue.length > 0 && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/60 bg-warning-soft px-4 py-2.5 text-[13.5px]">
-          <span><b>{overdue.length}</b> student{overdue.length === 1 ? " is" : "s are"} past the due date.</span>
-          <form action={sendFeeReminders.bind(null, slug)}>
-            <SubmitButton className={btnCls + " bg-warning"} pendingText="Sending…">
-              Send SMS reminders to their guardians
-            </SubmitButton>
-          </form>
-        </div>
+        <p className="mb-5 rounded-lg border border-warning/60 bg-warning-soft px-4 py-2.5 text-[13.5px]">
+          <b>{overdue.length}</b> student{overdue.length === 1 ? " is" : "s are"} past the due date —{" "}
+          <Link href="/fees?tab=reminders" className="font-semibold text-warning underline-offset-2 hover:underline">
+            open Reminders to chase them
+          </Link>.
+        </p>
       )}
 
       {Number(t.n) === 0 && (
@@ -300,15 +315,18 @@ export default async function Fees({ params, searchParams }: {
         </Card>
       )}
 
+      </>}
+
+      {tab === "ledger" && <>
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {clsOrdered.map((c) => (
-          <Link key={c.id} href={`/fees?c=${c.id}${sp.f ? `&f=${sp.f}` : ""}`}
+          <Link key={c.id} href={`/fees?tab=ledger&c=${c.id}${sp.f ? `&f=${sp.f}` : ""}`}
             className={`rounded-full px-3 py-1 text-[13px] font-medium ${c.id === activeCls?.id
               ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             {c.name}
           </Link>
         ))}
-        <Link href={`/fees?c=${activeCls?.id ?? ""}${sp.f ? "" : "&f=due"}`}
+        <Link href={`/fees?tab=ledger&c=${activeCls?.id ?? ""}${sp.f ? "" : "&f=due"}`}
           className={`ml-auto rounded-full px-3 py-1 text-[13px] font-medium ${sp.f
             ? "bg-warning text-white" : "border border-border hover:bg-muted"}`}>
           {sp.f ? "Showing owing only" : "Only owing"}
@@ -358,8 +376,10 @@ export default async function Fees({ params, searchParams }: {
           </tbody>
         </table></div>
       </Card>
+      </>}
 
-      <Card className="mt-5">
+      {tab === "today" && <>
+      <Card className="mt-0">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">Day-close · today</h2>
           <span className="text-[12.5px] text-muted-foreground" data-nums="">{live.length} receipts · {ghs(todayTotal)}</span>
@@ -399,6 +419,39 @@ export default async function Fees({ params, searchParams }: {
           </SubmitButton>
         </form>
       )}
+      </>}
+
+      {tab === "reminders" && (overdueRows.length ? <>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/60 bg-warning-soft px-4 py-2.5 text-[13.5px]">
+          <span><b>{overdueRows.length}</b> student{overdueRows.length === 1 ? " is" : "s are"} past the due date.</span>
+          <form action={sendFeeReminders.bind(null, slug)}>
+            <SubmitButton className={btnCls + " bg-warning"} pendingText="Sending…">
+              Send SMS reminders to their guardians
+            </SubmitButton>
+          </form>
+        </div>
+        <Card>
+          <h2 className="font-semibold">Past due, oldest first</h2>
+          <div className="mt-2 divide-y divide-border">
+            {overdueRows.map(({ i, s }) => (
+              <div key={i.id} className="flex flex-wrap items-center gap-3 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold">{s!.lastName}, {s!.firstName}</span>
+                  <span className="text-[12.5px] text-muted-foreground">
+                    {classNameById.get(s!.classId ?? "") ?? "—"} · owes <b className="text-danger" data-nums="">{ghs(i.total - i.paid)}</b>
+                  </span>
+                </span>
+                <Badge tone="danger">{daysLate(i.dueDate!)} day{daysLate(i.dueDate!) === 1 ? "" : "s"} late</Badge>
+                <Link href={`/fees/invoice/${i.id}`} className={btnGhostCls + " px-2.5 py-1 text-[12.5px]"}>Open</Link>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </> : (
+        <Empty title="Nobody is past due"
+          hint="When an invoice passes its due date, the guardian appears here — one tap from an SMS reminder. Due dates come from Catalog & settings."
+          icon={<Settings2 size={28} strokeWidth={1.6} />} />
+      ))}
     </div>
   );
 }

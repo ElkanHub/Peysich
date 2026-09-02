@@ -100,7 +100,7 @@ export default async function EditStudent({ params, searchParams }: {
 
         <div className="flex items-center gap-3">
           <SubmitButton className={btnCls} pendingText="Saving…">Save student file</SubmitButton>
-          <Link href={`/students/${id}`} className={btnGhostCls}>Cancel</Link>
+          <Link href={`/students/${id}`} className={btnGhostCls}>Back to the file</Link>
         </div>
       </form>
     </div>

@@ -101,7 +101,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
         })}
 
         <div className="flex items-center justify-between">
-          <Link href="/settings" className={btnGhostCls}>Cancel</Link>
+          <Link href="/settings" className={btnGhostCls}>Keep everything as it is</Link>
           <SubmitButton className={btnCls + " bg-danger"} pendingText="Promoting…">Run promotion</SubmitButton>
         </div>
       </form>
