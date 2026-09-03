@@ -50,7 +50,32 @@ export const plans = pgTable("plans", {
   /** @deprecated superseded by monthly/yearly pricing; kept for history */
   pricePerTermPesewas: integer("price_per_term_pesewas").notNull().default(0),
   active: boolean("active").notNull().default(true),
+  /** Shown on the marketing page and in every school's Billing page. Custom
+   *  (negotiated) plans are private: bound to ONE school via schoolId. */
+  isPublic: boolean("is_public").notNull().default(true),
+  schoolId: text("school_id"),
 });
+
+/** Requests from schools (and the public website): "build me a custom plan"
+ *  and "I want to cancel — here's why". One shape, a kind column; every row
+ *  is read by a person and carries a phone number to call. */
+export const planRequests = pgTable("plan_requests", {
+  id: text("id").primaryKey(),
+  schoolId: text("school_id").references(() => schools.id, { onDelete: "set null" }),
+  kind: text("kind").notNull(), // custom | cancel
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  schoolName: text("school_name"),
+  moduleKeys: jsonb("module_keys").$type<string[]>().notNull().default([]),
+  sizeBand: text("size_band"),
+  estimatePesewas: integer("estimate_pesewas").notNull().default(0),
+  cycle: text("cycle").notNull().default("monthly"),
+  reason: text("reason"),   // cancel: the compulsory why
+  message: text("message"), // free text — compulsory on cancel
+  source: text("source").notNull().default("app"), // app | website
+  status: text("status").notNull().default("new"), // new|contacted|negotiating|approved|declined|closed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("plan_requests_status_idx").on(t.status, t.createdAt)]);
 
 // Switchboard: per-school override of the plan's module set
 export const switchMode = pgEnum("switch_mode", ["on", "off"]);

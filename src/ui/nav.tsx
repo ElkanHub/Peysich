@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutButton, SwitchAccountButton } from "./signout";
+import { ProductTour, TourRelaunch } from "./tour";
 
 const ICONS: Record<string, LucideIcon> = {
   Dashboard: LayoutDashboard, Students: Users, Guardians: HeartHandshake,
@@ -24,6 +25,7 @@ const ICONS: Record<string, LucideIcon> = {
   Admissions: UserPlus, Library, Transport: Bus, Inventory: Boxes,
   "Staff HR": Briefcase, Analytics: BarChart3,
   Overview: LayoutDashboard, Schools: School, Onboarding: ListChecks, Leads: Inbox,
+  Plans: ClipboardList, Requests: Inbox,
   Subscriptions: CreditCard, Financials: Banknote, Broadcast: Radio,
   "All users": Users, "Audit log": ScrollText, "My Account": Users,
 };
@@ -63,7 +65,7 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
               const active = isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
               const Icon = ICONS[n.label] ?? LayoutDashboard;
               return (
-                <Link key={n.label + href} href={href} onClick={onNavigate}
+                <Link key={n.label + href} href={href} onClick={onNavigate} data-tour={n.label}
                   className={cn(
                     "group relative flex h-9 items-center gap-3 rounded-full px-3.5 text-[14px] font-medium transition-colors",
                     active
@@ -103,7 +105,7 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
       </div>
       <NavLinks items={items} onNavigate={onNavigate} />
       <div className="border-t border-ink-border p-3">
-        <Link href={accountHref} onClick={onNavigate}
+        <Link href={accountHref} onClick={onNavigate} data-tour="Account"
           className="flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-ink-2">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-active text-[12px] font-semibold uppercase text-ink-text-strong">
             {avatarUrl
@@ -117,7 +119,7 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
           </span>
         </Link>
         <div className="flex items-center justify-between gap-2 px-2 pt-1">
-          <SignOutButton /><SwitchAccountButton /><ThemeToggle />
+          <SignOutButton /><SwitchAccountButton /><TourRelaunch /><ThemeToggle />
         </div>
       </div>
     </div>
@@ -258,6 +260,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
           </button>
         </div>
       </div>
+      <ProductTour role={props.role} schoolName={props.schoolName} setDrawerOpen={setOpen} />
     </>
   );
 }

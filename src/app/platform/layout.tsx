@@ -9,6 +9,8 @@ const NAV = [
   { label: "Schools", href: "/platform/schools" },
   { label: "Onboarding", href: "/platform/onboarding" },
   { label: "Leads", href: "/platform/leads" },
+  { label: "Plans", href: "/platform/plans" },
+  { label: "Requests", href: "/platform/requests" },
   { label: "Subscriptions", href: "/platform/subscriptions" },
   { label: "Financials", href: "/platform/financials" },
   { label: "Broadcast", href: "/platform/broadcast" },

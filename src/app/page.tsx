@@ -21,6 +21,13 @@ import { LogoLockup } from "@/ui/logo";
 import { LeadForm } from "./lead-form";
 import { FeatureTabs } from "./feature-tabs";
 import { HeroBackdrop } from "./hero-backdrop";
+import { PricingCards } from "./pricing-section";
+import { PlanBuilder } from "@/modules/plans/builder";
+import { getPublicPlans } from "@/core/plans-cache";
+import { submitPublicPlanRequest } from "./plan-request-actions";
+import {
+  ADDON_MODULES, ADDON_PRICES, BASE_PESEWAS, CORE_MODULES, MODULE_LABELS, SIZE_BANDS,
+} from "@/core/plan-const";
 
 /* The wine the whole app runs on, as marketing gradients. */
 const GRAD_TEXT =
@@ -114,48 +121,10 @@ const TRUST = [
   },
 ];
 
-const PLANS = [
-  {
-    name: "Starter",
-    price: "99",
-    popular: false,
-    tagline: "The office essentials, digital at last",
-    feats: [
-      "Student records & files",
-      "30-second attendance + record book",
-      "Report cards & releases",
-      "Announcements & acknowledgements",
-    ],
-  },
-  {
-    name: "Standard",
-    price: "249",
-    popular: true,
-    tagline: "The whole school day, connected",
-    feats: [
-      "Everything in Starter",
-      "Timetable, calendar & clash detection",
-      "Homework records for parents",
-      "Fees with Mobile Money",
-      "SMS & email blasts",
-    ],
-  },
-  {
-    name: "Premium",
-    price: "499",
-    popular: false,
-    tagline: "Every department on one platform",
-    feats: [
-      "Everything in Standard",
-      "Admissions pipeline",
-      "Library & transport",
-      "Staff HR",
-      "Advanced analytics",
-    ],
-  },
-] as const;
 
-export default function Home() {
+
+export default async function Home() {
+  const publicPlans = await getPublicPlans();
   return (
     <main className="light-scope bg-background text-foreground">
       {/* ── nav ── */}
@@ -449,74 +418,37 @@ export default function Home() {
             Pricing
           </p>
           <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-            Simple pricing, per month.
+            Simple pricing. Nothing hidden.
           </h2>
           <p className="mt-3 text-[14.5px] text-muted-foreground">
-            Pay monthly, or yearly with two months free. Cancel any time.
+            Pay monthly, or yearly with two months free. Every plan shows everything it includes — nothing hidden. Cancel any time.
           </p>
         </div>
-        <div className="grid items-stretch gap-5 md:grid-cols-3">
-          {PLANS.map(({ name, price, tagline, feats, popular }) => (
-            <div
-              key={name}
-              className={`relative flex flex-col rounded-2xl p-[1.5px] ${popular ? GRAD_PANEL + " shadow-[var(--shadow-lg)]" : ""}`}
-            >
-              <div
-                className={`flex h-full flex-col rounded-[15px] bg-card p-6 ${popular ? "" : "border border-border shadow-[var(--shadow-sm)]"}`}
-              >
-                {popular && (
-                  <span
-                    className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11.5px] font-semibold text-white shadow-[var(--shadow-md)] ${GRAD_PANEL}`}
-                  >
-                    Most popular
-                  </span>
-                )}
-                <p className="font-semibold">{name}</p>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  {tagline}
-                </p>
-                <p
-                  className="mt-4 text-[34px] font-semibold tracking-tight"
-                  data-nums=""
-                >
-                  <span className={popular ? GRAD_TEXT : ""}>GHS {price}</span>
-                  <span className="text-[14px] font-normal text-muted-foreground">
-                    /month
-                  </span>
-                </p>
-                <ul className="mt-5 flex-1 space-y-2.5">
-                  {feats.map((f2) => (
-                    <li
-                      key={f2}
-                      className="flex items-start gap-2 text-[13.5px] leading-snug"
-                    >
-                      <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
-                        <Check size={11} strokeWidth={3} />
-                      </span>
-                      {f2}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/signup"
-                  className={`mt-6 block rounded-lg py-2.5 text-center text-sm font-semibold transition-all ${
-                    popular
-                      ? "text-white shadow-[var(--shadow-md)] hover:scale-[1.01] " +
-                        GRAD_PANEL
-                      : "border border-border hover:bg-muted"
-                  }`}
-                >
-                  Get started
-                </Link>
-              </div>
-            </div>
-          ))}
+        <PricingCards plans={publicPlans.map((p) => ({
+          key: p.key, name: p.name,
+          pricePerMonthPesewas: p.pricePerMonthPesewas, pricePerYearPesewas: p.pricePerYearPesewas,
+          studentCap: p.studentCap, moduleKeys: p.moduleKeys,
+        }))} moduleLabels={MODULE_LABELS} gradText={GRAD_TEXT} gradPanel={GRAD_PANEL} />
+
+        {/* ── build-your-own — the same builder schools use inside the app ── */}
+        <div id="builder" className="mx-auto mt-16 max-w-4xl scroll-mt-20">
+          <div className="mx-auto mb-8 max-w-2xl text-center">
+            <h3 className="text-[24px] font-semibold leading-tight tracking-tight">
+              None of these fit? Build your own.
+            </h3>
+            <p className="mt-2 text-[14.5px] text-muted-foreground">
+              Tick exactly what your school needs and see a live estimate. Send it in and
+              we&apos;ll call you within one working day to agree the final price.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] sm:p-8">
+            <PlanBuilder mode="public"
+              coreLabels={CORE_MODULES.map((k) => MODULE_LABELS[k])}
+              addons={ADDON_MODULES.map((k) => ({ key: k, label: MODULE_LABELS[k], pricePesewas: ADDON_PRICES[k] }))}
+              bands={SIZE_BANDS} basePesewas={BASE_PESEWAS}
+              action={submitPublicPlanRequest} />
+          </div>
         </div>
-        <p className="mt-7 text-center text-[14px] text-muted-foreground">
-          Bigger school or specific needs?{" "}
-          <span className="font-medium text-foreground">Custom plans</span>{" "}
-          compose exactly the modules you want.
-        </p>
       </section>
 
       {/* ── final CTA + lead capture ── */}

@@ -204,6 +204,13 @@
       "when": 1788202513399,
       "tag": "0028_fearless_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1788443885020,
+      "tag": "0029_purple_tarantula",
+      "breakpoints": true
     }
   ]
 }

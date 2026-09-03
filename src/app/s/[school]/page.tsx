@@ -4,7 +4,7 @@ import { db } from "@/db";
 import {
   students, staff, classes, subjects, staffNudges, timetableEntries, periodSlots,
   assignments, submissions, announcements, events, attendanceRecords, feeInvoices,
-  scorePublications,
+  scorePublications, feeItems,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getStructure } from "@/core/academics";
@@ -14,6 +14,7 @@ import { Card, PageHeader, Stat } from "@/ui/kit";
 import { ChildAvatar } from "@/ui/child-avatar";
 import { TermPulseBar } from "@/ui/term-pulse-bar";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { SetupChecklist } from "./setup-checklist";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -392,6 +393,20 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active")))
       .groupBy(students.classId),
   ]);
+  const [[feeItemCount], [invitedTeachers]] = await Promise.all([
+    db.select({ n: sql<number>`count(*)` }).from(feeItems).where(eq(feeItems.schoolId, school.id)),
+    db.select({ n: sql<number>`count(*)` }).from(staff)
+      .where(and(eq(staff.schoolId, school.id), sql`${staff.userId} is not null`)),
+  ]);
+  const docSign = (school.settings as { docSign?: { headSigKey?: string; adminSigKey?: string } }).docSign ?? {};
+  const setupItems = [
+    { key: "classes", label: "Create your classes", href: "/settings", done: allCls.length > 0 },
+    { key: "students", label: "Add your first students", href: "/students", done: Number(st.n) > 0 },
+    { key: "colour", label: "Pick your school colour", href: "/settings?tab=school", done: !!school.branding.primaryColor },
+    { key: "signature", label: "Collect the head teacher's signature", href: "/settings?tab=school", done: !!(docSign.headSigKey || docSign.adminSigKey) },
+    { key: "fees", label: "Set the fee catalog", href: "/fees/setup", done: Number(feeItemCount.n) > 0 },
+    { key: "teachers", label: "Invite your teachers", href: "/staff", done: Number(invitedTeachers.n) > 0 },
+  ];
   const f = fees[0];
   const rosterN = new Map(rosters.map((r) => [r.classId, Number(r.n)]));
   const attByClass = new Map(attToday.map((a) => [a.classId, a]));
@@ -399,23 +414,21 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
   const presentToday = attToday.reduce((a, r) => a + Number(r.present), 0);
   const totalToday = attToday.reduce((a, r) => a + Number(r.total), 0);
   const outstanding = Number(f.billed) - Number(f.paid);
-  const setupNeeded = !term || allCls.length === 0 || Number(st.n) === 0;
 
   return (
     <div>
       <PageHeader title="Dashboard" sub={sub} />
       <TermPulseBar school={school} />
-      {setupNeeded && (
+      {!term && (
         <Card className="mb-6">
-          <p className="font-medium">Get {school.name} running</p>
-          <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-muted-foreground">
-            {!term && <li><Link className="text-primary hover:underline" href="/settings">Set up your academic year & term dates</Link></li>}
-            {allCls.length === 0 && <li><Link className="text-primary hover:underline" href="/settings">Choose your levels — classes & subjects are created for you</Link></li>}
-            <li><Link className="text-primary hover:underline" href="/staff">Add your staff</Link></li>
-            {Number(st.n) === 0 && <li><Link className="text-primary hover:underline" href="/students/import">Import students (CSV)</Link> or <Link className="text-primary hover:underline" href="/students/new">add them one by one</Link></li>}
-          </ol>
+          <p className="font-medium">First things first</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            <Link className="font-medium text-primary hover:underline" href="/settings">Set up your academic year & term dates</Link>
+            {" "}— everything else hangs on the calendar.
+          </p>
         </Card>
       )}
+      <SetupChecklist schoolName={school.name} items={setupItems} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Active students" value={String(st.n)} />
