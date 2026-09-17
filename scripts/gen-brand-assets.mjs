@@ -22,11 +22,28 @@ import { MARK_BODY, MARK_WEDGE_TOP, MARK_WEDGE_BOTTOM, WINE, INK } from "../src/
 // require() honours NODE_PATH, so a globally installed playwright works too
 const { chromium } = createRequire(import.meta.url)("playwright");
 const ROOT = new URL("..", import.meta.url).pathname;
-// the wordmark in Geist when a built font file exists (next/font emits one), system sans otherwise
-import { readdirSync, existsSync } from "node:fs";
-const media = ROOT + ".next/static/media";
-const geist = existsSync(media) ? readdirSync(media).find((f) => f.endsWith(".woff2")) : null;
-const GEIST_URL = geist ? "file://" + media + "/" + geist : "";
+// the wordmark in Geist when a build has run (next/font emits the file and a
+// CSS @font-face naming it) — embedded as a data URI so the render can use it
+import { readdirSync, existsSync, readFileSync } from "node:fs";
+const GEIST_URL = (() => {
+  // Turbopack writes CSS under static/chunks, webpack under static/css
+  const files = [".next/static/css", ".next/static/chunks"].map((d) => ROOT + d).filter(existsSync)
+    .flatMap((d) => readdirSync(d).filter((f) => f.endsWith(".css")).map((f) => d + "/" + f));
+  for (const f of files) {
+    const css = readFileSync(f, "utf8");
+    // next/font splits Geist into unicode subsets — the wordmark needs the Latin one
+    const faces = [...css.matchAll(/@font-face\{[^}]*\}/g)].map((x) => x[0])
+      .filter((x) => /font-family:Geist;/.test(x));
+    const latin = faces.find((x) => /unicode-range:U\+(\?\?|0+-(FF|00FF))/i.test(x)) // "U+??" = Google's Latin block || faces.find((x) => !/unicode-range/.test(x)) || faces[0];
+    const m = latin && latin.match(/url\(([^)]+?\.woff2)\)/);
+    const url = m && m[1].replace(/["']/g, "");
+    if (url) {
+      const file = ROOT + ".next/static/media/" + url.split("/").pop();
+      if (existsSync(file)) return "data:font/woff2;base64," + readFileSync(file).toString("base64");
+    }
+  }
+  return "";
+})();
 const out = (p) => ROOT + p;
 mkdirSync(out("public/icons"), { recursive: true });
 mkdirSync(out("public/splash"), { recursive: true });
