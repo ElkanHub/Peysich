@@ -216,7 +216,7 @@ Each child-card answers the three parent questions at a glance:
 
 ```mermaid
 flowchart LR
-    A[SMS: “Term 3 fees due for Ama —<br/>pay at stmarys.peysich.com”] --> B[Child card → Pay]
+    A[SMS: “Term 3 fees due for Ama —<br/>pay at stmarys.schoolspec.app”] --> B[Child card → Pay]
     B --> C[Invoice detail:<br/>itemised · paid so far · balance]
     C --> D[Amount: full or partial<br/>if school allows]
     D --> E[Paystack sheet:<br/>MoMo prompt on phone]

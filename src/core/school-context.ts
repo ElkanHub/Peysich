@@ -23,7 +23,7 @@ const OPEN_TABS = new Set(["", "account", "no-access", "go"]);
 /** Which tab this request is for — first segment after any /s/{slug}. */
 async function requestTab(slug: string) {
   const h = await headers();
-  let p = h.get("x-peysich-path") ?? "";
+  let p = h.get("x-schoolspec-path") ?? "";
   if (p.startsWith(`/s/${slug}`)) p = p.slice(`/s/${slug}`.length);
   return p.split("/").filter(Boolean)[0] ?? "";
 }

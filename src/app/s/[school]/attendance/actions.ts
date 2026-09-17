@@ -88,7 +88,7 @@ export async function remindClassTeacher(slug: string, classId: string, f?: Form
   const [t] = await db.select().from(staff).where(eq(staff.id, responsibleId!));
   if (!t) redirect(`${back}?err=noteacher`);
 
-  const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} register for today hasn't been marked yet. Please mark it in Peysich. — ${school.name}`;
+  const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} register for today hasn't been marked yet. Please mark it in SchoolSpec. — ${school.name}`;
   await db.insert(staffNudges).values({
     id: uid(), schoolId: school.id, staffId: t.id,
     kind: "attendance", refId: classId, message, sentBy: user.name,
@@ -98,6 +98,13 @@ export async function remindClassTeacher(slug: string, classId: string, f?: Form
     schoolId: school.id, to: t.phone, kind: "staff-nudge",
     senderId: school.branding.smsSenderId, body: message,
   }]);
+  if (t.userId) {
+    const { pushToUsers } = await import("@/lib/push");
+    await pushToUsers([t.userId], {
+      title: `${cls.name} register`, body: "Today's register isn't marked yet — one minute and it's done.",
+      url: `/attendance/${classId}`, tag: `nudge-${classId}`,
+    });
+  }
   revalidatePath(`/attendance/${classId}`);
   revalidatePath(`/attendance`);
   redirect(`${back}?flash=done`);

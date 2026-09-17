@@ -1,12 +1,12 @@
 # 06 — UI / UX
 
-Stack: **shadcn/ui + Tailwind**, morphed into a Peysich design system. shadcn is copy-in code we
+Stack: **shadcn/ui + Tailwind**, morphed into a SchoolSpec design system. shadcn is copy-in code we
 own, so "morphing" is real: we restyle tokens and refine components once, and every screen
 inherits the premium look.
 
 ## The premium morph (what actually changes)
 
-- **Design tokens first**: a Peysich palette (one confident brand hue + calm neutrals + strict
+- **Design tokens first**: a SchoolSpec palette (one confident brand hue + calm neutrals + strict
   semantic colors for success/warning/danger), a type scale (Inter or Geist), consistent radii,
   and a two-elevation shadow system. All defined as CSS variables → theming and future
   white-labeling are token swaps.
@@ -106,7 +106,7 @@ set in Settings → Branding and consumed by every renderer:
 - **Invoices & receipts (PDF/print)**: school brand header, itemised, numbered, with payment
   method and balance — office-printable.
 - **Emails**: school-branded template (logo + colors) by default for all school→parent/staff
-  mail; Peysich branding only on platform-level mail (billing, system notices).
+  mail; SchoolSpec branding only on platform-level mail (billing, system notices).
 - **SMS**: sender ID = school's registered ID where the gateway allows it; message templates
   prefixed with the school's short name.
 - All rendered via one HTML→PDF pipeline (server-side, output to R2), so a new deliverable type

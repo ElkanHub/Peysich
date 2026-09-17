@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(out, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="peysich-analytics-${tab}-${snap.day}.csv"`,
+      "Content-Disposition": `attachment; filename="schoolspec-analytics-${tab}-${snap.day}.csv"`,
     },
   });
 }

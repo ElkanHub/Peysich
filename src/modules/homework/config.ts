@@ -1,4 +1,4 @@
-/** Homework is a RECORD in Peysich — set and referenced, not done in-app.
+/** Homework is a RECORD in SchoolSpec — set and referenced, not done in-app.
  *  How much gets recorded is the school's choice:
  *  - recordSubmissions: track who handed in (parents can see it)
  *  - recordMarks: also record marks/feedback in-app (off by default — most

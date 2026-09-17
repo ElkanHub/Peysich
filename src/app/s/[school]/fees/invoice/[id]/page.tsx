@@ -140,7 +140,7 @@ export default async function InvoicePage({ params, searchParams }: {
           </p>
         </div>
         <p className="mt-4 border-t border-neutral-200 pt-2 text-center text-[10px] text-neutral-400">
-          Generated for {d.school.name} · Peysich · Issued {d.invoice.createdAt.toISOString().slice(0, 10)} — the lines above will not change.
+          Generated for {d.school.name} · SchoolSpec · Issued {d.invoice.createdAt.toISOString().slice(0, 10)} — the lines above will not change.
         </p>
       </div>
 

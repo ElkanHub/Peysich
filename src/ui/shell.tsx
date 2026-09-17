@@ -38,7 +38,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
       <AppNav schoolName={schoolName} role={role} userName={userName} items={items}
         avatarUrl={avatarUrl} />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 mt-13 flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:mt-0 lg:px-8">
+        <header className="sticky top-0 z-30 mt-[calc(3.25rem+var(--sat))] flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:mt-0 lg:px-8">
           <RouteProgress />
           <Breadcrumbs root={schoolName} />
           {logoUrl && (

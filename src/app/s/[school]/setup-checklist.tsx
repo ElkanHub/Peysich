@@ -14,10 +14,10 @@ export type SetupItem = { key: string; label: string; href: string; done: boolea
 
 export function SetupChecklist({ schoolName, items }: { schoolName: string; items: SetupItem[] }) {
   const [hidden, setHidden] = useState(true); // avoid a flash before we read storage
-  const key = "peysich-setup-dismissed";
+  const key = "schoolspec-setup-dismissed";
 
   useEffect(() => {
-    try { setHidden(!!localStorage.getItem(key)); } catch { setHidden(false); }
+    try { setHidden(!!(localStorage.getItem(key) || localStorage.getItem("peysich-setup-dismissed"))); } catch { setHidden(false); }
   }, []);
 
   const done = items.filter((i) => i.done).length;

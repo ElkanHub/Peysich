@@ -10,7 +10,7 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  // Peysich fields
+  // SchoolSpec fields
   role: text("role").notNull().default("parent"), // platform_admin | admin | teacher | student | parent
   schoolId: text("school_id").references(() => schools.id, { onDelete: "cascade" }), // null = platform staff
   username: text("username").unique(), // school-issued logins (students/parents without email)
@@ -67,3 +67,18 @@ export const verification = pgTable("verification", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+/** Web-push subscriptions — one row per browser/phone a person turned
+ *  notifications on in. The endpoint is the identity; a dead endpoint
+ *  (410/404 from the push service) is deleted on the next send. */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  schoolId: text("school_id").references(() => schools.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("push_subs_user_idx").on(t.userId), index("push_subs_school_idx").on(t.schoolId)]);
+

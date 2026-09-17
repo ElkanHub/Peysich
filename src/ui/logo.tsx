@@ -1,38 +1,38 @@
-/** Peysich brand mark — derived from the official logo: a block "P" with a
- *  wine accent. `variant="light"` (white P) for dark surfaces, `variant="dark"`
- *  (near-black P) for light surfaces; the wine block is constant.
- *  Geometry traced from the source files (4096px masters, normalized ÷4). */
-const WINE = "#5E1D3E";
+import { MARK_VIEWBOX, MARK_BODY, MARK_WEDGE_TOP, MARK_WEDGE_BOTTOM, WINE, INK } from "./mark-paths.mjs";
 
+/** SchoolSpec brand mark — a stepped S with two wine wedges. `variant="light"`
+ *  (white body) for dark surfaces, `variant="dark"` (near-black body) for
+ *  light surfaces, `variant="auto"` follows the canvas; the wine never changes. */
 export function LogoMark({ size = 28, variant = "dark", className }: {
   size?: number; variant?: "light" | "dark" | "auto"; className?: string;
 }) {
-  // "auto" follows the canvas: near-black on light, white in dark mode
-  const p = variant === "light" ? "#FFFFFF"
+  const body = variant === "light" ? "#FFFFFF"
     : variant === "auto" ? "var(--foreground)" : "#0A0A0A";
   return (
-    <svg width={size} height={size} viewBox="0 0 375 375" fill="none"
+    <svg width={size} height={size} viewBox={MARK_VIEWBOX} fill="none"
       className={className} aria-hidden>
-      {/* P: top block + descending stem (sharp corners, as designed) */}
-      <path d="M96 0H278V193H188V375H96V0Z" fill={p} />
-      {/* wine accent block, aligned to the P's right edge and baseline */}
-      <rect x="198" y="209" width="80" height="166" rx="17" fill={WINE} />
+      <path d={MARK_BODY} fill={body} />
+      <path d={MARK_WEDGE_TOP} fill={WINE} />
+      <path d={MARK_WEDGE_BOTTOM} fill={WINE} />
     </svg>
   );
 }
 
-/** App-icon style: mark on a rounded ink tile (favicon, avatars, dark chrome). */
+/** App-icon style: the mark on a rounded ink tile (favicon, avatars, dark chrome). */
 export function LogoTile({ size = 28, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" fill="none" className={className} aria-hidden>
-      <rect width="512" height="512" rx="112" fill="#1A1218" />
-      <g transform="translate(100 68) scale(0.83)">
-        <path d="M96 0H278V193H188V375H96V0Z" fill="#FFFFFF" />
-        <rect x="198" y="209" width="80" height="166" rx="17" fill={WINE} />
+      <rect width="512" height="512" rx="112" fill={INK} />
+      <g transform="translate(64 64) scale(2)">
+        <path d={MARK_BODY} fill="#FFFFFF" />
+        <path d={MARK_WEDGE_TOP} fill={WINE} />
+        <path d={MARK_WEDGE_BOTTOM} fill={WINE} />
       </g>
     </svg>
   );
 }
+
+export const BRAND_NAME = "SchoolSpec";
 
 export function LogoLockup({ size = 28, dark = false }: { size?: number; dark?: boolean }) {
   return (
@@ -40,7 +40,7 @@ export function LogoLockup({ size = 28, dark = false }: { size?: number; dark?: 
       <LogoMark size={size} variant={dark ? "light" : "auto"} />
       <span className={`font-semibold tracking-tight ${dark ? "text-ink-text-strong" : "text-foreground"}`}
         style={{ fontSize: size * 0.72 }}>
-        Peysich
+        {BRAND_NAME}
       </span>
     </span>
   );

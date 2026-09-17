@@ -1,5 +1,8 @@
 # HANDOFF — Owner Setup Checklist
 
+> **Connecting the real domain, email, SMS and push?** The step-by-step guide with the exact
+> DNS records is **[docs/CONNECTIONS.md](docs/CONNECTIONS.md)**. This file is the broader checklist.
+
 Everything only you can do. Each item says where to do it and which env var it fills
 (set env vars in Vercel → Project → Settings → Environment Variables).
 **The app runs fully locally with none of these** (`npm run dev` + local Postgres).
@@ -22,11 +25,11 @@ When you later complete section 1 (real domain + wildcard) and update the two en
 redeploy, subdomain mode takes over automatically — no code changes.
 
 ## 1. Domain & DNS (when you buy the domain)
-- [ ] Buy the domain (e.g. `peysich.com`).
-- [ ] In Vercel: add the project, then add domains `peysich.com`, `www`, and `*.peysich.com`.
+- [ ] Buy the domain (e.g. `schoolspec.app`).
+- [ ] In Vercel: add the project, then add domains `schoolspec.app`, `www`, and `*.schoolspec.app`.
 - [ ] Point the domain's **nameservers to Vercel** (required for wildcard TLS). Vercel shows the
       two NS values when you add the domain.
-- [ ] Set `NEXT_PUBLIC_ROOT_DOMAIN=peysich.com`.
+- [ ] Set `NEXT_PUBLIC_ROOT_DOMAIN=schoolspec.app`.
 
 ## 2. Database — Neon (Phase 0 deploy)
 - [ ] Create a Neon project (region: closest available to Ghana, e.g. AWS eu-west).
@@ -34,10 +37,10 @@ redeploy, subdomain mode takes over automatically — no code changes.
 
 ## 3. Auth (Phase 0 deploy)
 - [ ] Generate a secret: `openssl rand -base64 32` → `BETTER_AUTH_SECRET`.
-- [ ] Set `BETTER_AUTH_URL=https://peysich.com`.
+- [ ] Set `BETTER_AUTH_URL=https://schoolspec.app`.
 - [ ] **Google sign-in**: Google Cloud console → create project → OAuth consent screen
       (external) → Credentials → OAuth client (Web). Authorized redirect URI:
-      `https://peysich.com/api/auth/callback/google` → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+      `https://schoolspec.app/api/auth/callback/google` → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 
 ## 4. File storage — Cloudflare R2 (Phase 1)
 - [ ] Cloudflare account → R2 → create bucket `peysich` → API token (Object Read & Write)
@@ -47,14 +50,14 @@ redeploy, subdomain mode takes over automatically — no code changes.
 - Optional `R2_ENDPOINT` overrides the account URL for any S3-compatible
   store (e.g. MinIO for local dev); leave it unset in production.
 - R2 bucket → Settings → CORS policy: allow `PUT` and `GET` from your app
-  origins (`https://peysich.com`, `https://*.peysich.com`, and your
+  origins (`https://schoolspec.app`, `https://*.schoolspec.app`, and your
   `*.vercel.app` URL while in preview mode) — browsers upload straight to R2
   with presigned URLs, so R2 must accept cross-origin PUTs.
 
 ## 5. Payments — Paystack (*later*, Phase 3)
 - [ ] Register/verify a Paystack business account (needs business KYC docs).
 - [ ] Copy live keys → `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`.
-- [ ] Set webhook URL in Paystack dashboard: `https://peysich.com/api/webhooks/paystack`.
+- [ ] Set webhook URL in Paystack dashboard: `https://schoolspec.app/api/webhooks/paystack`.
 
 ## 6. Email — Resend (*later*, Phase 1–2)
 - [ ] Resend account → verify sending domain (add their DNS records in Vercel DNS)

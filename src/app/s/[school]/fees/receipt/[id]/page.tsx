@@ -88,7 +88,7 @@ export default async function ReceiptPage({ params }: {
           <div className="w-[42%]"><StampSlot url={d.stampUrl} /></div>
         </div>
         <p className="mt-5 border-t border-neutral-200 pt-2 text-center text-[10px] text-neutral-400">
-          Thank you. Keep this receipt — it is your proof of payment. · Peysich
+          Thank you. Keep this receipt — it is your proof of payment. · SchoolSpec
         </p>
       </div>
     </div>

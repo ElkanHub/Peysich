@@ -34,7 +34,7 @@ export function HowToPay({ cfg, schoolName }: { cfg: FeesConfig; schoolName: str
           </p>
         )}
         <p className="mt-2 text-[12px] text-muted-foreground">
-          Peysich never collects school fees on a school&apos;s behalf and will never message you asking for payment.
+          SchoolSpec never collects school fees on a school&apos;s behalf and will never message you asking for payment.
         </p>
       </div>
     </Card>

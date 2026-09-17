@@ -6,7 +6,7 @@ import { uid } from "./utils";
  *  "queued" with cost tracked (re-billable). Keys (HANDOFF.md §6–7) flip both live. */
 
 export async function sendEmail(
-  to: string, subject: string, html: string, fromName = "Peysich",
+  to: string, subject: string, html: string, fromName = "SchoolSpec",
   attachments?: { filename: string; content: Buffer }[],
 ) {
   if (!process.env.RESEND_API_KEY) return { sent: false as const };
@@ -14,7 +14,7 @@ export async function sendEmail(
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: `${fromName} <${process.env.EMAIL_FROM ?? "noreply@peysich.com"}>`,
+      from: `${fromName} <${process.env.EMAIL_FROM ?? "noreply@schoolspec.app"}>`,
       to, subject, html,
       attachments: attachments?.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })),
     }),
@@ -33,7 +33,7 @@ export async function sendSms(opts: {
         method: "POST",
         headers: { "api-key": process.env.SMS_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          sender: (opts.senderId ?? "Peysich").slice(0, 11),
+          sender: (opts.senderId ?? "SchoolSpec").slice(0, 11),
           message: opts.body, recipients: [opts.to],
         }),
       });
@@ -65,7 +65,7 @@ export async function sendEmailBlast(rows: {
           ${r.body.replace(/\n/g, "<br/>")}
         </div>
         <p style="margin-top:16px;color:#9aa1ab;font-size:12px">
-          Sent by ${r.schoolName} via Peysich. If this doesn't concern your child's school, please ignore it.
+          Sent by ${r.schoolName} via SchoolSpec. If this doesn't concern your child's school, please ignore it.
         </p>
       </div>`;
     const { sent } = await sendEmail(r.to, r.subject, html, r.schoolName);

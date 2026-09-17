@@ -17,7 +17,7 @@ export async function createSchoolLogin(opts: {
   email?: string | null; username: string; phone?: string | null;
 }) {
   const username = opts.username.toLowerCase().replace(/[^a-z0-9._-]/g, "");
-  const email = opts.email?.trim() || `${username}@${opts.schoolSlug}.peysich.local`;
+  const email = opts.email?.trim() || `${username}@${opts.schoolSlug}.schoolspec.local`;
   const [dup] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email));
   if (dup) return { error: "An account already exists for this email/username" as const };
   const password = tempPassword();

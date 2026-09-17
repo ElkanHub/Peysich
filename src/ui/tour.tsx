@@ -41,7 +41,7 @@ const SCRIPTS: Record<string, Step[]> = {
   ],
 };
 
-const seenKey = (role: string) => `peysich-tour-done:${role}`;
+const seenKey = (role: string) => `schoolspec-tour-done:${role}`;
 
 function visibleAnchor(anchor: string): DOMRect | null {
   const els = document.querySelectorAll(`[data-tour="${anchor}"]`);
@@ -65,7 +65,7 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
   useEffect(() => {
     if (!script) return;
     let stored = "1";
-    try { stored = localStorage.getItem(seenKey(role)) ?? ""; } catch { /* private mode */ }
+    try { stored = localStorage.getItem(seenKey(role)) ?? localStorage.getItem(`peysich-tour-done:${role}`) ?? ""; } catch { /* private mode */ }
     if (!stored) {
       const t = setTimeout(() => setPhase("welcome"), 700);
       return () => clearTimeout(t);
@@ -73,8 +73,8 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
   }, [role, script]);
   useEffect(() => {
     const relaunch = () => { if (script) setPhase("welcome"); };
-    window.addEventListener("peysich:tour", relaunch);
-    return () => window.removeEventListener("peysich:tour", relaunch);
+    window.addEventListener("schoolspec:tour", relaunch);
+    return () => window.removeEventListener("schoolspec:tour", relaunch);
   }, [script]);
 
   const finish = useCallback(() => {
@@ -105,6 +105,13 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
     return () => { window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure, true); };
   }, [phase, steps, i]);
 
+  // the document knows a tour is running, so other on-open notices (the
+  // announcement gate) wait their turn instead of stacking on top
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-tour", phase !== "idle");
+    if (phase === "idle") window.dispatchEvent(new Event("schoolspec:tour-end"));
+  }, [phase]);
+
   useEffect(() => {
     if (phase === "idle") return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") finish(); };
@@ -120,7 +127,7 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
         role="dialog" aria-modal="true" aria-label="Welcome tour">
         <div className="w-full max-w-md rounded-2xl bg-card p-7 shadow-lg">
           <LogoMark size={40} />
-          <h2 className="mt-4 text-[21px] font-semibold leading-snug">Welcome to {schoolName} on Peysich</h2>
+          <h2 className="mt-4 text-[21px] font-semibold leading-snug">Welcome to {schoolName} on SchoolSpec</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             A two-minute walk shows you where everything lives. You can stop anytime — and take it
             again from the <b>?</b> in the sidebar.
@@ -218,7 +225,7 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
 export function TourRelaunch() {
   return (
     <button type="button" aria-label="Take the tour again"
-      onClick={() => window.dispatchEvent(new Event("peysich:tour"))}
+      onClick={() => window.dispatchEvent(new Event("schoolspec:tour"))}
       className="flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-semibold text-ink-text/70 hover:bg-ink-2 hover:text-ink-text-strong">
       ?
     </button>

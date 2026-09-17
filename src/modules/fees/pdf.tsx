@@ -140,7 +140,7 @@ export function InvoicePdf({ d, logo, student }: { d: InvoiceDoc; logo: Img; stu
         </View>
         <SafetyNote cfg={d.cfg} />
         <Text style={s.foot} fixed>
-          Generated for {d.school.name} · Peysich · Issued {d.invoice.createdAt.toISOString().slice(0, 10)} — the lines above will not change.
+          Generated for {d.school.name} · SchoolSpec · Issued {d.invoice.createdAt.toISOString().slice(0, 10)} — the lines above will not change.
         </Text>
       </Page>
     </Document>
@@ -195,7 +195,7 @@ export function ReceiptPdf({ d, logo, stamp }: { d: ReceiptDoc; logo: Img; stamp
           </View>
         </View>
         <Text style={[s.foot, { left: 30, right: 30 }]} fixed>
-          Thank you. Keep this receipt — it is your proof of payment. · Peysich
+          Thank you. Keep this receipt — it is your proof of payment. · SchoolSpec
         </Text>
       </Page>
     </Document>

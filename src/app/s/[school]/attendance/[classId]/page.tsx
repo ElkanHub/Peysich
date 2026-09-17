@@ -60,7 +60,7 @@ export default async function ClassRegister({ params, searchParams }: {
     return (
       <div className="max-w-lg">
         <PageHeader title={cls.name} sub={`Register · ${today} · everyone starts Present — tap only the exceptions`} />
-        <Register slug={slug} classId={classId} roster={roster} initial={statusMap} />
+        <Register slug={slug} classId={classId} className={cls.name} roster={roster} initial={statusMap} />
       </div>
     );
   }
@@ -71,7 +71,7 @@ export default async function ClassRegister({ params, searchParams }: {
       <div className="max-w-lg">
         <PageHeader title={cls.name}
           sub={`Correcting the register for ${date} — the record will show it was edited by you`} />
-        <Register slug={slug} classId={classId} roster={roster} initial={statusMap} date={date} />
+        <Register slug={slug} classId={classId} className={cls.name} roster={roster} initial={statusMap} date={date} />
       </div>
     );
   }
@@ -150,7 +150,7 @@ export default async function ClassRegister({ params, searchParams }: {
             <b>Mark on behalf of the class teacher</b> — use when the teacher is absent or unreachable.
             The record will show it was marked by you.
           </p>
-          <Register slug={slug} classId={classId} roster={roster} initial={statusMap} />
+          <Register slug={slug} classId={classId} className={cls.name} roster={roster} initial={statusMap} />
         </div>
       </details>
     </div>

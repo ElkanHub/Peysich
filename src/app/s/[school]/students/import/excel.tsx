@@ -49,7 +49,7 @@ function buildTemplate(schoolName: string, classNames: string[]) {
   XLSX.utils.book_append_sheet(wb, students, "Students");
 
   const rules = XLSX.utils.aoa_to_sheet([
-    [`Peysich student collection sheet — ${schoolName}`],
+    [`SchoolSpec student collection sheet — ${schoolName}`],
     ["Fill ONE ROW PER STUDENT on the Students sheet. Row 2 is an example — replace it."],
     ["Columns marked * are required. Dates must be typed as YYYY-MM-DD."],
     [],
@@ -65,7 +65,7 @@ function buildTemplate(schoolName: string, classNames: string[]) {
   ]);
   clsSheet["!cols"] = [{ wch: 40 }];
   XLSX.utils.book_append_sheet(wb, clsSheet, "Classes");
-  XLSX.writeFile(wb, `peysich-students-${schoolName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.xlsx`);
+  XLSX.writeFile(wb, `schoolspec-students-${schoolName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.xlsx`);
 }
 
 type Result = { imported: number; errors: string[] } | { error: string };

@@ -32,7 +32,7 @@ async function main() {
   const mk = (email: string, name: string) =>
     auth.api.signUpEmail({ body: { email, password: "password123", name } });
   const users: [string, string, string, string | null][] = [
-    ["platform@peysich.test", "Platform Owner", "platform_admin", null],
+    ["platform@schoolspec.test", "Platform Owner", "platform_admin", null],
     ["admin@stmarys.test", "Ama Admin", "admin", a],
     ["teacher@stmarys.test", "Kofi Teacher", "teacher", a],
     ["admin@littlestars.test", "Esi Admin", "admin", b],

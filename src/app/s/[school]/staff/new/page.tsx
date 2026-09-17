@@ -207,7 +207,7 @@ function AccessStage({ slug, s }: { slug: string; s: S }) {
     <Card>
       <h2 className="font-semibold">System access</h2>
       <p className="mt-0.5 text-[14px] text-muted-foreground">
-        What can they do in Peysich? Support staff usually need no portal at all — their record still lives here.
+        What can they do in SchoolSpec? Support staff usually need no portal at all — their record still lives here.
       </p>
       <form action={saveAccess.bind(null, slug, s.id)} className="mt-4 grid gap-3">
         <Field label="Portal role">

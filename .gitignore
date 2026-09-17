@@ -7,3 +7,6 @@ build
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# PWA — generated at build by scripts/stamp-sw.mjs
+public/sw.js

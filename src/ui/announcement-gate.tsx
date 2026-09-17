@@ -19,10 +19,17 @@ export function AnnouncementGate({ slug, items }: { slug: string; items: Item[] 
   useEffect(() => {
     if (!items.length) return;
     try {
-      if (sessionStorage.getItem("peysich-ann-gate") === "shown") return;
-      sessionStorage.setItem("peysich-ann-gate", "shown");
-      setOpen(true);
-    } catch { setOpen(true); }
+      if (sessionStorage.getItem("schoolspec-ann-gate") === "shown") return;
+      sessionStorage.setItem("schoolspec-ann-gate", "shown");
+    } catch { /* private mode — show anyway */ }
+    // a first-run tour is on screen: let it finish, then take the turn
+    if (document.documentElement.hasAttribute("data-tour")) {
+      const after = () => setOpen(true);
+      window.addEventListener("schoolspec:tour-end", after, { once: true });
+      return () => window.removeEventListener("schoolspec:tour-end", after);
+    }
+    const t = setTimeout(() => setOpen(true), 0);
+    return () => clearTimeout(t);
   }, [items.length]);
 
   if (!open || !items.length) return null;

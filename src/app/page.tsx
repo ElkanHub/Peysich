@@ -71,7 +71,7 @@ const BENEFITS = [
   {
     icon: ShieldCheck,
     t: "Your school, your subdomain",
-    d: "yourschool.peysich.com — isolated data, daily backups, and records archived term by term, year by year.",
+    d: "yourschool.schoolspec.app — isolated data, daily backups, and records archived term by term, year by year.",
   },
 ];
 
@@ -194,7 +194,7 @@ export default async function Home() {
               <span className={GRAD_TEXT}>before assembly ends.</span>
             </h1>
             <p className="mt-[18px] max-w-[34em] text-[clamp(15px,1vw+7px,17px)] leading-relaxed text-muted-foreground">
-              Peysich runs the whole school from one place — attendance,
+              SchoolSpec runs the whole school from one place — attendance,
               results, fees and parent SMS on your school&apos;s own subdomain.
               Owners see the money, heads see the day, teachers stop pushing
               paper.
@@ -226,12 +226,12 @@ export default async function Home() {
               Geometry lifted from LogoMark — same path, same rect. */}
           {/* <div className="relative">
             <svg viewBox="88 -8 198 391" role="img"
-              aria-label="A Peysich school, seen through the mark"
+              aria-label="A SchoolSpec school, seen through the mark"
               className="mx-auto h-[min(58svh,480px)] w-auto drop-shadow-[0_18px_44px_rgb(25_20_25/0.14)] md:h-[min(84svh,700px)]">
               <defs>
-                <clipPath id="peysich-p"><path d="M96 0H278V193H188V375H96V0Z" /></clipPath>
+                <clipPath id="schoolspec-mark"><path d="M24 19H81Q86 19 86 24V69H176Q181 69 181 74V169Q181 174 176 174H119Q114 174 114 169V124H24Q19 124 19 119V24Q19 19 24 19Z" /></clipPath>
               </defs>
-              <g clipPath="url(#peysich-p)">
+              <g clipPath="url(#schoolspec-mark)">
                 <rect x="96" y="0" width="182" height="375" fill="var(--brand-container)" />
                 <image href="/shots/hero-dashboard.png" x="96" y="0" width="182" height="375"
                   preserveAspectRatio="xMidYMid slice" />
@@ -333,7 +333,7 @@ export default async function Home() {
             <figure className="absolute -bottom-8 -left-6 hidden w-64 overflow-hidden rounded-lg border border-border shadow-[var(--shadow-lg)] md:block">
               <Image
                 src="/shots/dark-dashboard.png"
-                alt="Peysich in dark mode"
+                alt="SchoolSpec in dark mode"
                 width={2040}
                 height={1275}
                 className="w-full"
@@ -468,12 +468,12 @@ export default async function Home() {
               Get a demo
             </p>
             <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-              Ready to see Peysich
+              Ready to see SchoolSpec
               <br />
               in action?
             </h2>
             <p className="mt-3 max-w-sm text-[14.5px] leading-relaxed text-muted-foreground">
-              Leave your number and we&apos;ll call to walk you through Peysich
+              Leave your number and we&apos;ll call to walk you through SchoolSpec
               on your own school&apos;s structure — classes, report cards, fees,
               everything.
             </p>
@@ -579,7 +579,7 @@ export default async function Home() {
             </div>
           </div>
           <p className="mt-10 border-t border-border pt-5 text-[13px] text-muted-foreground">
-            © {new Date().getFullYear()} Peysich. Made for schools in Ghana 🇬🇭
+            © {new Date().getFullYear()} SchoolSpec. Made for schools in Ghana 🇬🇭
           </p>
         </div>
       </footer>

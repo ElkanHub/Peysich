@@ -120,7 +120,7 @@ async function sendOfferEverywhere(
       `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">
         <h2 style="margin:0 0 8px">${school.name}</h2>
         <p style="font-size:15px;line-height:1.6;white-space:pre-line">${message}</p>
-        <p style="color:#888;font-size:12px;margin-top:20px">Sent via Peysich on behalf of ${school.name}.</p>
+        <p style="color:#888;font-size:12px;margin-top:20px">Sent via SchoolSpec on behalf of ${school.name}.</p>
       </div>`, school.name);
   }
   return { phones: phones.length, emails: emails.length };

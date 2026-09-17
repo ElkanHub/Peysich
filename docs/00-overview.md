@@ -1,6 +1,6 @@
 # 00 — The Whole Map
 
-This is the complete picture of what Peysich is, drawn from three inputs:
+This is the complete picture of what SchoolSpec is, drawn from three inputs:
 
 1. **Your requirements** — multi-tenant, modular with a switchboard, 3 plans + custom, self-serve,
    preschool → JHS only, low-cost at scale, fast, premium shadcn UI, stable/predictable layout.
@@ -24,7 +24,7 @@ Everything in the system lives in one of two planes:
 
 ```mermaid
 flowchart TB
-    subgraph PP["PLATFORM PLANE  —  admin.peysich.com  (us)"]
+    subgraph PP["PLATFORM PLANE  —  admin.schoolspec.app  (us)"]
         direction LR
         T1[Tenant management<br/>create / suspend / delete schools]
         T2[Module switchboard<br/>per-school on/off toggles]
@@ -33,7 +33,7 @@ flowchart TB
         T5[Support tools<br/>impersonation, audit logs]
     end
 
-    subgraph SP["SCHOOL PLANE  —  {school}.peysich.com  (them)"]
+    subgraph SP["SCHOOL PLANE  —  {school}.schoolspec.app  (them)"]
         direction LR
         R1[School Admin<br/>full control of their school]
         R2[Teacher<br/>their classes, marks, attendance]
@@ -41,7 +41,7 @@ flowchart TB
         R4[Parent<br/>their children's everything + fees]
     end
 
-    subgraph SS["SELF-SERVE  —  peysich.com  (public)"]
+    subgraph SS["SELF-SERVE  —  schoolspec.app  (public)"]
         direction LR
         M1[Marketing site + pricing]
         M2[Sign up → create school<br/>→ pick plan → pay → onboard]

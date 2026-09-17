@@ -9,11 +9,18 @@ import { uid } from "@/lib/utils";
 
 export async function postAnnouncement(slug: string, f: FormData) {
   const { school, user } = await requireModule(slug, "comms", ["admin", "teacher"]);
+  const title = String(f.get("title"));
+  const classId = String(f.get("classId") || "") || null;
   await db.insert(announcements).values({
-    id: uid(), schoolId: school.id, title: String(f.get("title")),
-    body: String(f.get("body")), classId: String(f.get("classId") || "") || null,
+    id: uid(), schoolId: school.id, title,
+    body: String(f.get("body")), classId,
     createdBy: user.id,
   });
+  // phones that opted in hear it now — the class's people for a class notice,
+  // the whole school otherwise; never the author
+  const { pushToUsers, schoolAudience } = await import("@/lib/push");
+  await pushToUsers(await schoolAudience(school.id, { classId, exclude: user.id }),
+    { title: school.name, body: title, url: "/comms", tag: "announcement" });
   revalidatePath(`/comms`);
   redirect(`/comms?flash=saved`);
 }
@@ -46,6 +53,11 @@ export async function sendBlast(slug: string, f: FormData) {
       schoolId: school.id, to: g.phone, body: `${body} — ${school.name}`,
       kind: "blast", senderId: school.branding.smsSenderId,
     })));
+  }
+  {
+    const { pushToUsers, schoolAudience } = await import("@/lib/push");
+    await pushToUsers(await schoolAudience(school.id, { roles: ["parent"] }),
+      { title: school.name, body: body.slice(0, 140), url: "/comms", tag: "blast" });
   }
   if (viaEmail) {
     const seenE = new Set<string>();

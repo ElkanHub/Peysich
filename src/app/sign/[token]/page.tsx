@@ -29,7 +29,7 @@ export default async function SignOnPhone({ params }: { params: Promise<{ token:
   const shell = (children: React.ReactNode) => (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col px-4 py-6">
       <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {school?.name ?? "Peysich"}
+        {school?.name ?? "SchoolSpec"}
       </p>
       {children}
     </div>

@@ -8,6 +8,7 @@ import { SubmitButton } from "@/ui/feedback";
 import { DocImageUploader } from "../settings/doc-sign";
 import { clearDocImage } from "../settings/docsign-actions";
 import { AccountCards } from "./account-client";
+import { NotificationsCard, InstallCard } from "./pwa-cards";
 
 /** My Account (every role): profile + password — and, for staff, THEIR OWN
  *  signature, submitted right here so nobody queues at the admin's desk. */
@@ -22,6 +23,8 @@ export default async function Account({ params }: { params: Promise<{ school: st
   return (
     <div className="max-w-md space-y-5">
       <PageHeader title="My Account" />
+      <NotificationsCard />
+      <InstallCard />
       <AccountCards />
       {me && (
         <Card>

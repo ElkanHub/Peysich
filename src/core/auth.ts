@@ -31,7 +31,7 @@ export const auth = betterAuth({
     cookieCache: { enabled: true, maxAge: 60 }, // avoids a DB hit per request
   },
   advanced: {
-    // One session cookie across all *.peysich.com subdomains. Only for a real
+    // One session cookie across all *.schoolspec.app subdomains. Only for a real
     // owned domain: browsers reject Domain=.localhost, and vercel.app is on the
     // public-suffix list — both use host-only cookies (preview mode is single-host
     // anyway, so sessions work everywhere there).

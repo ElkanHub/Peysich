@@ -79,7 +79,7 @@ export default async function OfferLetter({ params }: {
           <div className="w-[42%]"><StampSlot url={ds.stampUrl} /></div>
         </div>
         <p className="mt-6 border-t border-neutral-200 pt-2 text-center text-[10px] text-neutral-400">
-          {school.name} · Generated with Peysich
+          {school.name} · Generated with SchoolSpec
         </p>
       </div>
     </div>

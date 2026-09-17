@@ -1,10 +1,12 @@
 {
-  "name": "peysich",
+  "name": "schoolspec",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/stamp-sw.mjs && next build",
+    "sw:stamp": "node scripts/stamp-sw.mjs",
+    "brand:assets": "node scripts/gen-brand-assets.mjs",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
@@ -30,6 +32,7 @@
     "react-dom": "19.2.8",
     "react-hook-form": "^7.85.0",
     "tailwind-merge": "^3.6.0",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
@@ -38,6 +41,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",

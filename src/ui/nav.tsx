@@ -90,12 +90,12 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
   );
 }
 
-function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "Peysich", accountHref = "/account", avatarUrl }: {
+function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "SchoolSpec", accountHref = "/account", avatarUrl }: {
   schoolName: string; role: string; userName: string; items: NavEntry[]; onNavigate?: () => void;
   subtitle?: string; accountHref?: string; avatarUrl?: string | null;
 }) {
   return (
-    <div className="flex h-full flex-col bg-ink">
+    <div className="flex h-full flex-col bg-ink pt-[var(--sat)]">
       <div className="flex items-center gap-2.5 border-b border-ink-border px-4 py-4">
         <LogoMark size={30} variant="light" />
         <div className="min-w-0">
@@ -235,7 +235,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
         <div className="fixed inset-y-0 w-60"><SidebarInner {...props} /></div>
       </aside>
       {/* mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-13 items-center gap-3 bg-ink px-4 py-2.5 print:hidden lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 flex h-[calc(3.25rem+var(--sat))] items-center gap-3 bg-ink px-4 pb-2.5 pt-[calc(0.625rem+var(--sat))] print:hidden lg:hidden">
         <button onClick={() => setOpen(true)} aria-label="Open menu"
           className="rounded-md p-1.5 text-ink-text hover:bg-ink-2">
           <Menu size={20} />

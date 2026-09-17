@@ -16,7 +16,7 @@ Every choice below was screened against four tests: **cheap at scale**, **fast**
 | Payments | **Paystack** *(recommended — decision #3)* | Mobile money + cards in Ghana; subscriptions API; also usable later for schools collecting fees from parents | % per transaction only |
 | Email | **Resend** | 3k emails/mo free; transactional only (invites, receipts, resets) | $0 → $20 |
 | SMS/WhatsApp | Local gateway (e.g. Arkesel/Hubtel) | Prepaid credits **re-billed to schools with 20–30% markup** — never our cost | $0 net |
-| UI | **shadcn/ui + Tailwind**, morphed to a Peysich theme | You own the components (copy-in, not a dependency) — morphing to premium is just tokens + refinement | $0 |
+| UI | **shadcn/ui + Tailwind**, morphed to a SchoolSpec theme | You own the components (copy-in, not a dependency) — morphing to premium is just tokens + refinement | $0 |
 | Validation | **Zod** shared schemas | Same schema validates react-hook-form client-side and server actions server-side — one source of truth | $0 |
 | Cache/queue | **Postgres-first** (no Redis) | At our scale Postgres handles queues (`FOR UPDATE SKIP LOCKED`), counters, and caching; Vercel Cron for scheduled jobs. Add Redis only when measured need appears | $0 |
 
@@ -31,7 +31,7 @@ sequenceDiagram
     participant DB as Neon
     participant R2 as Cloudflare R2
 
-    B->>MW: GET stmarys.peysich.com/attendance
+    B->>MW: GET stmarys.schoolspec.app/attendance
     MW->>MW: subdomain → schoolId (cached)<br/>session → userId + role<br/>module "attendance" enabled? role allowed?
     MW->>P: allowed (school + role in headers)
     P->>DB: one query, school_id scoped, paginated
@@ -52,9 +52,9 @@ sequenceDiagram
 ```
 peysich/
 ├── app/
-│   ├── (marketing)/          # peysich.com — landing, pricing, signup
-│   ├── (platform)/           # admin.peysich.com — our console
-│   └── (school)/             # {school}.peysich.com — tenant dashboards
+│   ├── (marketing)/          # schoolspec.app — landing, pricing, signup
+│   ├── (platform)/           # admin.schoolspec.app — our console
+│   └── (school)/             # {school}.schoolspec.app — tenant dashboards
 │       └── [module routes composed from src/modules/*]
 ├── src/
 │   ├── modules/              # ⭐ the product lives here (see doc 03)

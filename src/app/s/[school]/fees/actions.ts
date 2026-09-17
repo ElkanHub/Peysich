@@ -263,9 +263,9 @@ export async function emailInvoice(slug: string, invoiceId: string) {
       <div style="border:1.5px solid #b45309;border-radius:8px;padding:12px;font-size:13px;margin:14px 0">
         <b style="color:#b45309">⚠ Before you send money electronically:</b> confirm any payment number with the school
         ${cfg.confirmPhone ? `by calling <b>${cfg.confirmPhone}</b>` : "directly"} first. ${school.name} never changes its
-        payment numbers by SMS or email — and Peysich never collects school fees on a school's behalf.
+        payment numbers by SMS or email — and SchoolSpec never collects school fees on a school's behalf.
       </div>
-      <p style="color:#9aa1ab;font-size:12px">Sent by ${school.name} via Peysich.</p>
+      <p style="color:#9aa1ab;font-size:12px">Sent by ${school.name} via SchoolSpec.</p>
     </div>`;
   let sentAny = false;
   for (const g of to) {

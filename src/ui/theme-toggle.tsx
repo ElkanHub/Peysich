@@ -17,7 +17,7 @@ export function ThemeToggle() {
     setDark(next);
     try {
       document.documentElement.classList.toggle("dark", next);
-      localStorage.setItem("peysich-theme", next ? "dark" : "light");
+      localStorage.setItem("schoolspec-theme", next ? "dark" : "light");
     } catch { /* storage blocked — theme still flips for this page */ }
   };
 

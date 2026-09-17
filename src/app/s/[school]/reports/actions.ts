@@ -9,6 +9,12 @@ import { REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { uid } from "@/lib/utils";
 
+async function tellFamilies(schoolId: string, schoolName: string, body: string) {
+  const { pushToUsers, schoolAudience } = await import("@/lib/push");
+  await pushToUsers(await schoolAudience(schoolId, { roles: ["parent", "student"] }),
+    { title: schoolName, body, url: "/reports", tag: "reports" });
+}
+
 /** Release one test's marks to students & parents — recorded per test,
  *  with who released it and when. */
 export async function releaseComponent(slug: string, componentId: string) {
@@ -18,6 +24,7 @@ export async function releaseComponent(slug: string, componentId: string) {
   await db.insert(scorePublications).values({
     id: uid(), schoolId: school.id, termId: term.id, componentId, publishedBy: user.name,
   }).onConflictDoNothing();
+  await tellFamilies(school.id, school.name, "New results are out — open Reports to see them.");
   revalidatePath("/reports"); revalidatePath("/assessment");
   redirect("/reports?flash=done");
 }
@@ -28,6 +35,7 @@ export async function releaseTermReports(slug: string) {
   const term = await getCurrentTerm(school.id);
   if (!term) redirect("/reports");
   await publishTermReports(school.id, term.id);
+  await tellFamilies(school.id, school.name, `${term.name} report cards are ready — open Reports to see them.`);
   revalidatePath("/reports"); revalidatePath("/assessment");
   redirect("/reports?flash=done");
 }
@@ -39,6 +47,7 @@ export async function releasePreschoolReports(slug: string) {
   const term = await getCurrentTerm(school.id);
   if (!term) redirect("/reports");
   const n = await publishPreschoolReports(school.id, term.id);
+  if (n > 0) await tellFamilies(school.id, school.name, `${term.name} reports are ready — open Reports to see them.`);
   revalidatePath("/reports");
   redirect(`/reports?flash=${n > 0 ? "done" : "error"}`);
 }

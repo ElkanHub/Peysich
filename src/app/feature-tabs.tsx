@@ -124,7 +124,7 @@ export function FeatureTabs() {
               <span className="h-2.5 w-2.5 rounded-full bg-warning/50" />
               <span className="h-2.5 w-2.5 rounded-full bg-success/50" />
               <span className="ml-3 hidden rounded-md bg-card px-2.5 py-0.5 text-[11px] text-faint sm:block" data-nums="">
-                stmarys.peysich.com
+                stmarys.schoolspec.app
               </span>
             </div>
             <Image src={tab.img} alt={tab.alt} width={2040} height={1275}

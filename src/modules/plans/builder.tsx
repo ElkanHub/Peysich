@@ -67,7 +67,7 @@ export function PlanBuilder({ mode, coreLabels, addons, bands, basePesewas, defa
         <Phone size={22} className="mx-auto text-success" />
         <p className="mt-2 font-semibold text-success">Request received.</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-          Someone from Peysich will call {mode === "public" ? "the number you gave" : "your school's number"} within
+          Someone from SchoolSpec will call {mode === "public" ? "the number you gave" : "your school's number"} within
           one working day to talk it through and agree a final price. Nothing changes on your account until then.
         </p>
       </div>

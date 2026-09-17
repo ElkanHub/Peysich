@@ -18,7 +18,7 @@ export const MODULE_LABELS: Record<string, string> = {
 };
 export const ALL_MODULES = Object.keys(MODULE_LABELS);
 
-/** Every Peysich school runs on the core — it is never optional. */
+/** Every SchoolSpec school runs on the core — it is never optional. */
 export const CORE_MODULES = ["attendance", "assessment", "comms"];
 export const ADDON_MODULES = ALL_MODULES.filter((k) => !CORE_MODULES.includes(k));
 

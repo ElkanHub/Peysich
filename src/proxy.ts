@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
  * Edge middleware: host→path routing (no DB — layouts do the deep checks).
  *
  * Subdomain mode (a real domain with wildcard DNS):
- *   stmarys.peysich.com/attendance → rewrite → /s/stmarys/attendance
- *   admin.peysich.com/*            → rewrite → /platform/*
+ *   stmarys.schoolspec.app/attendance → rewrite → /s/stmarys/attendance
+ *   admin.schoolspec.app/*            → rewrite → /platform/*
  *
- * Preview mode (no wildcard, e.g. peysich.vercel.app): schools are selected by
+ * Preview mode (no wildcard, e.g. schoolspec.vercel.app): schools are selected by
  * a cookie instead of a subdomain — visit /t/<slug> once to enter a school,
  * /t/exit to leave. Only ROUTING uses the cookie; auth still verifies the
  * signed-in user belongs to that school on every request (school layout).
@@ -16,7 +16,8 @@ import { NextRequest, NextResponse } from "next/server";
 const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
-const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go"];
+const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline"];
+const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.png"]);
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
@@ -25,10 +26,14 @@ export function proxy(req: NextRequest) {
   // the ORIGINAL path rides along as a header so server code (Team & access
   // tab checks) knows which tab a request is for, rewrites included
   const fwd = new Headers(req.headers);
-  fwd.set("x-peysich-path", pathname);
+  fwd.set("x-schoolspec-path", pathname);
   const pass = { request: { headers: fwd } };
 
   if (pathname.startsWith("/api")) return NextResponse.next(pass);
+  // the installable-app files live at the root of EVERY host (a school's
+  // subdomain installs as that school): never rewrite them into a tenant
+  if (GLOBAL.has(pathname) || pathname.startsWith("/icons/") || pathname.startsWith("/splash/"))
+    return NextResponse.next(pass);
 
   if (host === ROOT || host === `www.${ROOT}`) {
     // /t/<slug> — enter a school (preview mode); /t/exit — back to marketing

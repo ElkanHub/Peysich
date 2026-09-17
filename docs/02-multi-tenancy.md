@@ -26,10 +26,10 @@ they live above tenants and are reachable only from `(platform)` routes.
 
 ## Tenant identity & URLs
 
-- **Each school gets a subdomain**: `stmarys.peysich.com` *(decision #4 — recommended over path-based)*.
+- **Each school gets a subdomain**: `stmarys.schoolspec.app` *(decision #4 — recommended over path-based)*.
   - Feels owned/premium to the school; clean cookie + auth scoping; one wildcard DNS record on Vercel.
   - Slug chosen at signup, changeable once via support.
-- `admin.peysich.com` → platform plane. `peysich.com` / `www` → marketing + signup.
+- `admin.schoolspec.app` → platform plane. `schoolspec.app` / `www` → marketing + signup.
 - Custom domains (`portal.stmarys.edu.gh`) become a **premium/custom plan perk** later — Vercel
   supports it natively.
 
@@ -39,14 +39,14 @@ Subdomains are **not** created per school. There is one wildcard record, set up 
 that a "new subdomain" is nothing but a row in our `schools` table:
 
 1. **One-time setup (you, ~15 minutes, in HANDOFF.md):** point the domain's nameservers at
-   Vercel (wildcard domains on Vercel require their nameservers), then add `*.peysich.com` as a
+   Vercel (wildcard domains on Vercel require their nameservers), then add `*.schoolspec.app` as a
    domain on the Vercel project. Vercel issues and renews a wildcard TLS certificate
    automatically. *(Alternative if you prefer keeping DNS at Cloudflare: proxy `*` through
    Cloudflare to Vercel — either works; pick one in HANDOFF.md.)*
-2. **From then on, DNS matches every subdomain automatically.** `anything.peysich.com` already
+2. **From then on, DNS matches every subdomain automatically.** `anything.schoolspec.app` already
    resolves to our app — whether or not a school exists with that slug.
 3. **The app decides what a subdomain means.** Middleware reads the `Host` header on each
-   request, extracts the slug (`stmarys` from `stmarys.peysich.com`), looks it up in `schools`
+   request, extracts the slug (`stmarys` from `stmarys.schoolspec.app`), looks it up in `schools`
    (cached), and either serves that tenant's `(school)` routes or shows a "school not found"
    page. Reserved slugs (`www`, `admin`, `api`, `app`, `mail`, …) are blocked at signup.
 4. **School signup = one DB insert.** The subdomain is live the same second the row exists.

@@ -3,9 +3,9 @@
 /* dark: utilities follow the app's .dark class (ThemeToggle), not the OS */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Assembly — the Peysich design language ────────────────────────────
+/* ── Assembly — the SchoolSpec design language ────────────────────────────
    Material's token engineering (roles, paired on-colours, tonal surfaces)
-   run with Apple's discipline, on Peysich ground: the wine seed, the ink
+   run with Apple's discipline, on SchoolSpec ground: the wine seed, the ink
    rail, the paper. Components reference ROLES; no component names a hex.
    Neutrals carry a 3% wine bias — a school hall, not a server room.
    `.light-scope` re-declares the same light values on a subtree, so the
@@ -29,7 +29,7 @@
   --border: #e9e4e8;
   --border-strong: #d6cfd4;
 
-  /* ink chrome (sidebar / topbars) — Peysich's fixed mark, never reseeds */
+  /* ink chrome (sidebar / topbars) — SchoolSpec's fixed mark, never reseeds */
   --ink: #1a1218;
   --ink-2: #251a23;
   --ink-border: #362737;
@@ -132,6 +132,25 @@ body {
 /* on html, not body — this is what stops the browser's own swipe-back
    gesture from hijacking an in-app swipe */
 html { overscroll-behavior-x: none; }
+
+/* ── installed-app (PWA) polish ─────────────────────────────────────────
+   Safe areas: the ink top bar and the drawer sit under the phone's status
+   bar (statusBarStyle black-translucent), so they pad themselves by the
+   inset. Standalone mode also drops the rubber-band pull-to-refresh that
+   would fight the app's own scroll views. */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+@media (display-mode: standalone) {
+  html { overscroll-behavior-y: none; }
+  body { -webkit-user-select: none; user-select: none; }
+  input, textarea, [contenteditable], .selectable { -webkit-user-select: text; user-select: text; }
+}
+/* phones zoom into any field under 16px — keep the type scale, lift the fields */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea { font-size: max(16px, 1em); }
+}
 /* press feedback everywhere something is pressable — the state layer */
 @media (hover: none) {
   a:active, button:active { opacity: .82; }

@@ -27,10 +27,10 @@ export default async function PlatformLayout({ children }: { children: React.Rea
   if (u.role !== "platform_admin") redirect("/sign-in");
   return (
     <div className="flex min-h-screen">
-      <AppNav schoolName="Peysich Console" subtitle="Platform" role="platform admin"
+      <AppNav schoolName="SchoolSpec Console" subtitle="Platform" role="platform admin"
         userName={u.name} items={NAV} accountHref="/platform/account" />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 mt-13 flex h-12 items-center border-b border-border bg-card/85 px-4 backdrop-blur lg:mt-0 lg:px-8">
+        <header className="sticky top-0 z-30 mt-[calc(3.25rem+var(--sat))] flex h-12 items-center border-b border-border bg-card/85 px-4 backdrop-blur lg:mt-0 lg:px-8">
           <Breadcrumbs root="Console" />
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">{children}

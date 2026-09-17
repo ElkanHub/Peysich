@@ -20,7 +20,7 @@ export const schoolPulse = pgTable("school_pulse", {
 export const schools = pgTable("schools", {
   id: text("id").primaryKey(), // uuidv7, generated in app code
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(), // subdomain: {slug}.peysich.com
+  slug: text("slug").notNull().unique(), // subdomain: {slug}.schoolspec.app
   status: schoolStatus("status").notNull().default("trial"),
   planKey: text("plan_key").notNull().default("trial"),
   // Branding for all deliverables (report cards, invoices, emails, SMS)

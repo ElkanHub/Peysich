@@ -47,8 +47,8 @@ is contained.
 
 | Option | Trade-off |
 |---|---|
-| **A. Subdomain per school** (`stmarys.peysich.com`) ⭐ | Premium feel, clean auth scoping, wildcard DNS on Vercel; slightly more middleware work |
-| B. Path-based (`peysich.com/stmarys`) | Simpler, feels cheaper, cookie scoping is messier |
+| **A. Subdomain per school** (`stmarys.schoolspec.app`) ⭐ | Premium feel, clean auth scoping, wildcard DNS on Vercel; slightly more middleware work |
+| B. Path-based (`schoolspec.app/stmarys`) | Simpler, feels cheaper, cookie scoping is messier |
 
 **Recommendation: A.** It also gives us custom domains as a Premium perk for free later.
 
@@ -70,7 +70,7 @@ schools during the pilot before locking. You can answer "later" here.
 
 ## 7. Product name check
 
-Docs assume **Peysich** (the repo name) is the product/brand. Confirm, or give the real name
+Docs assume **SchoolSpec** (the repo name) is the product/brand. Confirm, or give the real name
 before the marketing site phase.
 
 ---
