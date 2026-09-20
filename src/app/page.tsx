@@ -23,37 +23,37 @@ const FEATURES = [
   {
     n: "①", tag: "mornings, marked", h: "The 30-second register",
     p: "Everyone starts present. The teacher taps only the exceptions, the record book writes itself, and guardians of absentees have an SMS before first period.",
-    cta: "See it marked", more: "works offline too", file: "feat-register.png",
+    cta: "See it marked", more: "works offline too", file: "feat-register.webp",
     alt: "A teacher's hand marking the register on a phone, the class beyond",
   },
   {
     n: "②", tag: "papers that sign themselves", h: "Report cards in one click",
     p: "Scores in; totals, grades and positions out on your own scheme — printed under your crest with the class teacher's signature, the head's signature and the stamp already in place.",
-    cta: "See a report card", more: "released test by test, when you say", file: "feat-reports.png",
+    cta: "See a report card", more: "released test by test, when you say", file: "feat-reports.webp",
     alt: "A printed report card with stamp and pen",
   },
   {
     n: "③", tag: "every cedi, accounted for", h: "Fees parents actually pay",
     p: "Mobile money from any phone, partial payments welcome, receipts kept forever — and the owner sees collected versus outstanding, live.",
-    cta: "See the fees desk", more: "MTN MoMo · AT Money · cards", file: "feat-fees.png",
+    cta: "See the fees desk", more: "MTN MoMo · AT Money · cards", file: "feat-fees.webp",
     alt: "A mother and child on the veranda, paying fees by phone",
   },
   {
     n: "④", tag: "reach every parent", h: "Parents who never miss a notice",
     p: "Announcements that must be acknowledged, a shared calendar, and SMS signed with the school's name — to the phone they already carry.",
-    cta: "See announcements", more: "push notifications in the installed app", file: "feat-parents.png",
+    cta: "See announcements", more: "push notifications in the installed app", file: "feat-parents.webp",
     alt: "A trader reading a school message at her stall",
   },
   {
     n: "⑤", tag: "the week, without clashes", h: "A timetable that catches the clash",
     p: "Place lessons into the school's own day plan; double-bookings are refused before they happen. Teachers, classes and rooms each get their own view.",
-    cta: "See the timetable", more: "", file: "feat-timetable.png",
+    cta: "See the timetable", more: "", file: "feat-timetable.webp",
     alt: "A staff room with the timetable pinned on the corkboard",
   },
 ];
 
 const ROLES = [
-  { file: "role-head.png", h: "Owners & heads", p: "The morning in 90 seconds: every register, money in vs owing, the decisions waiting." },
+  { file: "role-head.webp", h: "Owners & heads", p: "The morning in 90 seconds: every register, money in vs owing, the decisions waiting." },
   { file: "role-teacher.png", h: "Teachers", p: "Their classes, their registers, their score sheets — no one else's paperwork." },
   { file: "role-parent.png", h: "Parents", p: "Their children only: attendance, homework, results, and exactly what's owed." },
   { file: "role-student.png", h: "Students", p: "A “do today” list that puts overdue homework and unread notices first." },
@@ -115,7 +115,7 @@ export default async function Home() {
           Run the school at the speed of the morning
         </h1>
         <p className="mk-hand mk-hand-u mt-2 rotate-[3deg] lg:absolute lg:right-[5%] lg:top-[250px]">→ not paperwork</p>
-        <Riso file="hero-morning.png" ratio="8/3" priority className="mt-[30px]"
+        <Riso file="hero-morning.webp" ratio="8/3" priority className="mt-[30px]"
           alt="A head teacher at the desk in the morning, register open, the compound through the louvres"
           caption="Attendance, results, fees and parents — one calm place." />
         <dl className="mt-14 grid grid-cols-2 border-y border-dashed border-[#221a22] text-left md:grid-cols-4">
