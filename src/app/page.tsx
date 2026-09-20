@@ -1,27 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import {
-  CalendarCheck,
-  GraduationCap,
-  Wallet,
-  Megaphone,
-  ShieldCheck,
-  Layers,
-  Users,
-  BookOpen,
-  HeartHandshake,
-  Sparkles,
-  Check,
-  Lock,
-  Server,
-  History,
-  ArrowRight,
-} from "lucide-react";
-import { LogoLockup } from "@/ui/logo";
+import { Architects_Daughter } from "next/font/google";
+import { LogoMark } from "@/ui/logo";
 import { LeadForm } from "./lead-form";
-import { FeatureTabs } from "./feature-tabs";
-import { HeroBackdrop } from "./hero-backdrop";
-import { PricingCards } from "./pricing-section";
+import { Riso } from "./riso";
 import { PlanBuilder } from "@/modules/plans/builder";
 import { getPublicPlans } from "@/core/plans-cache";
 import { submitPublicPlanRequest } from "./plan-request-actions";
@@ -29,419 +11,221 @@ import {
   ADDON_MODULES, ADDON_PRICES, BASE_PESEWAS, CORE_MODULES, MODULE_LABELS, SIZE_BANDS,
 } from "@/core/plan-const";
 
-/* The wine the whole app runs on, as marketing gradients. */
-const GRAD_TEXT =
-  "bg-[linear-gradient(100deg,#5e1d3e,#8a2f5c_55%,#b0447a)] bg-clip-text text-transparent " +
-  "dark:bg-[linear-gradient(100deg,#c9789f,#d98ab4_55%,#e6a9c8)]";
-const GRAD_PANEL = "bg-[linear-gradient(135deg,#37023c,#5e1d3e_55%,#4a1730)]";
+/* The marketing page runs on its own "drafting paper" language (kraft ground,
+ * squared grid, hand-lettered notes, risograph frames) — see the .mk-* block in
+ * globals.css. Generated art lives in public/marketing/ under the filenames in
+ * docs/MARKETING_IMAGES.md; until a file lands, its frame shows the filename. */
+const hand = Architects_Daughter({ weight: "400", subsets: ["latin"], variable: "--font-hand" });
 
-const STATS = [
-  ["30s", "to mark a whole register"],
-  ["1 click", "from scores to report cards"],
-  ["13", "modules — pay for what you use"],
-  ["4 roles", "admin, teacher, parent, student"],
-] as const;
+const TRIAL_DAYS = 14;
 
-const BENEFITS = [
+const FEATURES = [
   {
-    icon: CalendarCheck,
-    t: "30-second attendance",
-    d: "Everyone starts present — teachers tap only the exceptions. Guardians get absence SMS instantly, and the GES-style record book keeps the whole year.",
+    n: "①", tag: "mornings, marked", h: "The 30-second register",
+    p: "Everyone starts present. The teacher taps only the exceptions, the record book writes itself, and guardians of absentees have an SMS before first period.",
+    cta: "See it marked", more: "works offline too", file: "feat-register.png",
+    alt: "A teacher's hand marking the register on a phone, the class beyond",
   },
   {
-    icon: GraduationCap,
-    t: "Report cards in one click",
-    d: "Continuous assessment + exams on your own grading scheme, released test by test, printed beautifully under your school's brand.",
+    n: "②", tag: "papers that sign themselves", h: "Report cards in one click",
+    p: "Scores in; totals, grades and positions out on your own scheme — printed under your crest with the class teacher's signature, the head's signature and the stamp already in place.",
+    cta: "See a report card", more: "released test by test, when you say", file: "feat-reports.png",
+    alt: "A printed report card with stamp and pen",
   },
   {
-    icon: Wallet,
-    t: "Fees parents actually pay",
-    d: "Mobile money from any phone, partial payments welcome, receipts kept forever — and the dashboard shows collected vs outstanding live.",
+    n: "③", tag: "every cedi, accounted for", h: "Fees parents actually pay",
+    p: "Mobile money from any phone, partial payments welcome, receipts kept forever — and the owner sees collected versus outstanding, live.",
+    cta: "See the fees desk", more: "MTN MoMo · AT Money · cards", file: "feat-fees.png",
+    alt: "A mother and child on the veranda, paying fees by phone",
   },
   {
-    icon: Megaphone,
-    t: "Reach every parent",
-    d: "Announcements that must be acknowledged, events on a shared calendar, SMS and email blasts signed with your school's name.",
+    n: "④", tag: "reach every parent", h: "Parents who never miss a notice",
+    p: "Announcements that must be acknowledged, a shared calendar, and SMS signed with the school's name — to the phone they already carry.",
+    cta: "See announcements", more: "push notifications in the installed app", file: "feat-parents.png",
+    alt: "A trader reading a school message at her stall",
   },
   {
-    icon: Layers,
-    t: "Pay only for what you use",
-    d: "Modules switch on and off per school. Start with records and attendance, grow into timetables, admissions, transport and more.",
-  },
-  {
-    icon: ShieldCheck,
-    t: "Your school, your subdomain",
-    d: "yourschool.schoolspec.app — isolated data, daily backups, and records archived term by term, year by year.",
+    n: "⑤", tag: "the week, without clashes", h: "A timetable that catches the clash",
+    p: "Place lessons into the school's own day plan; double-bookings are refused before they happen. Teachers, classes and rooms each get their own view.",
+    cta: "See the timetable", more: "", file: "feat-timetable.png",
+    alt: "A staff room with the timetable pinned on the corkboard",
   },
 ];
 
 const ROLES = [
-  {
-    icon: Users,
-    t: "Admins run the morning in 90 seconds",
-    d: "A live board of every register, fees collected vs outstanding, one-tap teacher reminders and decision-ready KPIs.",
-  },
-  {
-    icon: BookOpen,
-    t: "Teachers get their day, not paperwork",
-    d: "Their registers, their lessons, their score sheets — scoped to exactly the classes they teach, nothing else.",
-  },
-  {
-    icon: HeartHandshake,
-    t: "Parents see their children, only theirs",
-    d: "Attendance, homework, released results and fees per child — strictly scoped, with SMS when it matters.",
-  },
-  {
-    icon: Sparkles,
-    t: "Students get a dashboard that moves them",
-    d: '"Do today" pulls overdue homework and unread notices to the top — personal, official, action-first.',
-  },
+  { file: "role-head.png", h: "Owners & heads", p: "The morning in 90 seconds: every register, money in vs owing, the decisions waiting." },
+  { file: "role-teacher.png", h: "Teachers", p: "Their classes, their registers, their score sheets — no one else's paperwork." },
+  { file: "role-parent.png", h: "Parents", p: "Their children only: attendance, homework, results, and exactly what's owed." },
+  { file: "role-student.png", h: "Students", p: "A “do today” list that puts overdue homework and unread notices first." },
 ];
 
-const TRUST = [
-  {
-    icon: Lock,
-    t: "Isolated per school",
-    d: "Every school lives on its own subdomain with bank-grade separation — one school can never see another's data.",
-  },
-  {
-    icon: ShieldCheck,
-    t: "Role-scoped everywhere",
-    d: "Teachers see their classes, parents their children, students themselves. Scoping is enforced on every page and every action.",
-  },
-  {
-    icon: Server,
-    t: "Backed up daily",
-    d: "Your records are backed up every day, and published report cards are immutable snapshots that keep their history.",
-  },
-  {
-    icon: History,
-    t: "An archive that lasts",
-    d: "Attendance books, score sheets and reports stay findable per term and per academic year — reference for years to come.",
-  },
+const FAQ = [
+  ["We keep everything in exercise books. How do we start?",
+    "Import students from a spreadsheet or add them one by one — most schools mark their first register the next morning. Classes and subjects are created for you when you choose your levels."],
+  ["Do parents need smartphones?",
+    "No. Fees work from any phone with mobile money, and everything important reaches parents by SMS. The app is a bonus, not a requirement."],
+  ["Is our data safe — and ours?",
+    "Every school lives on its own subdomain with isolated data and daily backups. Report cards are immutable snapshots; the archive stays findable term by term."],
+  ["What happens if the signal drops mid-register?",
+    "The register is saved on the phone and sends itself the moment the network returns. Nothing is lost."],
+  ["What if we downgrade or leave?",
+    "Modules outside the smaller plan close, but nothing is deleted. Cancelling is on your billing page, in plain sight."],
 ];
 
+const ghs = (pesewas: number) => `GHS ${Math.round(pesewas / 100).toLocaleString()}`;
 
+function Btn({ href, children, solid, icon = "→", className = "" }: {
+  href: string; children: React.ReactNode; solid?: boolean; icon?: string; className?: string;
+}) {
+  const cls = `mk-btn ${solid ? "mk-btn-solid" : ""} ${className}`;
+  const inner = <><i aria-hidden>{icon}</i><span>{children}</span></>;
+  return href.startsWith("#") ? <a href={href} className={cls}>{inner}</a> : <Link href={href} className={cls}>{inner}</Link>;
+}
+
+const H2 = "text-[clamp(40px,5.6vw,78px)] font-medium leading-[.98] tracking-[-.035em] text-balance";
 
 export default async function Home() {
-  const publicPlans = await getPublicPlans();
+  const plans = (await getPublicPlans()).filter((p) => p.pricePerMonthPesewas > 0);
+  const year = new Date().getFullYear();
+
   return (
-    <main className="light-scope bg-background text-foreground">
-      {/* ── nav ── */}
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-          <LogoLockup size={30} />
-          <nav className="hidden items-center gap-6 text-[14px] font-medium text-muted-foreground md:flex">
-            <a
-              href="#features"
-              className="transition-colors hover:text-foreground"
-            >
-              Features
-            </a>
-            <a
-              href="#roles"
-              className="transition-colors hover:text-foreground"
-            >
-              For your school
-            </a>
-            <a
-              href="#pricing"
-              className="transition-colors hover:text-foreground"
-            >
-              Pricing
-            </a>
-            <a
-              href="#trust"
-              className="transition-colors hover:text-foreground"
-            >
-              Security
-            </a>
-          </nav>
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/sign-in"
-              className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Sign in
-            </Link>
-            <a
-              href="#demo"
-              className="hidden rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted sm:block"
-            >
-              Get a demo
-            </a>
-            <Link
-              href="/signup"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-brand-strong"
-            >
-              Start free trial
-            </Link>
+    <main className={`light-scope mk-paper min-h-dvh text-[#221a22] ${hand.variable}`}>
+      {/* ── floating nav card ── */}
+      <div className="sticky top-3.5 z-30 flex justify-center px-4">
+        <nav className="flex items-center gap-5 border border-[#221a22] bg-white py-2 pl-3.5 pr-3 shadow-[0_1px_0_#221a22] sm:gap-7" aria-label="Main">
+          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+            <LogoMark size={22} /> SchoolSpec
+          </Link>
+          <div className="hidden gap-[18px] font-mono text-[13px] md:flex">
+            <a href="#features" className="hover:underline underline-offset-4">Features</a>
+            <a href="#pricing" className="hover:underline underline-offset-4">Pricing</a>
+            <a href="#faq" className="hover:underline underline-offset-4">FAQs</a>
+            <Link href="/sign-in" className="hover:underline underline-offset-4">Sign in</Link>
           </div>
-        </div>
-      </header>
+          <Btn href="/signup" solid>Start free</Btn>
+        </nav>
+      </div>
 
-      {/* ── hero: the mark holds the photograph, the grid holds the page ── */}
-      <section className="relative overflow-hidden border-b border-border">
-        <HeroBackdrop />
-
-        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-6 py-8 md:min-h-[calc(100svh-61px)] md:grid-cols-2">
-          <div>
-            <h1 className="text-[clamp(30px,3.6vw+6px,50px)] font-semibold leading-[1.06] tracking-tight">
-              Every register marked,
-              <br />
-              every cedi accounted for
-              <br />
-              <span className={GRAD_TEXT}>before assembly ends.</span>
-            </h1>
-            <p className="mt-[18px] max-w-[34em] text-[clamp(15px,1vw+7px,17px)] leading-relaxed text-muted-foreground">
-              SchoolSpec runs the whole school from one place — attendance,
-              results, fees and parent SMS on your school&apos;s own subdomain.
-              Owners see the money, heads see the day, teachers stop pushing
-              paper.
-            </p>
-            <div className="mt-[26px] flex flex-wrap items-center gap-3">
-              <Link
-                href="/signup"
-                className={`group inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-[15px] font-semibold text-white shadow-[var(--shadow-lg)] transition-transform hover:scale-[1.02] ${GRAD_PANEL}`}
-              >
-                Start your 14-day free trial
-                <ArrowRight
-                  size={16}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-              <a
-                href="#demo"
-                className="rounded-lg border border-border bg-card px-7 py-3.5 text-[15px] font-medium shadow-[var(--shadow-sm)] transition-colors hover:bg-muted"
-              >
-                Get a demo
-              </a>
-            </div>
-            <p className="mt-4 text-[13px] text-faint">
-              No card required · set up in under an hour · cancel any time
-            </p>
-          </div>
-
-          {/* the mark itself: the P is a window onto the school, the wine block stays wine.
-              Geometry lifted from LogoMark — same path, same rect. */}
-          {/* <div className="relative">
-            <svg viewBox="88 -8 198 391" role="img"
-              aria-label="A SchoolSpec school, seen through the mark"
-              className="mx-auto h-[min(58svh,480px)] w-auto drop-shadow-[0_18px_44px_rgb(25_20_25/0.14)] md:h-[min(84svh,700px)]">
-              <defs>
-                <clipPath id="schoolspec-mark"><path d="M24 19H81Q86 19 86 24V69H176Q181 69 181 74V169Q181 174 176 174H119Q114 174 114 169V124H24Q19 124 19 119V24Q19 19 24 19Z" /></clipPath>
-              </defs>
-              <g clipPath="url(#schoolspec-mark)">
-                <rect x="96" y="0" width="182" height="375" fill="var(--brand-container)" />
-                <image href="/shots/hero-dashboard.png" x="96" y="0" width="182" height="375"
-                  preserveAspectRatio="xMidYMid slice" />
-              </g>
-              <rect x="198" y="209" width="80" height="166" rx="17" fill="#5E1D3E" />
-            </svg>
-          </div> */}
-        </div>
-      </section>
-
-      {/* ── stats band ── */}
-      <section className="border-y border-border bg-card">
-        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-8 px-6 py-10 md:grid-cols-4">
-          {STATS.map(([n, l]) => (
-            <div key={l} className="text-center">
-              <p
-                className={`text-[32px] font-semibold tracking-tight ${GRAD_TEXT}`}
-                data-nums=""
-              >
-                {n}
-              </p>
-              <p className="mt-1 text-[13.5px] text-muted-foreground">{l}</p>
+      {/* ── hero ── */}
+      <section className="relative mk-wrap pt-[70px] text-center">
+        <span className="mk-hand absolute left-6 top-6 hidden !text-[12px] md:block">07:30 · assembly</span>
+        <span className="mk-hand absolute right-6 top-6 hidden !text-[12px] md:block">hello@schoolspec.app</span>
+        <p className="mk-hand mk-hand-u -rotate-[4deg] lg:absolute lg:left-[6%] lg:top-[92px]">GES-structured</p>
+        <h1 className="mx-auto mt-2 max-w-[12ch] text-[clamp(46px,8.6vw,124px)] font-medium leading-[.98] tracking-[-.035em] text-balance">
+          Run the school at the speed of the morning
+        </h1>
+        <p className="mk-hand mk-hand-u mt-2 rotate-[3deg] lg:absolute lg:right-[5%] lg:top-[250px]">→ not paperwork</p>
+        <Riso file="hero-morning.png" ratio="8/3" priority className="mt-[30px]"
+          alt="A head teacher at the desk in the morning, register open, the compound through the louvres"
+          caption="Attendance, results, fees and parents — one calm place." />
+        <dl className="mt-14 grid grid-cols-2 border-y border-dashed border-[#221a22] text-left md:grid-cols-4">
+          {[["30s", "to mark a whole register"], ["1 click", "from scores to report cards"], ["MoMo", "fees parents can actually pay"], ["Creche → JHS 3", "the GES structure, built in"]].map(([n, l], i) => (
+            <div key={l} className={`px-[18px] py-[22px] ${i % 2 === 0 ? "border-r border-dashed border-[#221a22]" : ""} ${i === 1 ? "md:border-r" : ""} ${i === 3 ? "md:border-r-0" : ""}`}>
+              <dt className="text-[26px] font-medium tracking-[-.03em] sm:text-[34px]">{n}</dt>
+              <dd className="font-mono text-[12px] text-[#5f5359]">{l}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </section>
 
-      {/* ── feature tabs ── */}
-      <section
-        id="features"
-        className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20"
-      >
-        <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p
-            className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
-          >
-            The platform
-          </p>
-          <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-            Everything a school runs on, flowing together.
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-            No patchwork of spreadsheets and WhatsApp groups. One source of
-            truth for the registers, the marks, the money and the messages.
-          </p>
-        </div>
-        <FeatureTabs />
-      </section>
-
-      {/* ── roles ── */}
-      <section
-        id="roles"
-        className="relative scroll-mt-20 overflow-hidden border-y border-border bg-card"
-      >
-        <div
-          aria-hidden
-          className="absolute -left-40 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,var(--brand-soft),transparent)]"
-        />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-[6fr_6fr]">
-          <div>
-            <p
-              className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
-            >
-              One school, four experiences
-            </p>
-            <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-              Everyone opens the same app.
-              <br />
-              Nobody sees the same thing.
-            </h2>
-            <div className="mt-7 space-y-5">
-              {ROLES.map(({ icon: Icon, t, d }) => (
-                <div key={t} className="flex items-start gap-3.5">
-                  <span
-                    className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[var(--shadow-md)] ${GRAD_PANEL}`}
-                  >
-                    <Icon size={17} />
-                  </span>
-                  <div>
-                    <p className="font-semibold leading-snug">{t}</p>
-                    <p className="mt-0.5 text-[14px] leading-relaxed text-muted-foreground">
-                      {d}
-                    </p>
-                  </div>
-                </div>
-              ))}
+      {/* ── features, alternating ── */}
+      <section id="features" className="mk-wrap scroll-mt-24">
+        {FEATURES.map((f, i) => (
+          <article key={f.h} className="grid items-center gap-7 py-[70px] md:grid-cols-[5fr_7fr] md:gap-12 md:py-[110px]">
+            <div className={i % 2 === 1 ? "md:order-2" : ""}>
+              <p className="mk-hand"><span className="mr-2 text-[#221a22]">{f.n}</span>{f.tag}</p>
+              <h2 className={`${H2} mb-[18px] mt-2.5`}>{f.h}</h2>
+              <p className="max-w-[30em] text-[17px] text-[#5f5359]">{f.p}</p>
+              <Btn href="#demo" icon="▶" className="mt-[26px]">{f.cta}</Btn>
+              {f.more && <span className="mk-hand mt-3.5 block !text-[12px]">↘ {f.more}</span>}
             </div>
-          </div>
-          <div className="relative">
-            <figure className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
-              <Image
-                src="/shots/student-dashboard.png"
-                alt="The student dashboard: identity card, KPIs and a Do-today list"
-                width={2040}
-                height={1275}
-                className="w-full"
-              />
-            </figure>
-            <figure className="absolute -bottom-8 -left-6 hidden w-64 overflow-hidden rounded-lg border border-border shadow-[var(--shadow-lg)] md:block">
-              <Image
-                src="/shots/dark-dashboard.png"
-                alt="SchoolSpec in dark mode"
-                width={2040}
-                height={1275}
-                className="w-full"
-              />
-              <figcaption className="bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground">
-                Dark mode included
-              </figcaption>
-            </figure>
-          </div>
-        </div>
+            <Riso file={f.file} alt={f.alt} />
+          </article>
+        ))}
       </section>
 
-      {/* ── benefits grid ── */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p
-            className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
-          >
-            Why schools switch
-          </p>
-          <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-            Streamlined school days, smarter decisions.
+      {/* ── roles band ── */}
+      <section id="roles" className="border-y border-dashed border-[#221a22] bg-[#DCD1BE] py-[90px]">
+        <div className="mk-wrap">
+          <p className="mk-hand">one sign-in · your own view</p>
+          <h2 className="mt-2.5 max-w-[16ch] text-[clamp(36px,5vw,64px)] font-medium leading-[.98] tracking-[-.035em] text-balance">
+            Four people open SchoolSpec. Each one sees their own school.
           </h2>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {BENEFITS.map(({ icon: Icon, t, d }) => (
-            <div
-              key={t}
-              className="group rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--shadow-lg)]"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <Icon size={18} />
-              </span>
-              <h3 className="mt-4 font-semibold">{t}</h3>
-              <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
-                {d}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── trust ── */}
-      <section id="trust" className={`scroll-mt-20 ${GRAD_PANEL}`}>
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <div className="mx-auto mb-10 max-w-2xl text-center">
-            <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60">
-              Trust & security
-            </p>
-            <h2 className="mt-2 text-[30px] font-semibold leading-tight tracking-tight text-white">
-              A school&apos;s records deserve a vault, not a folder.
-            </h2>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TRUST.map(({ icon: Icon, t, d }) => (
-              <div
-                key={t}
-                className="rounded-xl border border-white/15 bg-white/[0.06] p-5 backdrop-blur-sm"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white">
-                  <Icon size={16} />
-                </span>
-                <h3 className="mt-3.5 font-semibold text-white">{t}</h3>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/70">
-                  {d}
-                </p>
+          <div className="mt-10 grid grid-cols-2 gap-[18px] md:grid-cols-4">
+            {ROLES.map((r) => (
+              <div key={r.h}>
+                <Riso file={r.file} ratio="1/1" alt={r.h} />
+                <h3 className="mt-3 text-[17px] font-semibold">{r.h}</h3>
+                <p className="mt-1 text-[14px] text-[#5f5359]">{r.p}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── pricing ── */}
-      <section
-        id="pricing"
-        className="mx-auto max-w-5xl scroll-mt-20 px-6 py-20"
-      >
-        <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p
-            className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
-          >
-            Pricing
-          </p>
-          <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-            Simple pricing. Nothing hidden.
-          </h2>
-          <p className="mt-3 text-[14.5px] text-muted-foreground">
-            Pay monthly, or yearly with two months free. Every plan shows everything it includes — nothing hidden. Cancel any time.
-          </p>
+      {/* ── proof: the real app, pinned to the paper ── */}
+      <section id="demo" className="mk-wrap scroll-mt-24 py-[110px] text-center">
+        <p className="mk-hand">the real thing, pinned up</p>
+        <h2 className={`${H2} mt-2.5`}>Not a mock-up. This morning&apos;s dashboard.</h2>
+        <figure className="relative mx-auto mt-9 max-w-[1000px] -rotate-[.6deg] border border-[#221a22] bg-white p-2.5 shadow-[6px_6px_0_#221a22]">
+          <span aria-hidden className="absolute -top-3 left-1/2 h-7 w-[110px] -translate-x-1/2 -rotate-2 bg-[#E58A2E]/55" />
+          <Image src="/shots/hero-dashboard.png" alt="The head teacher's dashboard in SchoolSpec: today's registers, fees collected versus outstanding, and the decisions waiting"
+            width={2040} height={1275} className="w-full border border-[#d6cfd4]" sizes="(max-width: 1040px) 100vw, 1000px" />
+        </figure>
+        <div className="mt-12 flex flex-wrap justify-center gap-4">
+          <Btn href="/signup" solid>Start free — {TRIAL_DAYS} days</Btn>
+          <Btn href="#contact" icon="☎">Get a walkthrough</Btn>
         </div>
-        <PricingCards plans={publicPlans.map((p) => ({
-          key: p.key, name: p.name,
-          pricePerMonthPesewas: p.pricePerMonthPesewas, pricePerYearPesewas: p.pricePerYearPesewas,
-          studentCap: p.studentCap, moduleKeys: p.moduleKeys,
-        }))} moduleLabels={MODULE_LABELS} gradText={GRAD_TEXT} gradPanel={GRAD_PANEL} />
+      </section>
 
-        {/* ── build-your-own — the same builder schools use inside the app ── */}
-        <div id="builder" className="mx-auto mt-16 max-w-4xl scroll-mt-20">
-          <div className="mx-auto mb-8 max-w-2xl text-center">
-            <h3 className="text-[24px] font-semibold leading-tight tracking-tight">
-              None of these fit? Build your own.
-            </h3>
-            <p className="mt-2 text-[14.5px] text-muted-foreground">
-              Tick exactly what your school needs and see a live estimate. Send it in and
-              we&apos;ll call you within one working day to agree the final price.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] sm:p-8">
+      {/* ── pricing, from the live plans ── */}
+      <section id="pricing" className="mk-wrap scroll-mt-24 py-[100px]">
+        <h2 className="text-center text-[clamp(24px,3vw,34px)] font-medium tracking-[-.02em] text-balance">
+          Get <u className="decoration-[#E58A2E] decoration-[3px] underline-offset-[5px]">{TRIAL_DAYS} days free</u> when you start today.
+        </h2>
+        <div className="mt-11 grid gap-3.5 md:grid-cols-3 md:items-center md:gap-0">
+          {plans.map((p, i) => {
+            // each card lists what it adds on top of the one before it
+            const prev = plans[i - 1];
+            const extras = p.moduleKeys.filter((k) => !prev || !prev.moduleKeys.includes(k)).map((k) => MODULE_LABELS[k] ?? k);
+            const rows = prev ? [`Everything in ${prev.name}`, ...extras] : extras;
+            const pop = p.key === "standard";
+            const ink = p.key === "premium";
+            const tone = pop ? "bg-[#5E1D3E] text-white border-[#3d1128] md:min-h-[440px]" : ink ? "bg-[#221a22] text-white" : "bg-[#E8DFD0] md:min-h-[390px]";
+            const sub = pop ? "text-[#e8c8da]" : ink ? "text-[#bfb3bb]" : "text-[#5f5359]";
+            return (
+              <div key={p.key} className={`flex flex-col border border-[#221a22] px-[34px] pb-10 pt-[38px] text-center ${tone}`}>
+                <h3 className="text-[26px] font-semibold tracking-[-.02em]">{p.name}</h3>
+                <p className={`mt-1.5 font-mono text-[13px] ${sub}`}>
+                  {ghs(p.pricePerMonthPesewas)} / month · {p.studentCap ? `up to ${p.studentCap} students` : "unlimited students"}
+                </p>
+                <p className={`font-mono text-[11.5px] ${sub}`}>or {ghs(p.pricePerYearPesewas)} / year — 2 months free</p>
+                <ul className="mb-[30px] mt-[26px] text-left">
+                  {rows.map((r) => (
+                    <li key={r} className="border-b border-dashed border-current py-2 text-[14px] font-medium">
+                      <span className="opacity-70">✓ </span>{r}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto">
+                  <Btn href="/signup">{pop ? "Start free" : ink ? "Talk to us" : "Sign up"}</Btn>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-9 text-center font-mono text-[12px] text-[#5f5359]">
+          Every plan lists what it leaves out too · build your own below · cancel any time.
+        </p>
+
+        {/* build-your-own — the same builder schools use inside the app */}
+        <div id="builder" className="mx-auto mt-16 max-w-4xl scroll-mt-24">
+          <p className="mk-hand text-center">none of these fit?</p>
+          <h3 className="mt-2 text-center text-[clamp(28px,3.4vw,40px)] font-medium leading-tight tracking-[-.03em]">Build your own plan.</h3>
+          <p className="mx-auto mt-2 max-w-[38em] text-center text-[15px] text-[#5f5359]">
+            Tick exactly what your school needs and see a live estimate. Send it in and we&apos;ll call you within one working day to agree the final price.
+          </p>
+          <div className="mt-8 border border-[#221a22] bg-white p-6 shadow-[6px_6px_0_#221a22] sm:p-8">
             <PlanBuilder mode="public"
               coreLabels={CORE_MODULES.map((k) => MODULE_LABELS[k])}
               addons={ADDON_MODULES.map((k) => ({ key: k, label: MODULE_LABELS[k], pricePesewas: ADDON_PRICES[k] }))}
@@ -451,136 +235,78 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── final CTA + lead capture ── */}
-      <section
-        id="demo"
-        className="relative scroll-mt-20 overflow-hidden border-t border-border bg-card"
-      >
-        <div
-          aria-hidden
-          className="absolute -right-52 -top-40 h-[480px] w-[480px] rounded-full bg-[radial-gradient(closest-side,var(--brand-soft),transparent)]"
-        />
-        <div className="relative mx-auto grid max-w-5xl items-center gap-10 px-6 py-20 md:grid-cols-2">
+      {/* ── contact band ── */}
+      <section id="contact" className="scroll-mt-24 border-y border-dashed border-[#221a22] bg-[#DCD1BE] py-[90px]">
+        <div className="mk-wrap grid items-center gap-10 md:grid-cols-[5fr_7fr]">
           <div>
-            <p
-              className={`text-[13px] font-semibold uppercase tracking-widest ${GRAD_TEXT}`}
-            >
-              Get a demo
+            <p className="mk-hand">talk to a person</p>
+            <h2 className={`${H2} mt-2.5`}>Get a walkthrough on your own school.</h2>
+            <p className="mt-5 max-w-[30em] text-[17px] text-[#5f5359]">
+              Leave your number and we call to walk you through SchoolSpec on your school&apos;s real structure — classes, report cards, fees, everything. Set up and live in under an hour.
             </p>
-            <h2 className="mt-2 text-[32px] font-semibold leading-tight tracking-tight">
-              Ready to see SchoolSpec
-              <br />
-              in action?
-            </h2>
-            <p className="mt-3 max-w-sm text-[14.5px] leading-relaxed text-muted-foreground">
-              Leave your number and we&apos;ll call to walk you through SchoolSpec
-              on your own school&apos;s structure — classes, report cards, fees,
-              everything.
-            </p>
-            <ul className="mt-6 space-y-2.5">
-              {[
-                "A walkthrough on your school's real structure",
-                "Honest advice on which plan fits",
-                "Set up and live in under an hour",
-              ].map((f2) => (
-                <li key={f2} className="flex items-start gap-2.5 text-[14px]">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
-                    <Check size={12} strokeWidth={3} />
-                  </span>
-                  {f2}
-                </li>
-              ))}
-            </ul>
+            <p className="mk-hand mt-6 !text-[12px]">↘ or write to hello@schoolspec.app</p>
           </div>
-          <LeadForm />
+          <div className="border border-[#221a22] bg-white p-3 shadow-[6px_6px_0_#221a22]">
+            <LeadForm />
+          </div>
         </div>
       </section>
 
-      {/* ── footer ── */}
-      <footer className="border-t border-border bg-background">
-        <div className="mx-auto max-w-6xl px-6 py-12">
-          <div className="grid gap-10 md:grid-cols-[2fr_1fr_1fr]">
-            <div>
-              <LogoLockup size={26} />
-              <p className="mt-3 max-w-xs text-[13.5px] leading-relaxed text-muted-foreground">
-                School management for preschool to JHS — built for how Ghanaian
-                schools actually run.
-              </p>
+      {/* ── faq ── */}
+      <section id="faq" className="mk-wrap grid scroll-mt-24 gap-5 py-[100px] md:grid-cols-[5fr_7fr] md:gap-12">
+        <div>
+          <p className="mk-hand">need help?</p>
+          <h2 className={`${H2} mt-2.5`}>Fair questions, straight answers</h2>
+          <a href="mailto:hello@schoolspec.app" className="mk-hand mk-hand-u mt-6 inline-block !text-[12px]">→ hello@schoolspec.app</a>
+        </div>
+        <div>
+          {FAQ.map(([q, a]) => (
+            <details key={q} className="group border-b border-dashed border-[#221a22]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[17px] font-medium [&::-webkit-details-marker]:hidden">
+                {q}
+                <span aria-hidden className="flex h-[22px] w-[26px] shrink-0 items-center justify-center bg-[#5E1D3E] text-[13px] text-white transition-transform group-open:rotate-180">⌄</span>
+              </summary>
+              <p className="max-w-[60ch] pb-[18px] text-[15px] text-[#5f5359]">{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* ── footer: the blueprint ── */}
+      <footer className="relative overflow-hidden bg-[#5E1D3E] pb-10 pt-[120px] text-white">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[420px] bg-[linear-gradient(rgba(255,255,255,.13)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.13)_1px,transparent_1px)] bg-[size:44px_44px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/marketing/campus-lines.png" alt="" loading="lazy" decoding="async"
+            className="mx-auto h-full w-auto max-w-[1100px] object-contain opacity-90" />
+        </div>
+        <div className="mk-wrap relative">
+          <div className="relative mt-[180px] overflow-hidden bg-[#3d1128] px-6 pb-8 pt-11 sm:px-[60px] sm:pt-[70px]">
+            <span aria-hidden className="pointer-events-none absolute -bottom-10 left-[30px] text-[clamp(120px,22vw,300px)] font-semibold leading-none tracking-[-.05em] text-white/[.06]">SchoolSpec</span>
+            <div className="relative grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]">
+              <div>
+                <span className="flex items-center gap-2 font-semibold"><LogoMark size={22} variant="light" /> SchoolSpec</span>
+                <p className="mt-4 max-w-[18ch] text-[clamp(22px,2.6vw,30px)] font-medium leading-tight tracking-[-.02em]">
+                  Run the school at the speed of the morning, not the paperwork.
+                </p>
+              </div>
+              <div>
+                <h5 className="mb-2.5 font-mono text-[12px] tracking-[.06em] text-[#E58A2E]">Quick links</h5>
+                <a href="#features" className="block py-[3px] text-[14px]">Features</a>
+                <a href="#pricing" className="block py-[3px] text-[14px]">Pricing</a>
+                <a href="#faq" className="block py-[3px] text-[14px]">FAQs</a>
+                <Link href="/sign-in" className="block py-[3px] text-[14px]">Sign in</Link>
+                <Link href="/signup" className="block py-[3px] text-[14px]">Start free</Link>
+              </div>
+              <div>
+                <h5 className="mb-2.5 font-mono text-[12px] tracking-[.06em] text-[#E58A2E]">Connect</h5>
+                <a href="mailto:hello@schoolspec.app" className="block py-[3px] text-[14px]">hello@schoolspec.app</a>
+                <a href="#contact" className="block py-[3px] text-[14px]">Request a walkthrough</a>
+              </div>
             </div>
-            <div>
-              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-faint">
-                Product
-              </p>
-              <ul className="mt-3 space-y-2 text-[13.5px] text-muted-foreground">
-                <li>
-                  <a
-                    href="#features"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#roles"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    For your school
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#trust"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    Security
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-faint">
-                Get started
-              </p>
-              <ul className="mt-3 space-y-2 text-[13.5px] text-muted-foreground">
-                <li>
-                  <Link
-                    href="/signup"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    Start free trial
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="#demo"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    Get a demo
-                  </a>
-                </li>
-                <li>
-                  <Link
-                    href="/sign-in"
-                    className="transition-colors hover:text-foreground"
-                  >
-                    Sign in
-                  </Link>
-                </li>
-              </ul>
+            <div className="relative mt-10 flex flex-wrap gap-[18px] text-[12.5px] text-[#dbb7cb]">
+              <span>© {year} SchoolSpec · Made for schools in Ghana</span>
             </div>
           </div>
-          <p className="mt-10 border-t border-border pt-5 text-[13px] text-muted-foreground">
-            © {new Date().getFullYear()} SchoolSpec. Made for schools in Ghana 🇬🇭
-          </p>
         </div>
       </footer>
     </main>

@@ -188,3 +188,30 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 @media print {
   body { background: #fff; }
 }
+
+/* ── Marketing — the drafting-paper language (landing page only) ────────
+   Kraft exercise-book ground with a squared grid, hand-lettered
+   marginalia, typewriter controls with a hard offset shadow. Scoped to
+   .mk-* so the app's own kit is untouched. */
+.mk-paper {
+  background-color: #E8DFD0;
+  background-image: linear-gradient(rgba(70,40,40,.11) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(70,40,40,.11) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.mk-wrap { max-width: 1240px; margin: 0 auto; padding-left: 28px; padding-right: 28px; }
+.mk-hand { font-family: var(--font-hand), cursive; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #5f5359; }
+.mk-hand-u { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+.mk-btn { display: inline-flex; align-items: stretch; border: 1px solid #221a22; background: #fff; color: #221a22;
+  font-family: var(--font-mono); font-size: 13px; box-shadow: 3px 3px 0 #221a22; transition: transform .12s, box-shadow .12s; }
+.mk-btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #221a22; }
+.mk-btn i { width: 34px; display: flex; align-items: center; justify-content: center; background: #E58A2E; color: #fff; font-style: normal; border-right: 1px solid #221a22; }
+.mk-btn span { padding: 10px 16px; display: flex; align-items: center; white-space: nowrap; }
+.mk-btn-solid { background: #5E1D3E; color: #fff; border-color: #3d1128; box-shadow: 3px 3px 0 #3d1128; }
+.mk-btn-solid:hover { box-shadow: 4px 4px 0 #3d1128; }
+.mk-btn-solid i { border-color: #3d1128; }
+/* the riso frame's paper-grain veil (placeholder and art alike) */
+.riso::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .35;
+  background-image: radial-gradient(rgba(232,223,208,.28) .7px, transparent .8px); background-size: 4px 4px; }
+.riso-ph { background: radial-gradient(120% 80% at 30% 20%, #7a3a5c 0, #5E1D3E 45%, #3d1128 100%); }
+@media (prefers-reduced-motion: reduce) { .mk-btn { transition: none; } }
