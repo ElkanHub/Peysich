@@ -9,6 +9,7 @@
     "brand:assets": "node scripts/gen-brand-assets.mjs",
     "start": "next start",
     "lint": "eslint",
+    "check:proxy": "tsx src/proxy.check.mts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",

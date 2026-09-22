@@ -14,6 +14,10 @@ import { NextRequest, NextResponse } from "next/server";
  * When a real domain + wildcard exists, subdomain mode simply takes over.
  */
 const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").split(":")[0];
+/** The marketing domain, when it is a separate one (schoolspec.com beside the
+ *  app's schoolspec.app). Unset locally and in preview — then the root host
+ *  keeps serving the marketing page itself, exactly as before. */
+const MARKETING = (process.env.NEXT_PUBLIC_MARKETING_DOMAIN ?? "").toLowerCase().split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
 const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline"];
@@ -34,6 +38,15 @@ export function proxy(req: NextRequest) {
   // subdomain installs as that school): never rewrite them into a tenant
   if (GLOBAL.has(pathname) || pathname.startsWith("/icons/") || pathname.startsWith("/splash/"))
     return NextResponse.next(pass);
+
+  // The marketing domain holds exactly one page. Sign-in, signup, the console
+  // and every school belong to the app domain — a second copy served here could
+  // not set the app's session cookie (it is scoped to .${ROOT}), so the sign-in
+  // would look fine and silently do nothing. Send them across instead.
+  if (MARKETING && host === MARKETING) {
+    if (pathname === "/") return NextResponse.next(pass);
+    return NextResponse.redirect(new URL(pathname + req.nextUrl.search, `https://${ROOT}`), 308);
+  }
 
   if (host === ROOT || host === `www.${ROOT}`) {
     // /t/<slug> — enter a school (preview mode); /t/exit — back to marketing
@@ -59,6 +72,11 @@ export function proxy(req: NextRequest) {
       url.pathname = `/s/${tenant}${pathname === "/" ? "" : pathname}`;
       return NextResponse.rewrite(url, pass);
     }
+    // one marketing page, on one domain: a signed-out visitor to the app's own
+    // root is sent to it rather than shown a second indexable copy. 307, not
+    // 308 — the answer changes the moment they have a session.
+    if (MARKETING && pathname === "/" && !hasSession)
+      return NextResponse.redirect(`https://${MARKETING}/`, 307);
     return NextResponse.next(pass);
   }
 
