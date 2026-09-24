@@ -25,8 +25,15 @@ serve from the hostname it was asked for.
 
 SchoolSpec puts every school on its own subdomain (`stmarys.schoolspec.app`) and the
 console on `admin.schoolspec.app`. That needs a **wildcard** (`*.schoolspec.app`), and
-Vercel only issues wildcard certificates when it runs the domain's DNS. So both domains'
-nameservers move to Vercel; Namecheap stays the registrar (you still renew there).
+Vercel only issues wildcard certificates when it runs the domain's DNS. So **only
+`schoolspec.app`'s nameservers move to Vercel.**
+
+`schoolspec.com` has no subdomains to serve, so it **stays on Namecheap DNS** and simply
+points its website records at Vercel. Your mailbox, and any other records on the `.com`,
+keep working untouched, with nothing to copy across.
+
+Namecheap stays the registrar for both domains. Registration, any hosting plan and
+Private Email carry on billing there exactly as before.
 
 ### 1a. Add all five entries in Vercel
 Vercel -> your project -> **Settings -> Domains -> Add**, one after another:
@@ -39,26 +46,43 @@ Vercel -> your project -> **Settings -> Domains -> Add**, one after another:
 | `www.schoolspec.app` | **Redirect to `schoolspec.app`** |
 | `*.schoolspec.app` | leave as-is — the wildcard every school lives under |
 
-Vercel will say "Invalid configuration" for both domains and show two nameservers,
-normally `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. Keep that page open.
+Vercel will say "Invalid configuration" for each entry and show what it wants. For
+`schoolspec.app` pick the **nameservers** option (normally `ns1.vercel-dns.com` and
+`ns2.vercel-dns.com`). For `schoolspec.com` pick the **A / CNAME records** option. Keep
+that page open.
 
 > Do **not** add `*.schoolspec.com`. The marketing domain has no subdomains to serve,
 > and a wildcard there would only invite someone to point one at you.
 
-### 1b. Point Namecheap at Vercel — for each domain
-Do this twice, once for `schoolspec.com` and once for `schoolspec.app`:
+### 1b. Point Namecheap at Vercel — differently for each domain
 
-1. Namecheap -> **Domain List -> Manage** (next to the domain).
+**`schoolspec.app`: nameservers move to Vercel.**
+
+1. Namecheap -> **Domain List -> Manage** (next to `schoolspec.app`).
 2. On the **Domain** tab, find **Nameservers** -> change *Namecheap BasicDNS* to
    **Custom DNS**.
 3. Enter the two nameservers Vercel showed, then click the green tick to save.
-4. Wait. Nameserver changes usually take 10–60 minutes, occasionally a few hours.
-   Vercel's Domains page turns green ("Valid configuration") on its own — you can press
-   **Refresh** there.
 
-> Namecheap will warn that its own DNS records stop working — correct, and intended.
-> Any records you had at Namecheap (email forwarding etc.) must be recreated in Vercel
+> Namecheap will warn that its own DNS records for this domain stop working. That is
+> correct and intended. If `schoolspec.app` has any records you care about (it
+> normally has none), screenshot **Advanced DNS** first and recreate them in Vercel
 > DNS (section 1d).
+
+**`schoolspec.com`: nameservers stay at Namecheap.** Leave it on *Namecheap BasicDNS*.
+
+1. Namecheap -> **Domain List -> Manage** (next to `schoolspec.com`) -> **Advanced DNS**.
+2. Delete any existing `A`, `CNAME` or `URL Redirect` records on `@` and `www` (often
+   Namecheap's parking page). **Leave every mail record alone**: `MX`, the SPF `TXT`,
+   `default._domainkey`, and `mail`/`autodiscover`/`autoconfig`.
+3. Add the two records Vercel showed for the domain, typically:
+   - `A` on `@` -> `76.76.21.21`
+   - `CNAME` on `www` -> `cname.vercel-dns.com`
+
+   Use Vercel's values if they differ.
+
+**Then wait.** Changes usually take 10–60 minutes, occasionally a few hours. Vercel's
+Domains page turns green ("Valid configuration") on its own; you can press
+**Refresh** there.
 
 ### 1c. Tell the app about both
 In Vercel environment variables (Production) set:
@@ -94,10 +118,13 @@ the root host serves the marketing page itself, which is what you want on
 including that a signed-in person is *not* bounced to marketing).
 
 ### 1d. Where DNS records now live
-Vercel -> **your account (top-left) -> Domains -> <the domain> -> DNS Records**. Note
-there is one zone *per domain*: the Resend records in section 3 go in the
-**`schoolspec.com`** zone, not the `.app` one. Vercel manages the `A`/`CNAME` records
-for the app itself — you never add those.
+The two domains keep their records in different places:
+
+- **`schoolspec.com`**: **Namecheap -> Manage -> Advanced DNS**. Mail, Resend
+  (section 3), DMARC and support-inbox records all go here.
+- **`schoolspec.app`**: **Vercel -> your account (top-left) -> Domains ->
+  `schoolspec.app` -> DNS Records**. Vercel manages the `A`/`CNAME` records for the app
+  itself; you never add those, and nothing else normally goes here.
 
 **Check:** all four must load over HTTPS with a valid padlock —
 `https://schoolspec.com` (marketing), `https://schoolspec.app` (bounces to marketing
@@ -130,14 +157,22 @@ It costs nothing to set up this way and is expensive to unpick later, so do it n
 
 1. resend.com -> sign up -> **Domains -> Add Domain** -> enter **`send.schoolspec.com`**
    (region: EU or US, either is fine).
-2. Resend shows DNS records. Add each one in the **`schoolspec.com` Vercel DNS zone**
-   (section 1d) exactly as shown — name, type, value, priority. Typically:
+2. Resend shows DNS records. Add each one in **Namecheap -> `schoolspec.com` ->
+   Advanced DNS** (section 1d) exactly as shown: name, type, value, priority.
+   Typically:
    - `TXT` on `resend._domainkey.send` (DKIM)
    - `MX` on `send` with priority 10 -> `feedback-smtp.<region>.amazonses.com`
    - `TXT` on `send` -> `v=spf1 include:amazonses.com ~all`
 
-   Enter the name **without** the domain on the end — Vercel appends it. Resend shows
-   `resend._domainkey.send.schoolspec.com`; you type `resend._domainkey.send`.
+   Enter the host **without** the domain on the end, because Namecheap appends it.
+   Resend shows `resend._domainkey.send.schoolspec.com`; you type
+   `resend._domainkey.send`.
+
+   The `MX` record goes under **Mail Settings**, not the host records list. If that is
+   set to *Private Email* and won't take an extra `MX`, switch it to **Custom MX**. Then
+   re-add your mailbox's own `MX` records on `@` alongside the `send` one (for Private
+   Email: `mx1.privateemail.com` and `mx2.privateemail.com`, priority 10). Note them
+   down before switching.
 3. Click **Verify** in Resend (a few minutes).
 4. Add a DMARC record so Gmail trusts you. This one goes on the **root**, where it
    covers every subdomain including `send.`:
@@ -163,18 +198,20 @@ logs these as *queued* — nothing breaks.
 
 ### 3a. A support address people can actually write to
 For an inbox on `support@schoolspec.com`, the root domain's `MX` records must point at a
-mailbox provider — and because nameservers now live at Vercel, those records go in the
-`schoolspec.com` Vercel DNS zone.
+mailbox provider. Those records live in **Namecheap -> `schoolspec.com` -> Advanced
+DNS**. If you already have a Namecheap **Private Email** mailbox there, it is already
+set up; just create a `support` mailbox or alias in it.
 
-Any of Namecheap **Private Email**, Zoho Mail (free tier) or Google Workspace works.
-Each gives you `MX` records plus an SPF `TXT` for the root. Add them in the
-`schoolspec.com` zone and leave the `send.` records alone — the two do not collide,
-which is exactly the point of the split.
+Otherwise, any of Namecheap **Private Email**, Zoho Mail (free tier) or Google
+Workspace works. Each gives you `MX` records plus an SPF `TXT` for the root. Add them in
+Advanced DNS and leave the `send.` records alone. The two do not collide, which is
+exactly the point of the split.
 
-One catch: if the provider gives you a root SPF record and you already have one, they
-must be **merged into a single `TXT`** — two SPF records on the same name is a hard
-failure, not a warning. Combine the includes:
-`v=spf1 include:spf.efwd.registrar-servers.com include:amazonses.com ~all`
+One catch: the root (`@`) may have **only one SPF `TXT`**. Two SPF records on the same
+name is a hard failure, not a warning. If a second provider needs the root, merge the
+includes into one record, e.g. for Private Email:
+`v=spf1 include:spf.privateemail.com ~all`. Resend's SPF sits on `send`, a different
+name, so it never needs merging.
 
 **Check:** send yourself a mail at `support@schoolspec.com` from an outside account and
 watch it arrive.
@@ -282,9 +319,13 @@ Account page explains this to the person on the spot.
 - [ ] `pnpm run db:migrate` run against Neon after every pull with a new migration
 
 ### Common snags
-- **"Invalid configuration" stays red for hours** -> the nameservers didn't save at
-  Namecheap; check the Domain tab shows *Custom DNS* with both `vercel-dns.com` entries.
-  Check **both** domains — it is easy to do one and forget the other.
+- **"Invalid configuration" stays red for hours** -> for `schoolspec.app`, the
+  nameservers didn't save at Namecheap; check the Domain tab shows *Custom DNS* with
+  both `vercel-dns.com` entries. For `schoolspec.com`, check Advanced DNS has the `A` on
+  `@` and the `CNAME` on `www`, and that no parking or `URL Redirect` record is still
+  on them.
+- **Your mailbox stopped receiving** -> someone switched `schoolspec.com`'s nameservers
+  to Vercel. Switch it back to *Namecheap BasicDNS*; its records are still there.
 - **The marketing page appears on `schoolspec.app` too** ->
   `NEXT_PUBLIC_MARKETING_DOMAIN` is missing or the project wasn't redeployed. Google
   will index both copies if you leave it.
@@ -295,9 +336,9 @@ Account page explains this to the person on the spot.
 - **Subdomain shows the marketing page** -> `NEXT_PUBLIC_ROOT_DOMAIN` still points at
   `vercel.app`; fix the variable and redeploy.
 - **Resend record "not found"** -> the record name was entered with the domain repeated
-  (`send.schoolspec.com.schoolspec.com`). In Vercel DNS enter only the part before the
-  domain (`send`, `resend._domainkey.send`, `_dmarc`) — and put them in the
-  **`schoolspec.com`** zone, not the `.app` one.
+  (`send.schoolspec.com.schoolspec.com`). In Namecheap's Advanced DNS enter only the
+  part before the domain (`send`, `resend._domainkey.send`, `_dmarc`), on
+  **`schoolspec.com`**, not the `.app`.
 - **Mail lands in spam after a big blast** -> this is the case the `send.` subdomain was
   chosen for: the root is unaffected, so `support@schoolspec.com` still works. Warm the
   sending domain up (a few hundred a day before thousands) and keep `p=none` on DMARC
