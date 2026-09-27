@@ -4,8 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
  * Edge middleware: host→path routing (no DB — layouts do the deep checks).
  *
  * Subdomain mode (a real domain with wildcard DNS):
- *   stmarys.schoolspec.app/attendance → rewrite → /s/stmarys/attendance
- *   admin.schoolspec.app/*            → rewrite → /platform/*
+ *   schoolspec.com/                   → the marketing page (and sign-in, signup)
+ *   stmarys.schoolspec.com/attendance → rewrite → /s/stmarys/attendance
+ *   admin.schoolspec.com/*            → rewrite → /platform/*
  *
  * Preview mode (no wildcard, e.g. schoolspec.vercel.app): schools are selected by
  * a cookie instead of a subdomain — visit /t/<slug> once to enter a school,
@@ -13,11 +14,14 @@ import { NextRequest, NextResponse } from "next/server";
  * signed-in user belongs to that school on every request (school layout).
  * When a real domain + wildcard exists, subdomain mode simply takes over.
  */
-const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").split(":")[0];
-/** The marketing domain, when it is a separate one (schoolspec.com beside the
- *  app's schoolspec.app). Unset locally and in preview — then the root host
- *  keeps serving the marketing page itself, exactly as before. */
-const MARKETING = (process.env.NEXT_PUBLIC_MARKETING_DOMAIN ?? "").toLowerCase().split(":")[0];
+/** Read per request rather than at module load so the routing check can
+ *  exercise both layouts in one run. */
+const root = () => (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").split(":")[0];
+/** OPTIONAL: a separate marketing domain beside the app's root. The shipped
+ *  layout leaves it unset — everything lives on the one owned domain and the
+ *  root host serves the marketing page itself. Set it only if the marketing
+ *  site is ever moved to a second domain. */
+const marketing = () => (process.env.NEXT_PUBLIC_MARKETING_DOMAIN ?? "").toLowerCase().split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
 const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline"];
@@ -26,6 +30,8 @@ const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.png"
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
   const { pathname } = req.nextUrl;
+  const ROOT = root();
+  const MARKETING = marketing();
 
   // the ORIGINAL path rides along as a header so server code (Team & access
   // tab checks) knows which tab a request is for, rewrites included

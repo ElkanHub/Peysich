@@ -11,7 +11,7 @@ import { pushSubscriptions, user, guardians, studentGuardians, students, staff, 
 const PUB = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const PRIV = process.env.VAPID_PRIVATE_KEY;
 export const pushEnabled = !!(PUB && PRIV);
-if (pushEnabled) webpush.setVapidDetails(process.env.VAPID_SUBJECT ?? "mailto:hello@schoolspec.app", PUB!, PRIV!);
+if (pushEnabled) webpush.setVapidDetails(process.env.VAPID_SUBJECT ?? "mailto:hello@schoolspec.com", PUB!, PRIV!);
 
 export type PushPayload = { title: string; body: string; url?: string; tag?: string; icon?: string };
 

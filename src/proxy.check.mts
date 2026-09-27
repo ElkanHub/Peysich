@@ -2,9 +2,6 @@
  *  Env is read when the module loads, so it is set before the import. */
 import assert from "node:assert/strict";
 
-process.env.NEXT_PUBLIC_ROOT_DOMAIN = "schoolspec.app";
-process.env.NEXT_PUBLIC_MARKETING_DOMAIN = "schoolspec.com";
-
 const { proxy } = await import("./proxy");
 const { NextRequest } = await import("next/server");
 
@@ -21,6 +18,35 @@ function go(host: string, path: string, cookie = "") {
 
 const SESSION = "better-auth.session_token=abc";
 
+// ─── the shipped layout: ONE domain, everything under schoolspec.com ───
+process.env.NEXT_PUBLIC_ROOT_DOMAIN = "schoolspec.com";
+delete process.env.NEXT_PUBLIC_MARKETING_DOMAIN;
+
+// the root serves the marketing page itself, and sign-in/signup stay on it
+assert.equal(go("schoolspec.com", "/"), "pass");
+assert.equal(go("schoolspec.com", "/", SESSION), "pass");
+assert.equal(go("schoolspec.com", "/sign-in"), "pass");
+assert.equal(go("schoolspec.com", "/signup?plan=pro"), "pass");
+assert.equal(go("www.schoolspec.com", "/sign-in"), "pass");
+
+// every school on its own subdomain; the console on admin.
+assert.equal(go("stmarys.schoolspec.com", "/attendance"), "rewrite /s/stmarys/attendance");
+assert.equal(go("stmarys.schoolspec.com", "/"), "rewrite /s/stmarys");
+assert.equal(go("admin.schoolspec.com", "/schools"), "rewrite /platform/schools");
+assert.equal(go("admin.schoolspec.com", "/"), "rewrite /platform");
+
+// nested hosts are not schools; phone-signing links are global
+assert.equal(go("a.b.schoolspec.com", "/"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/sign/tok123"), "pass");
+
+// the installable-app files stay global on every host
+assert.equal(go("schoolspec.com", "/sw.js"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/manifest.webmanifest"), "pass");
+
+// ─── the optional layout: marketing on a second domain (not shipped) ───
+process.env.NEXT_PUBLIC_ROOT_DOMAIN = "schoolspec.app";
+process.env.NEXT_PUBLIC_MARKETING_DOMAIN = "schoolspec.com";
+
 // the marketing domain holds one page, and hands everything else to the app
 assert.equal(go("schoolspec.com", "/"), "pass");
 assert.equal(go("schoolspec.com", "/sign-in"), "308 https://schoolspec.app/sign-in");
@@ -36,8 +62,6 @@ assert.equal(go("stmarys.schoolspec.app", "/attendance"), "rewrite /s/stmarys/at
 assert.equal(go("stmarys.schoolspec.app", "/"), "rewrite /s/stmarys");
 assert.equal(go("admin.schoolspec.app", "/schools"), "rewrite /platform/schools");
 
-// the installable-app files stay global on every host
-assert.equal(go("schoolspec.com", "/sw.js"), "pass");
 assert.equal(go("stmarys.schoolspec.app", "/manifest.webmanifest"), "pass");
 
-console.log("proxy: ok");
+console.log("proxy: ok (single-domain layout + optional split)");

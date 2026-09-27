@@ -109,7 +109,7 @@ export default async function Home() {
       {/* ── hero ── */}
       <section className="relative mk-wrap pt-[70px] text-center">
         <span className="mk-hand absolute left-6 top-6 hidden !text-[12px] md:block">07:30 · assembly</span>
-        <span className="mk-hand absolute right-6 top-6 hidden !text-[12px] md:block">hello@schoolspec.app</span>
+        <span className="mk-hand absolute right-6 top-6 hidden !text-[12px] md:block">hello@schoolspec.com</span>
         <p className="mk-hand mk-hand-u -rotate-[4deg] lg:absolute lg:left-[6%] lg:top-[92px]">GES-structured</p>
         <h1 className="mx-auto mt-2 max-w-[12ch] text-[clamp(46px,8.6vw,124px)] font-medium leading-[.98] tracking-[-.035em] text-balance">
           Run the school at the speed of the morning
@@ -244,7 +244,7 @@ export default async function Home() {
             <p className="mt-5 max-w-[30em] text-[17px] text-[#5f5359]">
               Leave your number and we call to walk you through SchoolSpec on your school&apos;s real structure — classes, report cards, fees, everything. Set up and live in under an hour.
             </p>
-            <p className="mk-hand mt-6 !text-[12px]">↘ or write to hello@schoolspec.app</p>
+            <p className="mk-hand mt-6 !text-[12px]">↘ or write to hello@schoolspec.com</p>
           </div>
           <div className="border border-[#221a22] bg-white p-3 shadow-[6px_6px_0_#221a22]">
             <LeadForm />
@@ -257,7 +257,7 @@ export default async function Home() {
         <div>
           <p className="mk-hand">need help?</p>
           <h2 className={`${H2} mt-2.5`}>Fair questions, straight answers</h2>
-          <a href="mailto:hello@schoolspec.app" className="mk-hand mk-hand-u mt-6 inline-block !text-[12px]">→ hello@schoolspec.app</a>
+          <a href="mailto:hello@schoolspec.com" className="mk-hand mk-hand-u mt-6 inline-block !text-[12px]">→ hello@schoolspec.com</a>
         </div>
         <div>
           {FAQ.map(([q, a]) => (
@@ -299,7 +299,7 @@ export default async function Home() {
               </div>
               <div>
                 <h5 className="mb-2.5 font-mono text-[12px] tracking-[.06em] text-[#E58A2E]">Connect</h5>
-                <a href="mailto:hello@schoolspec.app" className="block py-[3px] text-[14px]">hello@schoolspec.app</a>
+                <a href="mailto:hello@schoolspec.com" className="block py-[3px] text-[14px]">hello@schoolspec.com</a>
                 <a href="#contact" className="block py-[3px] text-[14px]">Request a walkthrough</a>
               </div>
             </div>
