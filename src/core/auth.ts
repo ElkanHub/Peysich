@@ -14,6 +14,8 @@ const google =
       }
     : {}; // Google button hidden until creds exist (HANDOFF.md)
 
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: { enabled: true },
@@ -35,17 +37,20 @@ export const auth = betterAuth({
     // owned domain: browsers reject Domain=.localhost, and vercel.app is on the
     // public-suffix list — both use host-only cookies (preview mode is single-host
     // anyway, so sessions work everywhere there).
+    // Until NEXT_PUBLIC_ROOT_DOMAIN is set on the deployment the cookie stays
+    // host-only rather than the build failing on an undefined domain.
     crossSubDomainCookies: process.env.NODE_ENV === "production" &&
-      !process.env.NEXT_PUBLIC_ROOT_DOMAIN?.includes("localhost") &&
-      !process.env.NEXT_PUBLIC_ROOT_DOMAIN?.endsWith("vercel.app")
-      ? { enabled: true, domain: "." + process.env.NEXT_PUBLIC_ROOT_DOMAIN!.split(":")[0] }
+      !!process.env.NEXT_PUBLIC_ROOT_DOMAIN &&
+      !ROOT_DOMAIN.includes("localhost") &&
+      !ROOT_DOMAIN.endsWith("vercel.app")
+      ? { enabled: true, domain: "." + ROOT_DOMAIN.split(":")[0] }
       : { enabled: false },
   },
   trustedOrigins: [
-    `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000"}`,
-    `http://*.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000"}`,
-    `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? ""}`,
-    `https://*.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? ""}`,
+    `http://${ROOT_DOMAIN}`,
+    `http://*.${ROOT_DOMAIN}`,
+    `https://${ROOT_DOMAIN}`,
+    `https://*.${ROOT_DOMAIN}`,
   ],
 });
 
