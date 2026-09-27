@@ -54,9 +54,9 @@ const FEATURES = [
 
 const ROLES = [
   { file: "role-head.webp", h: "Owners & heads", p: "The morning in 90 seconds: every register, money in vs owing, the decisions waiting." },
-  { file: "role-teacher.png", h: "Teachers", p: "Their classes, their registers, their score sheets — no one else's paperwork." },
-  { file: "role-parent.png", h: "Parents", p: "Their children only: attendance, homework, results, and exactly what's owed." },
-  { file: "role-student.png", h: "Students", p: "A “do today” list that puts overdue homework and unread notices first." },
+  { file: "role-teacher.webp", h: "Teachers", p: "Their classes, their registers, their score sheets — no one else's paperwork." },
+  { file: "role-parent.webp", h: "Parents", p: "Their children only: attendance, homework, results, and exactly what's owed." },
+  { file: "role-student.webp", h: "Students", p: "A “do today” list that puts overdue homework and unread notices first." },
 ];
 
 const FAQ = [
@@ -115,7 +115,7 @@ export default async function Home() {
           Run the school at the speed of the morning
         </h1>
         <p className="mk-hand mk-hand-u mt-2 rotate-[3deg] lg:absolute lg:right-[5%] lg:top-[250px]">→ not paperwork</p>
-        <Riso file="hero-morning.webp" ratio="8/3" priority className="mt-[30px]"
+        <Riso file="hero-morning.webp" ratio="8/3" priority tilt={-0.4} className="mt-[38px]"
           alt="A head teacher at the desk in the morning, register open, the compound through the louvres"
           caption="Attendance, results, fees and parents — one calm place." />
         <dl className="mt-14 grid grid-cols-2 border-y border-dashed border-[#221a22] text-left md:grid-cols-4">
@@ -137,9 +137,8 @@ export default async function Home() {
               <h2 className={`${H2} mb-[18px] mt-2.5`}>{f.h}</h2>
               <p className="max-w-[30em] text-[17px] text-[#5f5359]">{f.p}</p>
               <Btn href="#demo" icon="▶" className="mt-[26px]">{f.cta}</Btn>
-              {f.more && <span className="mk-hand mt-3.5 block !text-[12px]">↘ {f.more}</span>}
             </div>
-            <Riso file={f.file} alt={f.alt} />
+            <Riso file={f.file} alt={f.alt} tilt={i % 2 ? 1 : -1} note={f.more && `↖ ${f.more}`} />
           </article>
         ))}
       </section>
@@ -152,9 +151,9 @@ export default async function Home() {
             Four people open SchoolSpec. Each one sees their own school.
           </h2>
           <div className="mt-10 grid grid-cols-2 gap-[18px] md:grid-cols-4">
-            {ROLES.map((r) => (
+            {ROLES.map((r, i) => (
               <div key={r.h}>
-                <Riso file={r.file} ratio="1/1" alt={r.h} />
+                <Riso file={r.file} ratio="4/5" alt={r.h} tilt={[-1.2, 0.8, -0.6, 1.1][i]} />
                 <h3 className="mt-3 text-[17px] font-semibold">{r.h}</h3>
                 <p className="mt-1 text-[14px] text-[#5f5359]">{r.p}</p>
               </div>
@@ -276,8 +275,8 @@ export default async function Home() {
       <footer className="relative overflow-hidden bg-[#5E1D3E] pb-10 pt-[120px] text-white">
         <div aria-hidden className="absolute inset-x-0 top-0 h-[420px] bg-[linear-gradient(rgba(255,255,255,.13)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.13)_1px,transparent_1px)] bg-[size:44px_44px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/marketing/campus-lines.png" alt="" loading="lazy" decoding="async"
-            className="mx-auto h-full w-auto max-w-[1100px] object-contain opacity-90" />
+          <img src="/marketing/campus-lines.webp" alt="" loading="lazy" decoding="async"
+            className="mx-auto h-full w-auto max-w-[1100px] object-contain opacity-90 mix-blend-lighten" />
         </div>
         <div className="mk-wrap relative">
           <div className="relative mt-[180px] overflow-hidden bg-[#3d1128] px-6 pb-8 pt-11 sm:px-[60px] sm:pt-[70px]">

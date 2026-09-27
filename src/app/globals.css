@@ -213,5 +213,7 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 /* the riso frame's paper-grain veil (placeholder and art alike) */
 .riso::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .35;
   background-image: radial-gradient(rgba(232,223,208,.28) .7px, transparent .8px); background-size: 4px 4px; }
+.riso-tape { position: absolute; z-index: 3; width: min(78px, 26%); height: 22px; background: rgba(229,138,46,.55);
+  box-shadow: 0 1px 1px rgba(34,26,34,.18); pointer-events: none; }
 .riso-ph { background: radial-gradient(120% 80% at 30% 20%, #7a3a5c 0, #5E1D3E 45%, #3d1128 100%); }
 @media (prefers-reduced-motion: reduce) { .mk-btn { transition: none; } }
