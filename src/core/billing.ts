@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { plans, schools, subscriptions, feeCheckouts, feeInvoices, feePayments } from "@/db/schema";
+import { plans, schools, subscriptions, feeCheckouts, feePayments } from "@/db/schema";
 import { invalidateModules } from "./entitlements";
 import { uid } from "@/lib/utils";
 
@@ -55,14 +55,12 @@ export async function applyFeePayment(reference: string) {
   if (!c) return;
   const [existing] = await db.select().from(feePayments).where(eq(feePayments.reference, reference));
   if (existing) return;
-  const [inv] = await db.select().from(feeInvoices).where(eq(feeInvoices.id, c.invoiceId));
-  if (!inv) return;
-  await db.insert(feePayments).values({
-    id: uid(), schoolId: c.schoolId, invoiceId: c.invoiceId,
-    amountPesewas: c.amountPesewas, method: "momo", reference,
+  const [school] = await db.select().from(schools).where(eq(schools.id, c.schoolId));
+  if (!school) return;
+  // same path as the cashier's desk: receipt number, ledger row, SMS to the parent
+  const { recordPaymentFor, sendReceiptSms } = await import("@/modules/fees/engine");
+  const r = await recordPaymentFor(school, {
+    invoiceId: c.invoiceId, amountPesewas: c.amountPesewas, method: "momo", reference,
   });
-  const paid = inv.paidPesewas + c.amountPesewas;
-  await db.update(feeInvoices).set({
-    paidPesewas: paid, status: paid >= inv.totalPesewas ? "paid" : "part_paid",
-  }).where(eq(feeInvoices.id, c.invoiceId));
+  if (r) await sendReceiptSms(school, { ...r, amountPesewas: c.amountPesewas });
 }

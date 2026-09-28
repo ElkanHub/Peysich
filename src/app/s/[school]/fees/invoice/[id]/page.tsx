@@ -8,23 +8,21 @@ import { assertParentOf } from "@/core/portal";
 import { canFeeAction } from "@/core/access";
 import { loadInvoiceDoc, guardianEmailsFor } from "@/modules/fees/docs";
 import { ghs } from "@/modules/fees/config";
+import { PaymentForm } from "@/modules/fees/payment-form";
 import { emailInvoice, recordPayment } from "../../actions";
 import { PrintButton } from "@/ui/print-button";
-import { Card, Field, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { Card, Badge, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 
-const ERR: Record<string, string> = {
-  noemail: "No guardian of this child has an email on file — add one under Guardians first.",
-};
+const big = btnGhostCls + " h-11 text-[14.5px]";
 
 /** The invoice paper: what prints for a walk-in parent, what the PDF holds,
- *  what the email attaches — one document, three doors. */
-export default async function InvoicePage({ params, searchParams }: {
+ *  what the email attaches — one document, three doors. For the cashier the
+ *  payment form sits first: the search on /fees lands here to save a payment. */
+export default async function InvoicePage({ params }: {
   params: Promise<{ school: string; id: string }>;
-  searchParams: Promise<{ err?: string }>;
 }) {
   const { school: slug, id } = await params;
-  const { err } = await searchParams;
   const { school, user } = await requireModule(slug, "fees");
   const d = await loadInvoiceDoc(school, id);
   if (!d) notFound();
@@ -48,20 +46,46 @@ export default async function InvoicePage({ params, searchParams }: {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href="/fees" className="text-[13.5px] font-medium text-primary">← Fees</Link>
+        <Link href="/fees" className="inline-flex h-11 items-center text-[14.5px] font-medium text-primary">← Fees</Link>
         <div className="flex flex-wrap items-center gap-2">
-          <PrintButton />
-          <a href={`/api/fees/pdf/invoice/${d.invoice.id}`} target="_blank" className={btnGhostCls}>Download PDF</a>
+          <PrintButton className={big} />
+          <a href={`/api/fees/pdf/invoice/${d.invoice.id}`} target="_blank" className={big}>Download PDF</a>
           {isAdmin && (
             <form action={emailInvoice.bind(null, slug, d.invoice.id)}>
-              <SubmitButton className={btnGhostCls} pendingText="Emailing…">✉ Email to guardian{gEmails.length > 1 ? "s" : ""}</SubmitButton>
+              <SubmitButton className={big} pendingText="Emailing…">Email to guardian{gEmails.length > 1 ? "s" : ""}</SubmitButton>
             </form>
           )}
           {lastEmailed && <Badge tone="success">emailed {lastEmailed.createdAt.toISOString().slice(5, 10)} ✓</Badge>}
         </div>
       </div>
-      {err && ERR[err] && (
-        <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger print:hidden">{ERR[err]}</p>
+
+      {/* ── the cashier's job comes first: save the payment ── */}
+      {isAdmin && (
+        <Card className="mb-5 print:hidden">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {d.student.firstName} {d.student.lastName} · {d.className ?? "—"} · {d.termName}
+          </p>
+          <h2 className="mt-1 text-[22px] font-bold" data-nums="">
+            {owing ? <>Owes <span className="text-danger">{ghs(owing)}</span></> : <span className="text-success">Fully paid ✓</span>}
+          </h2>
+          {canRecord ? (
+            owing > 0 || pays.length === 0 ? (
+              <PaymentForm action={recordPayment.bind(null, slug, d.invoice.id)}
+                owingGhs={owing ? (owing / 100).toFixed(2) : ""} />
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Nothing left to pay on this bill. Any extra would sit as credit on the child&apos;s balance.</p>
+            )
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your access doesn&apos;t include recording payments — ask a full admin under Settings → Team &amp; access.
+            </p>
+          )}
+          {canRecord && owing > 0 && (
+            <p className="mt-2 text-[12.5px] text-muted-foreground">
+              Paying more than the balance becomes credit on the child&apos;s balance. A wrong entry is voided from its receipt, never deleted.
+            </p>
+          )}
+        </Card>
       )}
 
       {/* ── the paper ── */}
@@ -108,7 +132,7 @@ export default async function InvoicePage({ params, searchParams }: {
               <tr key={l.id}>
                 <td className="border border-neutral-200 px-2.5 py-1.5">
                   {l.label}
-                  {l.source === "carry_forward" && <span className="ml-1.5 text-[10.5px] text-neutral-500">(previous term)</span>}
+                  {l.source === "carry_forward" && <span className="ml-1.5 text-[10.5px] text-neutral-500">(brought forward from last term)</span>}
                   {l.source === "scholarship" && <span className="ml-1.5 text-[10.5px] text-neutral-500">(discount)</span>}
                 </td>
                 <td className="border border-neutral-200 px-2.5 py-1.5 text-right">{(l.amountPesewas / 100).toFixed(2)}</td>
@@ -140,63 +164,29 @@ export default async function InvoicePage({ params, searchParams }: {
           </p>
         </div>
         <p className="mt-4 border-t border-neutral-200 pt-2 text-center text-[10px] text-neutral-400">
-          Generated for {d.school.name} · SchoolSpec · Issued {d.invoice.createdAt.toISOString().slice(0, 10)} — the lines above will not change.
+          Generated for {d.school.name} · SchoolSpec · Issued {d.invoice.createdAt.toISOString().slice(0, 10)}
         </p>
       </div>
 
-      {/* ── admin side: record + history (never printed) ── */}
+      {/* ── payments so far (never printed) ── */}
       {isAdmin && (
-        <div className="mt-5 grid items-start gap-4 md:grid-cols-2 print:hidden">
-          {canRecord ? (
-            <Card>
-              <h2 className="font-semibold">Record a payment</h2>
-              <form action={recordPayment.bind(null, slug, d.invoice.id)} className="mt-3 grid grid-cols-2 gap-3">
-                <Field label="Amount (GHS)">
-                  <input name="amountGhs" type="number" step="0.01" min="0.01" required
-                    defaultValue={owing ? (owing / 100).toFixed(2) : ""} className={inputCls} />
-                </Field>
-                <Field label="Method">
-                  <select name="method" className={inputCls}>
-                    <option value="cash">Cash</option><option value="momo">MoMo</option>
-                    <option value="bank">Bank transfer</option>
-                  </select>
-                </Field>
-                <Field label="Reference (MoMo/bank)"><input name="reference" className={inputCls} /></Field>
-                <Field label="Note (optional)"><input name="note" placeholder="e.g. paid by uncle" className={inputCls} /></Field>
-                <SubmitButton className={btnCls + " col-span-2"} pendingText="Saving…">
-                  Save — mints the next receipt
-                </SubmitButton>
-              </form>
-              <p className="mt-2 text-[12px] text-muted-foreground">
-                Overpayment becomes credit on the child&apos;s ledger. A wrong entry is voided, never deleted.
-              </p>
-            </Card>
-          ) : (
-            <Card>
-              <h2 className="font-semibold">Record a payment</h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                Your access doesn&apos;t include recording payments — ask a full admin under Settings → Team &amp; access.
-              </p>
-            </Card>
-          )}
-          <Card>
-            <h2 className="font-semibold">Payments on this invoice</h2>
-            <ul className="mt-2 divide-y divide-border text-sm" data-nums="">
-              {pays.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-2 py-1.5">
-                  <span className={p.voidedAt ? "line-through opacity-60" : ""}>
-                    <b>{p.receiptNo ?? "—"}</b>
-                    <span className="ml-2 text-muted-foreground">{p.createdAt.toISOString().slice(0, 10)} · {ghs(p.amountPesewas)} · {p.method}</span>
-                  </span>
-                  <Link href={`/fees/receipt/${p.id}`} className="text-[12.5px] font-medium text-primary">
-                    {p.voidedAt ? "view (void)" : "receipt →"}
-                  </Link>
-                </li>
-              ))}
-              {!pays.length && <li className="py-1.5 text-muted-foreground">Nothing yet.</li>}
-            </ul>
-          </Card>
-        </div>
+        <Card className="mt-5 print:hidden">
+          <h2 className="font-semibold">Payments on this bill</h2>
+          <ul className="mt-2 divide-y divide-border text-sm" data-nums="">
+            {pays.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-2 py-1">
+                <span className={p.voidedAt ? "line-through opacity-60" : ""}>
+                  <b>{p.receiptNo ?? "—"}</b>
+                  <span className="ml-2 text-muted-foreground">{p.createdAt.toISOString().slice(0, 10)} · {ghs(p.amountPesewas)} · {p.method}</span>
+                </span>
+                <Link href={`/fees/receipt/${p.id}`} className="inline-flex h-11 items-center px-1 text-[14px] font-medium text-primary">
+                  {p.voidedAt ? "View (void)" : "View receipt"}
+                </Link>
+              </li>
+            ))}
+            {!pays.length && <li className="py-1.5 text-muted-foreground">Nothing yet.</li>}
+          </ul>
+        </Card>
       )}
     </div>
   );

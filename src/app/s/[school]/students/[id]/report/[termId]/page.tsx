@@ -8,6 +8,8 @@ import { getReportConfig } from "@/modules/assessment/report-config";
 import { getDocSign, getClassSigner } from "@/core/doc-sign";
 import { SignLine } from "@/ui/paper-sign";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { PrintButton } from "@/ui/print-button";
+import { btnCls } from "@/ui/kit";
 
 /** School-branded digital report card — print-optimized (browser print → PDF).
  *  Server PDF→R2 pipeline swaps in at deploy without changing this template. */
@@ -37,7 +39,11 @@ export default async function ReportCard({ params }: {
   const ds = cfg.signatures ? await getDocSign(school) : null;
   const signer = cfg.signatures ? await getClassSigner(school.id, s?.classId ?? null) : null;
   return (
-    <div className="mx-auto max-w-2xl bg-white p-8 text-black print:p-0">
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-4 print:hidden">
+        <PrintButton label="Download report card" className={btnCls + " h-12 w-full text-[16px] sm:w-auto"} />
+      </div>
+    <div className="bg-white p-8 text-black print:p-0">
       <div className="relative border-b-4 pb-4 text-center" style={{ borderColor: color }}>
         {logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -123,9 +129,7 @@ export default async function ReportCard({ params }: {
                 : <SignLine key={l} label={l} />)}
         </div>
       )}
-      <p className="mt-6 text-center text-[11px] text-neutral-400 print:hidden">
-        Digital report card · use your browser&apos;s Print for a PDF copy
-      </p>
+    </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -8,22 +8,24 @@ import {
   UserPlus, Library, Bus, Boxes, Briefcase, BarChart3, ClipboardList, Menu, X,
   CalendarRange,
   School, ListChecks, Inbox, Radio, ScrollText, Banknote,
+  ArrowLeftRight, Sun, Moon,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
-import { ThemeToggle } from "./theme-toggle";
-import { SignOutButton, SwitchAccountButton } from "./signout";
+import { SignOutButton } from "./signout";
+import { authClient } from "@/lib/auth-client";
+import { rememberAccount } from "@/lib/device-accounts";
 import { ProductTour, TourRelaunch } from "./tour";
 
 const ICONS: Record<string, LucideIcon> = {
-  Dashboard: LayoutDashboard, Students: Users, Guardians: HeartHandshake,
-  Staff: BriefcaseBusiness, Settings, Billing: CreditCard,
-  Attendance: CalendarCheck, Assessment: GraduationCap, Reports: ClipboardList,
+  Home: LayoutDashboard, Students: Users, Parents: HeartHandshake,
+  Staff: BriefcaseBusiness, "School settings": Settings, "Your SchoolSpec plan": CreditCard,
+  Attendance: CalendarCheck, Scores: GraduationCap, "Report cards": ClipboardList,
   Timetable: CalendarDays, Homework: BookOpen, Announcements: Megaphone, Fees: Wallet,
   Calendar: CalendarRange,
   Admissions: UserPlus, Library, Transport: Bus, Inventory: Boxes,
-  "Staff HR": Briefcase, Analytics: BarChart3,
+  Leave: Briefcase, Analytics: BarChart3, Settings,
   Overview: LayoutDashboard, Schools: School, Onboarding: ListChecks, Leads: Inbox,
   Plans: ClipboardList, Requests: Inbox,
   Subscriptions: CreditCard, Financials: Banknote, Broadcast: Radio,
@@ -32,14 +34,49 @@ const ICONS: Record<string, LucideIcon> = {
 
 export type NavEntry = { label: string; href: string; badge?: number };
 
-/* Assembly groups: Learn / Money / Operate. Labels not listed here (the
- * platform console, portals) fall into an uncaptioned leading group, so
- * every nav renders correctly whether or not it matches the school map. */
+/* Groups by WHEN you use it, not what it is. Labels not listed here (the
+ * platform console) fall into an uncaptioned leading group, so every nav
+ * renders correctly whether or not it matches the school map. */
 const NAV_GROUPS: [string, string[]][] = [
-  ["Learn", ["Dashboard", "Students", "Guardians", "Attendance", "Assessment", "Reports", "Timetable", "Homework"]],
-  ["Money", ["Fees", "Billing"]],
-  ["Operate", ["Staff", "Staff HR", "Admissions", "Announcements", "Calendar", "Library", "Transport", "Inventory", "Analytics", "Settings"]],
+  ["Every day", ["Home", "Attendance", "Scores", "Fees", "Announcements"]],
+  ["People", ["Students", "Parents", "Staff", "Admissions"]],
+  ["This term", ["Report cards", "Timetable", "Calendar", "Homework"]],
+  ["Extras", ["Library", "Transport", "Inventory", "Leave", "Analytics"]],
+  ["Setup", ["School settings", "Your SchoolSpec plan"]],
 ];
+
+/* Phone bottom tabs: three page tabs per role + Menu, each with its word.
+ * A tab whose page is not on this person's nav (module off, tab not
+ * granted) is dropped rather than shown dead. */
+const TABS: Record<string, { label: string; href: string; icon: LucideIcon }[]> = {
+  admin: [
+    { label: "Home", href: "/", icon: LayoutDashboard },
+    { label: "Attendance", href: "/attendance", icon: CalendarCheck },
+    { label: "Fees", href: "/fees", icon: Wallet },
+  ],
+  teacher: [
+    { label: "Register", href: "/attendance", icon: CalendarCheck },
+    { label: "Scores", href: "/assessment", icon: GraduationCap },
+    { label: "Homework", href: "/homework", icon: BookOpen },
+  ],
+  parent: [
+    { label: "My children", href: "/", icon: HeartHandshake },
+    { label: "Fees", href: "/fees", icon: Wallet },
+    { label: "Notices", href: "/comms", icon: Megaphone },
+  ],
+  student: [
+    { label: "Today", href: "/", icon: LayoutDashboard },
+    { label: "Homework", href: "/homework", icon: BookOpen },
+    // ponytail: results live at /students/{id}/performance/{term}, ids the nav
+    // does not have, so the tab lands on the dashboard, which links them
+    { label: "Results", href: "/", icon: ClipboardList },
+  ],
+};
+
+const isActive = (pathname: string, href: string) => {
+  const isRoot = href === "/" || href === "/platform";
+  return isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
+};
 
 function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -61,8 +98,7 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
           <div className="space-y-0.5">
             {ls.map((n) => {
               const href = `/${n.href.replace(/^\//, "")}` || "/";
-              const isRoot = href === "/" || href === "/platform";
-              const active = isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
+              const active = isActive(pathname, href);
               const Icon = ICONS[n.label] ?? LayoutDashboard;
               return (
                 <Link key={n.label + href} href={href} onClick={onNavigate} data-tour={n.label}
@@ -118,11 +154,82 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
             <span className="block text-[12px] capitalize text-ink-text/60">{role.replace("_", " ")}</span>
           </span>
         </Link>
-        <div className="flex items-center justify-between gap-2 px-2 pt-1">
-          <SignOutButton /><SwitchAccountButton /><TourRelaunch /><ThemeToggle />
+        <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pt-1">
+          <SignOutButton />
+          <button type="button" onClick={switchAccount} className={footerBtn}>
+            <ArrowLeftRight size={12} /> Switch account
+          </button>
+          <TourRelaunch />
+          <ThemeWord />
         </div>
       </div>
     </div>
+  );
+}
+
+const footerBtn = "flex h-8 items-center gap-1.5 text-[12px] font-medium text-ink-text/60 transition-colors hover:text-ink-text-strong";
+
+/** Same as SignOutButton, but lands on the account picker (a teacher who is
+ *  also a parent). Lives here so the footer can say "Switch account" in full. */
+async function switchAccount() {
+  try {
+    const s = await authClient.getSession();
+    const u = s.data?.user as { email?: string; name?: string; username?: string | null } | undefined;
+    const id = u?.username || u?.email;
+    if (id) rememberAccount({ id, name: u?.name });
+  } catch { /* purely a convenience */ }
+  await authClient.signOut();
+  // a full load on purpose: the session cookie is gone, nothing client-side should survive
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.href = "/sign-in?switch=1";
+}
+
+/** Light/dark switch that says which one you will get. The html class is
+ *  the source of truth (the root layout sets it before first paint). */
+const themeListeners = new Set<() => void>();
+const subscribeTheme = (fn: () => void) => { themeListeners.add(fn); return () => { themeListeners.delete(fn); }; };
+function ThemeWord() {
+  const dark = useSyncExternalStore(subscribeTheme,
+    () => document.documentElement.classList.contains("dark"), () => false);
+  const flip = () => {
+    const next = !dark;
+    try {
+      document.documentElement.classList.toggle("dark", next);
+      localStorage.setItem("schoolspec-theme", next ? "dark" : "light");
+    } catch { /* storage blocked: theme still flips for this page */ }
+    themeListeners.forEach((fn) => fn());
+  };
+  return (
+    <button type="button" onClick={flip} className={footerBtn}>
+      {dark ? <Sun size={12} /> : <Moon size={12} />} {dark ? "Light" : "Dark"}
+    </button>
+  );
+}
+
+/** Phone bottom tabs (below lg): three page tabs + Menu, every one with its word. */
+function BottomTabs({ role, items, openMenu }: { role: string; items: NavEntry[]; openMenu: () => void }) {
+  const pathname = usePathname();
+  const hrefs = new Set(items.map((n) => `/${n.href.replace(/^\//, "")}`));
+  const tabs = (TABS[role] ?? []).filter((t) => hrefs.has(t.href));
+  if (tabs.length === 0) return null;
+  const cls = "flex h-12 flex-1 flex-col items-center justify-center gap-1 rounded-md text-[12px] font-medium leading-none";
+  return (
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-ink-border bg-ink px-1 pb-[var(--sab)] pt-1 print:hidden lg:hidden">
+      {tabs.map((t) => {
+        const active = isActive(pathname, t.href);
+        return (
+          <Link key={t.label} href={t.href} data-tour={`tab:${t.label}`} aria-current={active ? "page" : undefined}
+            className={cn(cls, active ? "text-ink-text-strong" : "text-ink-text/70")}>
+            <t.icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+            {t.label}
+          </Link>
+        );
+      })}
+      <button type="button" onClick={openMenu} className={cn(cls, "text-ink-text/70")}>
+        <Menu size={20} strokeWidth={1.8} />
+        Menu
+      </button>
+    </nav>
   );
 }
 
@@ -166,7 +273,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
    * pans horizontally itself — tables, the timetable, chip rows, canvases,
    * form controls — so those keep their native behaviour. */
   const openRef = useRef(open);
-  openRef.current = open;
+  useEffect(() => { openRef.current = open; }, [open]);
   const settledAt = useRef(0); // swallow the ghost click a touch gesture leaves behind
   useEffect(() => {
     const ownsHorizontal = (el: EventTarget | null) => {
@@ -236,9 +343,9 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
       </aside>
       {/* mobile top bar */}
       <div className="fixed inset-x-0 top-0 z-40 flex h-[calc(3.25rem+var(--sat))] items-center gap-3 bg-ink px-4 pb-2.5 pt-[calc(0.625rem+var(--sat))] print:hidden lg:hidden">
-        <button onClick={() => setOpen(true)} aria-label="Open menu"
-          className="rounded-md p-1.5 text-ink-text hover:bg-ink-2">
-          <Menu size={20} />
+        <button onClick={() => setOpen(true)}
+          className="flex h-9 items-center gap-1.5 rounded-md px-2 text-[14px] font-medium text-ink-text hover:bg-ink-2">
+          <Menu size={20} /> Menu
         </button>
         <LogoMark size={24} variant="light" />
         <span className="truncate text-[14px] font-semibold text-ink-text-strong">{props.schoolName}</span>
@@ -254,12 +361,13 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
             transition: dragging ? "none" : "transform 260ms cubic-bezier(.32,.72,0,1)",
             touchAction: "pan-y" }}>
           <SidebarInner {...props} onNavigate={() => setOpen(false)} />
-          <button onClick={() => setOpen(false)} aria-label="Close menu"
-            className="absolute right-3 top-4 rounded-md p-1.5 text-ink-text hover:bg-ink-2">
-            <X size={18} />
+          <button onClick={() => setOpen(false)}
+            className="absolute right-3 top-[calc(0.875rem+var(--sat))] flex h-9 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-ink-text hover:bg-ink-2">
+            <X size={16} /> Close
           </button>
         </div>
       </div>
+      <BottomTabs role={props.role} items={props.items} openMenu={() => setOpen(true)} />
       <ProductTour role={props.role} schoolName={props.schoolName} setDrawerOpen={setOpen} />
     </>
   );

@@ -1,19 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, eq, sql, inArray, asc } from "drizzle-orm";
+import { and, eq, sql, asc } from "drizzle-orm";
 import { db } from "@/db";
-import { classes, levels, students, subjects, attendanceRecords, staff, teachingAssignments } from "@/db/schema";
+import { classes, levels, students, subjects, attendanceRecords, staff } from "@/db/schema";
 import { requireModule, getTeacherScope } from "@/core/school-context";
-import { Card, PageHeader, Empty, btnCls } from "@/ui/kit";
+import { Card, PageHeader, Empty, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { remindClassTeacher, nudgesTodayByClass } from "./actions";
-
-const ERR: Record<string, string> = {
-  noteacher: "That class has no class teacher yet — assign one on Teaching & allocations first.",
-  weekend: "That day is a weekend — school records run Monday to Friday only.",
-  holiday: "That day is marked as a holiday, so there is no register to keep.",
-  notallowed: "Only an admin can correct a past day's register.",
-};
 
 const hhmm = (d: Date) =>
   d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Accra" });
@@ -45,12 +38,8 @@ function Breakdown({ present, late, absent }: { present: number; late: number; a
  *  of subject-only classes (no marking — that's the class teacher's job).
  *  Admins: a monitoring board — school pulse up top, unmarked registers
  *  called out with one-tap reminders, marked ones showing the full picture. */
-export default async function Attendance({ params, searchParams }: {
-  params: Promise<{ school: string }>;
-  searchParams: Promise<{ err?: string }>;
-}) {
+export default async function Attendance({ params }: { params: Promise<{ school: string }> }) {
   const { school: slug } = await params;
-  const { err } = await searchParams;
   const { school, user } = await requireModule(slug, "attendance");
   // families come here for their own record — that lives in the record book
   if (user.role === "parent" || user.role === "student") redirect("/attendance/register");
@@ -122,13 +111,10 @@ export default async function Attendance({ params, searchParams }: {
       <div>
         <PageHeader title="Attendance" sub={dateLabel}
           action={{ href: "/attendance/register", label: "Record book" }} />
-        {err && ERR[err] && (
-          <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[err]}</p>
-        )}
         <h2 className="mb-3 text-sm font-semibold">My register{homerooms.length === 1 ? "" : "s"}</h2>
         {homerooms.length === 0 && (
           <Empty title="You are not a class teacher"
-            hint="Attendance is marked by the class teacher (form master). If that should be you, ask your admin to assign you on Teaching & allocations." />
+            hint="Attendance is marked by the class teacher (JHS). If that should be you, ask your admin to assign you on Teaching & allocations." />
         )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {homerooms.map((c) => {
@@ -152,7 +138,7 @@ export default async function Attendance({ params, searchParams }: {
                       <RateBar {...m} />
                       <Breakdown {...m} />
                       {out.length > 0 && (
-                        <p className="truncate text-[13px] text-danger">Out: {out.join(", ")}</p>
+                        <p className="text-[13px] text-danger">Absent: {out.join(", ")}</p>
                       )}
                     </div>
                   ) : (
@@ -179,7 +165,7 @@ export default async function Attendance({ params, searchParams }: {
                       {(subsOf.get(c.id) ?? []).join(", ") || "—"}
                     </p>
                     <p className="mt-1.5 text-[12.5px] text-faint">
-                      Register: {teacherName.get(c.formMasterId ?? c.classTeacherId ?? "") ?? "no form master"}
+                      Register: {teacherName.get(c.formMasterId ?? c.classTeacherId ?? "") ?? "no class teacher"}
                       {m && <span className="text-success"> · marked ✓</span>}
                     </p>
                   </Card>
@@ -211,10 +197,6 @@ export default async function Attendance({ params, searchParams }: {
     <div>
       <PageHeader title="Attendance" sub={dateLabel}
         action={{ href: "/attendance/register", label: "Record book" }} />
-
-      {err && ERR[err] && (
-        <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[err]}</p>
-      )}
 
       {/* today's pulse — can the office stop chasing yet? */}
       <Card className="mb-6">
@@ -260,12 +242,15 @@ export default async function Attendance({ params, searchParams }: {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {unmarked.map((c) => {
               const tname = teacherName.get(c.formMasterId ?? c.classTeacherId ?? "");
+              const first = tname?.split(" ")[0];
               const nudge = nudgedAt.get(c.id);
+              // a form can't sit inside a link, so the card link is stretched
+              // over the card and the buttons float above it
               return (
-                <Card key={c.id} className="border-warning/60">
+                <Card key={c.id} className="relative border-warning/60">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <Link href={`/attendance/${c.id}`} className="text-[15px] font-semibold hover:text-primary">{c.name}</Link>
+                      <Link href={`/attendance/${c.id}`} className="text-[15px] font-semibold after:absolute after:inset-0 hover:text-primary">{c.name}</Link>
                       <p className="text-[13px] text-muted-foreground" data-nums="">{rosterN.get(c.id)} students · {c.levelName}</p>
                     </div>
                     <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[12px] font-medium text-warning">not marked</span>
@@ -275,20 +260,23 @@ export default async function Attendance({ params, searchParams }: {
                       ? <span className="text-muted-foreground">Class teacher: <span className="font-medium text-foreground">{tname}</span></span>
                       : <span className="font-medium text-warning">No class teacher assigned</span>}
                   </p>
-                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+                  <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                     {tname ? (
                       <form action={remindClassTeacher.bind(null, slug, c.id)}>
                         <input type="hidden" name="from" value="wall" />
                         <SubmitButton className={btnCls + " px-3 py-1.5 text-[13.5px]"} pendingText="Sending…">
-                          {nudge ? "Remind again" : "Send reminder"}
+                          {nudge ? `Remind ${first} again` : `Remind ${first}`}
                         </SubmitButton>
                       </form>
                     ) : (
-                      <Link href="/staff/allocations" className="text-[13.5px] font-medium text-primary">Assign teacher →</Link>
+                      <Link href="/staff/allocations" className={btnCls + " px-3 py-1.5 text-[13.5px]"}>Choose a teacher</Link>
                     )}
-                    <span className="text-[12.5px] text-faint" data-nums="">
-                      {nudge ? `reminded ${hhmm(nudge)}` : ""}
-                    </span>
+                    <Link href={`/attendance/${c.id}?mark=1`} className={btnGhostCls + " px-3 py-1.5 text-[13.5px]"}>
+                      Mark it myself
+                    </Link>
+                    {nudge && (
+                      <span className="text-[12.5px] text-faint" data-nums="">reminded {hhmm(nudge)}</span>
+                    )}
                   </div>
                 </Card>
               );
@@ -313,7 +301,7 @@ export default async function Attendance({ params, searchParams }: {
                       <div>
                         <p className="text-[15px] font-semibold">{c.name}</p>
                         <p className="text-[13px] text-muted-foreground">
-                          {teacherName.get(c.formMasterId ?? c.classTeacherId ?? "") ?? "no form master"}
+                          {teacherName.get(c.formMasterId ?? c.classTeacherId ?? "") ?? "no class teacher"}
                         </p>
                       </div>
                       <span className="rounded-full bg-success/10 px-2 py-0.5 text-[12px] font-medium text-success" data-nums="">
@@ -324,9 +312,7 @@ export default async function Attendance({ params, searchParams }: {
                       <RateBar {...m} />
                       <Breakdown {...m} />
                       {out.length > 0 && (
-                        <p className="truncate text-[13px] text-danger" title={out.join(", ")}>
-                          Out: {out.slice(0, 3).join(", ")}{out.length > 3 ? ` +${out.length - 3}` : ""}
-                        </p>
+                        <p className="text-[13px] text-danger">Absent: {out.join(", ")}</p>
                       )}
                     </div>
                   </Card>

@@ -7,6 +7,8 @@ import { requireSchool } from "@/core/school-context";
 import { uid } from "@/lib/utils";
 
 export type ImportRow = {
+  /** Excel row number (numbered before blank rows are dropped). */
+  row: number;
   firstName: string; lastName: string; otherNames?: string; sex: string;
   dob?: string; className: string; admissionNo?: string; admittedOn?: string;
   boarder?: string; idNumber?: string; placeOfBirth?: string; nationality?: string;
@@ -22,7 +24,9 @@ const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** Bulk install: rows parsed from the Excel collection sheet, validated and
  *  written per-row — valid rows import, broken rows are reported by line. */
-export async function importStudentRows(slug: string, rows: ImportRow[]) {
+export async function importStudentRows(
+  slug: string, rows: ImportRow[],
+): Promise<{ error: string } | { imported: number; errors: string[] }> {
   const { school } = await requireSchool(slug, ["admin"]);
   if (!Array.isArray(rows) || rows.length === 0) return { error: "No rows found in the sheet" };
   if (rows.length > 2000) return { error: "Sheet too large — import in batches of 2,000" };
@@ -45,14 +49,11 @@ export async function importStudentRows(slug: string, rows: ImportRow[]) {
   };
   const guardianCache = new Map<string, string>(); // phone → id
 
+  // validate every row FIRST, so the plan cap counts only what will import
   const errors: string[] = [];
-  let imported = 0;
-  const capLeft = school.studentCap - Number(act);
-  if (rows.length > capLeft)
-    return { error: `Sheet has ${rows.length} students but your plan allows ${capLeft} more — upgrade in Billing first` };
-
+  const valid: { r: ImportRow; sex: "male" | "female"; classId: string; dob: string | null; admittedOn: string | null; admissionNo: string }[] = [];
   for (let i = 0; i < rows.length; i++) {
-    const r = rows[i], line = i + 2; // +2: header row + 1-index, matches Excel
+    const r = rows[i], line = r.row ?? i + 2; // +2: header row + 1-index, matches Excel
     const firstName = t(r.firstName), lastName = t(r.lastName);
     const sexRaw = (r.sex ?? "").trim().toLowerCase();
     const sex = sexRaw.startsWith("m") ? "male" : sexRaw.startsWith("f") ? "female" : null;
@@ -69,11 +70,20 @@ export async function importStudentRows(slug: string, rows: ImportRow[]) {
     }
     admissionNo = admissionNo ?? nextAdm();
     usedAdm.add(admissionNo.toLowerCase());
+    valid.push({ r, sex, classId: cl.id, dob, admittedOn, admissionNo });
+  }
 
+  const capLeft = school.studentCap - Number(act);
+  if (valid.length > capLeft)
+    return { error: `Sheet has ${valid.length} students to import but your plan allows ${capLeft} more — upgrade in Billing first` };
+
+  let imported = 0;
+  for (const { r, sex, classId, dob, admittedOn, admissionNo } of valid) {
+    const firstName = t(r.firstName)!, lastName = t(r.lastName)!;
     const id = uid();
     await db.insert(students).values({
       id, schoolId: school.id, admissionNo, firstName, lastName,
-      otherNames: t(r.otherNames), sex, dob, classId: cl.id,
+      otherNames: t(r.otherNames), sex, dob, classId,
       admittedOn, boarding: /^(y|yes|true|boarder|1)$/i.test((r.boarder ?? "").trim()),
       idNumber: t(r.idNumber), placeOfBirth: t(r.placeOfBirth),
       nationality: t(r.nationality), hometown: t(r.hometown), religion: t(r.religion),
@@ -83,7 +93,7 @@ export async function importStudentRows(slug: string, rows: ImportRow[]) {
       paymentNote: t(r.paymentNote),
     });
     if (year) await db.insert(enrollments).values({
-      id: uid(), schoolId: school.id, studentId: id, yearId: year.id, classId: cl.id,
+      id: uid(), schoolId: school.id, studentId: id, yearId: year.id, classId,
     }).onConflictDoNothing();
 
     const gName = t(r.guardianName), gPhone = t(r.guardianPhone);
@@ -105,7 +115,7 @@ export async function importStudentRows(slug: string, rows: ImportRow[]) {
         }
         guardianCache.set(gPhone, gid);
       }
-      await db.insert(studentGuardians).values({ studentId: id, guardianId: gid }).onConflictDoNothing();
+      await db.insert(studentGuardians).values({ studentId: id, guardianId: gid, isPrimary: true }).onConflictDoNothing();
     }
     imported++;
   }

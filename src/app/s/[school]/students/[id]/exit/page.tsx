@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import {
-  students, studentItems, feeInvoices, loans, books, routeStudents, routes,
+  students, studentItems, loans, books, routeStudents, routes,
 } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
@@ -54,18 +54,6 @@ export default async function ExitStudent({ params, searchParams }: {
   const issues = (balance > 0 ? 1 : 0) + openLoans.length + custody.length;
   const feesBlocked = feesCfg.clearanceGate === "block" && balance > 0;
 
-  const Row = ({ ok, label, detail }: { ok: boolean; label: string; detail: string }) => (
-    <li className="flex items-start justify-between gap-3 py-2">
-      <span className="flex items-center gap-2">
-        <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[12px] font-bold",
-          ok ? "bg-success/15 text-success" : "bg-warning-soft text-warning")}>
-          {ok ? "✓" : "!"}
-        </span>
-        <span className="text-sm font-medium">{label}</span>
-      </span>
-      <span className={cn("text-right text-[14px]", ok ? "text-muted-foreground" : "font-medium text-warning")}>{detail}</span>
-    </li>
-  );
 
   return (
     <div className="max-w-2xl">
@@ -155,5 +143,20 @@ export default async function ExitStudent({ params, searchParams }: {
         </Card>
       </form>
     </div>
+  );
+}
+
+function Row({ ok, label, detail }: { ok: boolean; label: string; detail: string }) {
+  return (
+    <li className="flex items-start justify-between gap-3 py-2">
+      <span className="flex items-center gap-2">
+        <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[12px] font-bold",
+          ok ? "bg-success/15 text-success" : "bg-warning-soft text-warning")}>
+          {ok ? "✓" : "!"}
+        </span>
+        <span className="text-sm font-medium">{label}</span>
+      </span>
+      <span className={cn("text-right text-[14px]", ok ? "text-muted-foreground" : "font-medium text-warning")}>{detail}</span>
+    </li>
   );
 }

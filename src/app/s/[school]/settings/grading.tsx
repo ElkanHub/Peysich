@@ -6,7 +6,7 @@ import { btnCls, inputCls } from "@/ui/kit";
 type Band = { min: number; grade: string; remark: string };
 
 /** Grading scheme editor: CA/exam weights + editable grade bands. */
-export function GradingEditor({ slug, caWeight, examWeight, bands }: {
+export function GradingEditor({ slug, caWeight, bands }: {
   slug: string; caWeight: number; examWeight: number; bands: Band[];
 }) {
   const [ca, setCa] = useState(caWeight);

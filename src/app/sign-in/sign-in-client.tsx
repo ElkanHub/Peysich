@@ -33,13 +33,16 @@ export function SignInClient({ google }: { google: boolean }) {
       : await authClient.signIn.username({ username: id, password });
     if (r.error) {
       setPending(false);
+      // better-auth deliberately returns one 401 for "no such account" and
+      // "wrong password", so the copy names both rather than blaming the password.
       setError(r.error.status === 401 || /invalid|incorrect|not found/i.test(r.error.message ?? "")
-        ? "That password doesn't match this account. Check it and try again."
+        ? "We couldn't sign you in. Check the email or username and the password."
         : r.error.message ?? "Sign-in didn't go through. Try again.");
       return;
     }
     const u = (r.data as { user?: { name?: string } } | null)?.user;
     rememberAccount({ id, name: u?.name });
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- /go is a route handler (cookies + subdomain hop): full navigation
     if (!id.includes("@")) window.location.href = "/go";
   }
 
@@ -52,12 +55,12 @@ export function SignInClient({ google }: { google: boolean }) {
         title: "Run the whole school from one calm place.",
         body: "Attendance in 30 seconds. Report cards in one click. Fees parents can actually pay — with the papers signed, stamped and ready. Built for preschool through JHS.",
       }}
-      footer={<p>Trouble signing in? Your school office can reset your login — passwords are never sent by SchoolSpec.</p>}
+      footer={<p>Passwords are never sent by SchoolSpec — only your school office can reset one.</p>}
     >
       <h2 className="text-[26px] font-semibold leading-tight tracking-tight">
         {switching ? "Switch account" : "Welcome back"}
       </h2>
-      <p className="mt-1.5 text-[15px] text-muted-foreground">
+      <p className="mt-1.5 text-[16px] text-muted-foreground">
         {switching ? "Pick an account below, or sign in with another one." : "Sign in to your school."}
       </p>
 
@@ -68,23 +71,23 @@ export function SignInClient({ google }: { google: boolean }) {
             {accounts.map((a) => {
               const on = picked?.id === a.id;
               return (
-                <div key={a.id} className="group relative shrink-0">
+                <div key={a.id} className="relative shrink-0 pr-2 pt-2">
                   <button type="button" onClick={() => pick(a)}
-                    className={cn("flex w-[132px] flex-col items-start gap-2 rounded-2xl border p-3 text-left transition-colors",
+                    className={cn("flex min-h-12 w-[132px] flex-col items-start gap-2 rounded-2xl border p-3 text-left transition-colors",
                       on ? "border-primary bg-brand-soft" : "border-border bg-card hover:bg-muted")}>
                     <span className={cn("flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-semibold uppercase",
                       on ? "bg-primary text-primary-foreground" : "bg-brand-container text-on-brand-container")}>
                       {(a.name || a.id).slice(0, 2)}
                     </span>
                     <span className="min-w-0 w-full">
-                      <span className="block truncate text-[14px] font-medium">{a.name || a.id}</span>
-                      <span className="block truncate text-[11.5px] text-muted-foreground">{a.name ? a.id : "tap to continue"}</span>
+                      <span className="block truncate text-[16px] font-medium">{a.name || a.id}</span>
+                      <span className="block truncate text-[13px] text-muted-foreground">{a.name ? a.id : "tap to continue"}</span>
                     </span>
                   </button>
-                  <button type="button" aria-label={`Forget ${a.id} on this device`}
+                  <button type="button" aria-label={`Remove ${a.name || a.id} from this device`} title="Remove from this device"
                     onClick={() => { forgetAccount(a.id); if (email === a.id) setEmail(""); }}
-                    className="absolute -right-1.5 -top-1.5 rounded-full border border-border bg-card p-1 text-muted-foreground shadow-[var(--shadow-sm)] transition-colors hover:text-danger sm:opacity-0 sm:group-hover:opacity-100">
-                    <X size={12} />
+                    className="absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-[var(--shadow-sm)] transition-colors hover:text-danger">
+                    <X size={14} />
                   </button>
                 </div>
               );
@@ -98,14 +101,14 @@ export function SignInClient({ google }: { google: boolean }) {
           <label htmlFor="id" className={label}>Email or username</label>
           <input id="id" ref={idRef} value={email} onChange={(e) => setEmail(e.target.value)} required
             autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
-            inputMode="email" className={cn(doorInputCls, "mt-1.5")} placeholder="you@school.edu.gh or your username" />
+            inputMode="email" className={cn(doorInputCls, "mt-1.5 text-[16px]")} placeholder="you@school.edu.gh or your username" />
         </div>
         <div>
           <label htmlFor="pw" className={label}>Password</label>
           <div className="relative mt-1.5">
             <input id="pw" ref={passRef} value={password} onChange={(e) => setPassword(e.target.value)}
               type={show ? "text" : "password"} required autoComplete="current-password"
-              className={cn(doorInputCls, "pr-12")} placeholder="••••••••" />
+              className={cn(doorInputCls, "pr-12 text-[16px]")} placeholder="••••••••" />
             <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
               {show ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -113,11 +116,12 @@ export function SignInClient({ google }: { google: boolean }) {
           </div>
         </div>
         {error && (
-          <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[14px] text-danger">{error}</p>
+          <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[16px] text-danger">{error}</p>
         )}
-        <button type="submit" disabled={pending} className={doorBtnCls}>
+        <button type="submit" disabled={pending} className={cn(doorBtnCls, "text-[16px]")}>
           {pending ? "Signing in…" : <>Sign in <ArrowRight size={16} /></>}
         </button>
+        <p className="text-[16px] text-muted-foreground">Forgotten your password? Ask the school office to reset it.</p>
       </form>
 
       {google && (
@@ -125,7 +129,7 @@ export function SignInClient({ google }: { google: boolean }) {
           <div className="my-5 flex items-center gap-3 text-[12px] text-faint">
             <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
           </div>
-          <button type="button" className={doorGhostCls}
+          <button type="button" className={cn(doorGhostCls, "text-[16px]")}
             onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/go" })}>
             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
               <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.3 14.6 2.3 12 2.3 6.6 2.3 2.3 6.6 2.3 12s4.3 9.7 9.7 9.7c5.6 0 9.3-3.9 9.3-9.5 0-.6-.1-1.1-.2-1.6H12z" />
@@ -135,7 +139,7 @@ export function SignInClient({ google }: { google: boolean }) {
         </>
       )}
 
-      <p className="mt-8 text-[14px] text-muted-foreground">
+      <p className="mt-8 text-[16px] text-muted-foreground">
         New school? <a href="/signup" className="font-semibold text-primary hover:underline">Start a free trial</a>
       </p>
     </Door>

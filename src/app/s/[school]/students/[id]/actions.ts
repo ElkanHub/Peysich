@@ -1,14 +1,15 @@
 "use server";
-import { and, eq, ne, sql, isNull } from "drizzle-orm";
+import { and, eq, ne, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   students, studentFiles, studentItems, enrollments, academicYears,
-  routeStudents, feeInvoices,
+  routeStudents,
 } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { uid } from "@/lib/utils";
+import { withFlash } from "@/lib/flash";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim() || null;
 
@@ -36,7 +37,24 @@ export async function updateStudent(slug: string, id: string, f: FormData) {
     boarding: f.get("boarding") === "on", admittedOn: str(f, "admittedOn"),
   }).where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   revalidatePath(`/students/${id}`);
-  redirect(`/students/${id}?flash=saved`);
+  redirect(withFlash(`/students/${id}`, "Student file saved."));
+}
+
+const DETAIL_KEYS = [
+  "otherNames", "dob", "idNumber", "placeOfBirth", "nationality", "hometown", "religion",
+  "address", "previousSchool", "bloodGroup", "medicalNotes", "emergencyName", "emergencyPhone",
+] as const;
+
+/** "Add more details" on the student's page: each folded group posts only its
+ *  own fields, so only the fields present in the form are written. */
+export async function updateStudentDetails(slug: string, id: string, f: FormData) {
+  const { school } = await requireSchool(slug, ["admin"]);
+  const set: Partial<typeof students.$inferInsert> = {};
+  for (const k of DETAIL_KEYS) if (f.has(k)) set[k] = str(f, k);
+  if (f.has("attendance")) set.boarding = f.get("attendance") === "boarder";
+  await db.update(students).set(set).where(and(eq(students.id, id), eq(students.schoolId, school.id)));
+  revalidatePath(`/students/${id}`);
+  redirect(withFlash(`/students/${id}`, "Details saved."));
 }
 
 /** ENROL an existing student: place them into a year + class. One enrolment
@@ -70,7 +88,7 @@ export async function enrollStudent(slug: string, id: string, f: FormData) {
     }).where(eq(students.id, id));
   }
   revalidatePath(`/students/${id}`);
-  redirect(`/students/${id}?tab=academics`);
+  redirect(withFlash(`/students/${id}?tab=academics`, `Enrolled for ${year.name}.`));
 }
 
 const EXIT_REASONS = ["transferred", "withdrawn", "completed", "expelled", "other"] as const;
@@ -127,7 +145,7 @@ export async function exitStudent(slug: string, id: string, f: FormData) {
 
   revalidatePath("/students");
   revalidatePath(`/students/${id}`);
-  redirect(`/students/${id}?exited=1`);
+  redirect(withFlash(`/students/${id}`, `${s.firstName} ${s.lastName} has left the school. Undo from the file if this was recorded in error.`));
 }
 
 /** Undo an exit recorded in error (distinct from re-admission, which is the
@@ -154,7 +172,7 @@ export async function savePaymentNote(slug: string, id: string, f: FormData) {
   await db.update(students).set({ paymentNote: str(f, "paymentNote") })
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   revalidatePath(`/students/${id}`);
-  redirect(`/students/${id}?tab=fees&flash=saved`);
+  redirect(withFlash(`/students/${id}?tab=fees`, "Fee arrangement saved."));
 }
 
 export async function setStudentPhoto(slug: string, id: string, fileKey: string) {
@@ -163,7 +181,6 @@ export async function setStudentPhoto(slug: string, id: string, fileKey: string)
   await db.update(students).set({ photoUrl: fileKey })
     .where(and(eq(students.id, id), eq(students.schoolId, school.id)));
   revalidatePath(`/students/${id}`);
-  revalidatePath("/students/new");
   return { ok: true };
 }
 
@@ -180,7 +197,6 @@ export async function addStudentFile(slug: string, id: string, payload: {
     uploadedBy: user.name,
   });
   revalidatePath(`/students/${id}`);
-  revalidatePath("/students/new");
   return { ok: true };
 }
 
@@ -195,7 +211,6 @@ export async function addStudentItem(slug: string, id: string, f: FormData) {
     note: str(f, "note"), receivedBy: user.name,
   });
   revalidatePath(`/students/${id}`);
-  revalidatePath("/students/new");
 }
 
 export async function returnStudentItem(slug: string, id: string, itemId: string, f: FormData) {

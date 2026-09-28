@@ -147,15 +147,16 @@ export function InvoicePdf({ d, logo, student }: { d: InvoiceDoc; logo: Img; stu
   );
 }
 
+const Row = ({ k, v, bold }: { k: string; v: string; bold?: boolean }) => (
+  <View style={{ flexDirection: "row", marginBottom: 5 }}>
+    <Text style={[s.th, { width: 105, flexShrink: 0, paddingTop: 1 }]}>{k}</Text>
+    <Text style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, fontFamily: bold ? "Helvetica-Bold" : "Helvetica" }}>{v}</Text>
+  </View>
+);
+
 export function ReceiptPdf({ d, logo, stamp }: { d: ReceiptDoc; logo: Img; stamp: Img }) {
   const color = d.school.branding.primaryColor || "#5E1D3E";
   const p = d.payment;
-  const Row = ({ k, v, bold }: { k: string; v: string; bold?: boolean }) => (
-    <View style={{ flexDirection: "row", marginBottom: 5 }}>
-      <Text style={[s.th, { width: 105, flexShrink: 0, paddingTop: 1 }]}>{k}</Text>
-      <Text style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, fontFamily: bold ? "Helvetica-Bold" : "Helvetica" }}>{v}</Text>
-    </View>
-  );
   return (
     <Document title={`Receipt ${p.receiptNo ?? ""} — ${d.student.firstName} ${d.student.lastName}`}>
       <Page size="A5" style={[s.page, { padding: 30 }]}>

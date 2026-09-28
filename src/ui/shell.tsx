@@ -5,12 +5,12 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { RouteProgress } from "./route-progress";
 
 const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
-  { label: "Dashboard", href: "", roles: ["admin", "teacher", "student", "parent"] },
+  { label: "Home", href: "", roles: ["admin", "teacher", "student", "parent"] },
   { label: "Students", href: "/students", roles: ["admin", "teacher"] },
-  { label: "Guardians", href: "/guardians", roles: ["admin"] },
+  { label: "Parents", href: "/guardians", roles: ["admin"] },
   { label: "Staff", href: "/staff", roles: ["admin"] },
-  { label: "Settings", href: "/settings", roles: ["admin"] },
-  { label: "Billing", href: "/billing", roles: ["admin"] },
+  { label: "School settings", href: "/settings", roles: ["admin"] },
+  { label: "Your SchoolSpec plan", href: "/billing", roles: ["admin"] },
 ];
 
 /** App shell: ink sidebar (nav composed from core + enabled modules — off means
@@ -34,7 +34,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
     .map((n) => ({ ...n, badge: badges?.[n.href] }));
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen text-[16px] max-md:text-[18px]">
       <AppNav schoolName={schoolName} role={role} userName={userName} items={items}
         avatarUrl={avatarUrl} />
       <div className="min-w-0 flex-1">
@@ -47,7 +47,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
               className="h-8 w-8 shrink-0 rounded-md object-contain" />
           )}
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 print:max-w-none print:p-0 lg:px-8 lg:py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-6 pb-[calc(5rem+var(--sab))] print:max-w-none print:p-0 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );

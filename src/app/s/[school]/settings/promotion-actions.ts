@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { academicYears, terms, classes, students, enrollments } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { uid } from "@/lib/utils";
+import { withFlash } from "@/lib/flash";
 
 /** Year-end promotion, the way it happens on the ground: every class gets a
  *  destination, and individual students can be held back to repeat. */
@@ -25,6 +26,7 @@ export async function runPromotion(slug: string, f: FormData) {
 
   const yearName = String(f.get("yearName") ?? "").trim();
   const y = new Date().getFullYear();
+  let moved = 0, left = 0;
   const yearId = uid();
   await db.update(academicYears).set({ isCurrent: false })
     .where(eq(academicYears.schoolId, school.id));
@@ -56,11 +58,14 @@ export async function runPromotion(slug: string, f: FormData) {
     const dest = target.get(s.classId) ?? "stay";
     if (dest === "graduate") {
       await db.update(students).set({ status: "alumni" }).where(eq(students.id, s.id));
+      left++;
       continue;
     }
     const toClass = dest === "stay" ? s.classId : dest;
-    if (toClass !== s.classId)
+    if (toClass !== s.classId) {
       await db.update(students).set({ classId: toClass }).where(eq(students.id, s.id));
+      moved++;
+    }
     await db.insert(enrollments).values({
       id: uid(), schoolId: school.id, studentId: s.id, yearId,
       classId: toClass, status: dest === "stay" ? "enrolled" : "promoted",
@@ -69,5 +74,6 @@ export async function runPromotion(slug: string, f: FormData) {
 
   revalidatePath("/");
   revalidatePath("/settings");
-  redirect("/settings?flash=done");
+  redirect(withFlash("/settings?tab=yearend",
+    `${yearName || `${y}/${y + 1}`} started. ${moved} children moved up; ${left} became past students.`));
 }

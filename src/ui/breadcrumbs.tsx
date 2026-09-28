@@ -4,13 +4,13 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 const LABELS: Record<string, string> = {
-  students: "Students", new: "New", import: "Import", guardians: "Guardians",
-  staff: "Staff", settings: "Settings", billing: "Billing", account: "My Account",
-  attendance: "Attendance", assessment: "Assessment", matrix: "Term closing",
+  students: "Students", new: "New", import: "Import", guardians: "Parents",
+  staff: "Staff", settings: "School settings", billing: "Your SchoolSpec plan", account: "My Account",
+  attendance: "Attendance", assessment: "Scores", matrix: "Term closing",
   skills: "Skills", timetable: "Timetable", homework: "Homework", comms: "Announcements",
   fees: "Fees", admissions: "Admissions", library: "Library", transport: "Transport",
-  inventory: "Inventory", hr: "Staff HR", analytics: "Analytics", children: "My Children",
-  report: "Report card", reports: "Reports", performance: "Performance",
+  inventory: "Inventory", hr: "Leave", analytics: "Analytics", children: "My children",
+  report: "Report card", reports: "Report cards", performance: "Performance",
   calendar: "Calendar", register: "Record book",
   setup: "Catalog & settings", invoice: "Invoice", receipt: "Receipt",
   offer: "Offer letter",
@@ -38,7 +38,8 @@ export function Breadcrumbs({ root = "Home" }: { root?: string }) {
     parts = parts.slice(2);
   }
   const crumbs = parts.map((seg, i) => ({
-    label: LABELS[seg] ?? (isId(seg) ? "Detail" : seg),
+    // the console's /platform/settings is not a school's settings
+    label: (!base && seg === "settings" ? "Settings" : LABELS[seg]) ?? (isId(seg) ? "Detail" : seg),
     href: base + "/" + parts.slice(0, i + 1).join("/"),
     // link only the module root (first segment) — deeper paths need params
     // the trail can't know, so they stay text instead of risking a 404

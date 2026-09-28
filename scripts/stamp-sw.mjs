@@ -4,8 +4,10 @@
  * the commit on Vercel, the clock elsewhere — either way every deploy ships
  * a byte-different worker, which is what makes the update toast fire. */
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const root = new URL("..", import.meta.url).pathname;
+// fileURLToPath, not .pathname: on Windows the latter is "/E:/…", which fs reads as E:\E:\…
+const root = fileURLToPath(new URL("..", import.meta.url));
 const version = (process.env.VERCEL_GIT_COMMIT_SHA || process.env.SW_VERSION || Date.now().toString(36)).slice(0, 10);
 const src = readFileSync(root + "src/pwa/sw.template.js", "utf8");
 mkdirSync(root + "public", { recursive: true });

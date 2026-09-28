@@ -3,16 +3,21 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { staff, classes, subjects, teachingAssignments, staffTeaching } from "@/db/schema";
+import { staff, classes, subjects, teachingAssignments, staffTeaching, adminAccess } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { createSchoolLogin } from "@/core/accounts";
+import { ACCESS_PRESETS } from "@/core/access-const";
+import { sendSms } from "@/lib/notify";
+import { withFlash } from "@/lib/flash";
 import { uid } from "@/lib/utils";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim() || null;
-const wiz = (id: string, step: number) => `/staff/new?draft=${id}&step=${step}`;
 const TYPES = ["teaching", "admin", "support"];
 const EMPLOYMENT = ["full_time", "part_time", "contract"];
+/** What a login opens. "none" is stored — it is a real choice, not a gap. */
 const ROLES = ["teacher", "admin", "bursar", "none"];
+/** The default login for each kind of work: least access that does the job. */
+const ROLE_FOR: Record<string, string> = { teaching: "teacher", admin: "bursar", support: "none" };
 
 async function ownStaff(slug: string, id: string) {
   const { school } = await requireSchool(slug, ["admin"]);
@@ -22,122 +27,97 @@ async function ownStaff(slug: string, id: string) {
   return { school, s };
 }
 
-const bump = (s: { onboardingStep: number | null }, step: number) =>
-  ({ onboardingStep: Math.max(s.onboardingStep ?? 0, step) });
+type StaffRow = typeof staff.$inferSelect;
 
-/** Stage 1 — personal & contact. Creates the DRAFT staff record. */
-export async function startOnboarding(slug: string, f: FormData) {
+/** Create the portal login a staff record asks for. A bursar is an admin
+ *  LIMITED to the Bursar preset (Team & access grants) — never a full admin.
+ *  Returns the credentials, or why nothing was made. */
+async function makeStaffLogin(
+  school: { id: string; slug: string }, s: StaffRow,
+): Promise<{ error: string } | { loginAs: string; password: string }> {
+  if (s.userId) return { error: "Already has a login" };
+  if (s.staffRole === "none") return { error: "Marked as no login — change what they can open first" };
+  const r = await createSchoolLogin({
+    schoolId: school.id, schoolSlug: school.slug, name: s.name,
+    role: s.staffRole === "teacher" ? "teacher" : "admin",
+    email: s.email, phone: s.phone,
+    username: s.email ? s.email.split("@")[0] : `staff.${(s.staffNo ?? s.id.slice(0, 6)).toLowerCase()}`,
+  });
+  if ("error" in r) return r;
+  if (s.staffRole === "bursar") await db.insert(adminAccess).values({
+    userId: r.userId, schoolId: school.id,
+    tabs: JSON.stringify(ACCESS_PRESETS.bursar.tabs), feeActions: JSON.stringify(ACCESS_PRESETS.bursar.fees),
+  }).onConflictDoNothing();
+  await db.update(staff).set({ userId: r.userId }).where(eq(staff.id, s.id));
+  return { loginAs: r.loginAs, password: r.password };
+}
+
+/** Text the login to the person's phone. Returns the sentence for the toast. */
+async function smsLogin(school: { id: string; slug: string; name: string }, s: StaffRow, who: string) {
+  if (!s.phone) return ` Add a phone to send ${who} a login, or create one on this page.`;
+  const r = await makeStaffLogin(school, s);
+  if ("error" in r) return ` No login: ${r.error.toLowerCase()}.`;
+  const status = await sendSms({
+    schoolId: school.id, to: s.phone, kind: "login", senderId: school.name,
+    body: `${school.name}: your SchoolSpec login is ${r.loginAs}, password ${r.password}. Please change it after signing in.`,
+  });
+  return status === "sent"
+    ? ` Login sent by SMS to ${s.phone}.`
+    : ` Login created — SMS is not set up, so reset the password on this page to hand it over.`;
+}
+
+/** ONE screen: name, phone, what they do, and whether to text them a login.
+ *  `draftId` is an old wizard draft being finished on the same row. */
+export async function addStaff(slug: string, draftId: string | null, f: FormData) {
   const { school } = await requireSchool(slug, ["admin"]);
   const name = str(f, "name");
-  if (!name) redirect(`/staff/new?err=name`);
-  const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(staff)
-    .where(eq(staff.schoolId, school.id));
-  const id = uid();
-  await db.insert(staff).values({
-    id, schoolId: school.id, name,
-    staffNo: `STF${String(Number(n) + 1).padStart(4, "0")}`,
-    phone: str(f, "phone"), email: str(f, "email"),
-    dob: str(f, "dob"), nationality: str(f, "nationality"),
-    idNumber: str(f, "idNumber"), address: str(f, "address"),
-    emergencyName: str(f, "emergencyName"), emergencyPhone: str(f, "emergencyPhone"),
-    status: "draft", onboardingStep: 1,
-  });
-  redirect(wiz(id, 2));
-}
-
-/** Stage 1 revisited. */
-export async function savePersonal(slug: string, id: string, f: FormData) {
-  const { school, s } = await ownStaff(slug, id);
-  await db.update(staff).set({
-    name: str(f, "name") ?? s.name, phone: str(f, "phone"), email: str(f, "email"),
-    dob: str(f, "dob"), nationality: str(f, "nationality"),
-    idNumber: str(f, "idNumber"), address: str(f, "address"),
-    emergencyName: str(f, "emergencyName"), emergencyPhone: str(f, "emergencyPhone"),
-    ...bump(s, 1),
-  }).where(eq(staff.id, id));
-  redirect(wiz(id, 2));
-}
-
-/** Stage 2 — employment & contract. Teaching reveals stage 3. */
-export async function saveEmployment(slug: string, id: string, f: FormData) {
-  const { s } = await ownStaff(slug, id);
-  const staffType = String(f.get("staffType") ?? "");
-  const employmentType = String(f.get("employmentType") ?? "");
-  await db.update(staff).set({
-    staffNo: str(f, "staffNo") ?? s.staffNo,
-    designation: str(f, "designation"),
-    staffType: TYPES.includes(staffType) ? staffType : s.staffType,
-    employmentType: EMPLOYMENT.includes(employmentType) ? employmentType : s.employmentType,
-    joinedOn: str(f, "joinedOn"), probationEnd: str(f, "probationEnd"),
-    ...bump(s, 2),
-  }).where(eq(staff.id, id));
-  const next = TYPES.includes(staffType) && staffType !== "teaching" ? 4 : 3;
-  redirect(wiz(id, next));
-}
-
-/** Stage 3 — qualifications & competencies (teaching staff only). */
-export async function saveQualifications(slug: string, id: string, f: FormData) {
-  const { s } = await ownStaff(slug, id);
-  const competencies: string[] = [];
-  for (const [k] of f.entries()) if (k.startsWith("comp_")) competencies.push(k.slice(5));
-  await db.update(staff).set({
-    qualification: str(f, "qualification"), institution: str(f, "institution"),
-    licenseNo: str(f, "licenseNo"), competencies,
-    ...bump(s, 3),
-  }).where(eq(staff.id, id));
-  redirect(wiz(id, 4));
-}
-
-/** Stage 4 — payroll & statutory (admin-only data). */
-export async function savePayroll(slug: string, id: string, f: FormData) {
-  const { s } = await ownStaff(slug, id);
-  const salary = Number(f.get("salaryGhs"));
-  await db.update(staff).set({
-    bankName: str(f, "bankName"), bankBranch: str(f, "bankBranch"),
-    accountNo: str(f, "accountNo"), ssnitNo: str(f, "ssnitNo"), tinNo: str(f, "tinNo"),
-    salaryPesewas: salary > 0 ? Math.round(salary * 100) : null,
-    ...bump(s, 4),
-  }).where(eq(staff.id, id));
-  redirect(wiz(id, 5));
-}
-
-/** Stage 5 — portal role (or no portal access at all). */
-export async function saveAccess(slug: string, id: string, f: FormData) {
-  const { s } = await ownStaff(slug, id);
-  const role = String(f.get("portalRole") ?? "");
-  await db.update(staff).set({
-    staffRole: ROLES.includes(role) && role !== "none" ? role : s.staffRole,
-    ...bump(s, 5),
-    // "none" is remembered by simply not issuing a login at completion
-  }).where(eq(staff.id, id));
-  redirect(wiz(id, 6) + (role === "none" ? "&portal=none" : ""));
-}
-
-/** Stage 6 — review & provisioning: activate + optional login. */
-export async function completeOnboarding(slug: string, id: string, f: FormData) {
-  const { school, s } = await ownStaff(slug, id);
-  await db.update(staff).set({ status: "active", onboardingStep: null })
-    .where(eq(staff.id, id));
-  if (f.get("issueLogin") === "on" && !s.userId) {
-    const r = await createSchoolLogin({
-      schoolId: school.id, schoolSlug: school.slug, name: s.name,
-      role: s.staffRole === "teacher" ? "teacher" : "admin",
-      email: s.email, phone: s.phone,
-      username: s.email ? s.email.split("@")[0] : `staff.${(s.staffNo ?? id.slice(0, 6)).toLowerCase()}`,
+  if (!name) redirect(withFlash("/staff/new", "A full name is needed.", { error: true }));
+  const staffType = TYPES.includes(String(f.get("staffType"))) ? String(f.get("staffType")) : "teaching";
+  const staffRole = ROLE_FOR[staffType];
+  const phone = str(f, "phone");
+  const draft = draftId
+    ? (await db.select().from(staff).where(and(eq(staff.id, draftId), eq(staff.schoolId, school.id))))[0]
+    : null;
+  let id: string;
+  if (draft && draft.status !== "active") {
+    id = draft.id;
+    await db.update(staff).set({ name, phone, staffType, staffRole, status: "active", onboardingStep: null })
+      .where(eq(staff.id, id));
+  } else {
+    const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(staff)
+      .where(eq(staff.schoolId, school.id));
+    id = uid();
+    await db.insert(staff).values({
+      id, schoolId: school.id, name, phone, staffType, staffRole,
+      staffNo: `STF${String(Number(n) + 1).padStart(4, "0")}`,
+      joinedOn: new Date().toISOString().slice(0, 10),
     });
-    if (!("error" in r))
-      await db.update(staff).set({ userId: r.userId }).where(eq(staff.id, id));
+  }
+  let note = "";
+  if (f.get("sendLogin") === "on" && staffRole !== "none") {
+    const [s] = await db.select().from(staff).where(eq(staff.id, id));
+    note = await smsLogin(school, s, "them");
   }
   revalidatePath("/staff");
-  redirect(`/staff/${id}`);
+  redirect(withFlash(`/staff/${id}`, `${name} added.${note}`));
 }
 
+/** "Create login" on the Staff File — same rules as the one-screen form. */
+export async function issueStaffLogin(slug: string, id: string) {
+  const { school, s } = await ownStaff(slug, id);
+  const r = await makeStaffLogin(school, s);
+  revalidatePath(`/staff/${id}`);
+  return r;
+}
+
+/** Drop a draft: a status flip, so the Undo toast can flip it back (staff/[id]/undo). */
 export async function discardOnboarding(slug: string, id: string) {
   const { school } = await requireSchool(slug, ["admin"]);
-  await db.delete(staff).where(and(
+  // ponytail: discarded rows stay (invisible — every query filters on status)
+  await db.update(staff).set({ status: "discarded" }).where(and(
     eq(staff.id, id), eq(staff.schoolId, school.id), eq(staff.status, "draft")));
   revalidatePath("/staff");
-  redirect("/staff");
+  redirect(withFlash("/staff", "Draft removed.", { undo: `/staff/${id}/undo` }));
 }
 
 /** Staff File edits — one action per card, flash on save. */
@@ -174,8 +154,13 @@ export async function updateStaffCard(slug: string, id: string, card: string, f:
       salaryPesewas: salary > 0 ? Math.round(salary * 100) : null,
     }).where(eq(staff.id, id));
   }
+  // what a login opens — settable until a login exists (then it lives on the account)
+  if (card === "access" && !s.userId) {
+    const role = String(f.get("staffRole") ?? "");
+    if (ROLES.includes(role)) await db.update(staff).set({ staffRole: role }).where(eq(staff.id, id));
+  }
   revalidatePath(`/staff/${id}`);
-  redirect(`/staff/${id}?flash=saved`);
+  redirect(withFlash(`/staff/${id}`, "Saved."));
 }
 
 export async function setStaffPhoto(slug: string, id: string, fileKey: string) {
@@ -206,7 +191,7 @@ export async function markStaffLeft(slug: string, id: string, f: FormData) {
   await db.delete(staffTeaching).where(and(
     eq(staffTeaching.schoolId, school.id), eq(staffTeaching.staffId, id)));
   revalidatePath("/staff");
-  redirect(`/staff/${id}?flash=done`);
+  redirect(withFlash(`/staff/${id}`, `${s.name} marked as left. Their classes are free to reassign.`, { undo: `/staff/${id}/undo` }));
 }
 
 export async function reinstateStaff(slug: string, id: string) {
@@ -257,7 +242,7 @@ export async function fillClassWithTeacher(slug: string, classId: string) {
       });
   }
   revalidatePath("/staff/allocations");
-  redirect(`/staff/allocations?flash=done#class-${classId}`);
+  redirect(withFlash("/staff/allocations", "The class teacher now takes every subject.") + `#class-${classId}`);
 }
 
 /* ── Teacher PROFILES — who a teacher IS, set once, everything derived ── */
@@ -299,7 +284,7 @@ export async function addTeachingRole(slug: string, staffId: string, f: FormData
     redirect(`/staff/allocations?err=roleform`);
   }
   revalidatePath("/staff/allocations");
-  redirect(`/staff/allocations?flash=saved`);
+  redirect(withFlash("/staff/allocations", "Teaching role added."));
 }
 
 export async function removeTeachingRole(slug: string, roleId: string) {
@@ -307,7 +292,7 @@ export async function removeTeachingRole(slug: string, roleId: string) {
   await db.delete(staffTeaching).where(and(
     eq(staffTeaching.id, roleId), eq(staffTeaching.schoolId, school.id)));
   revalidatePath("/staff/allocations");
-  redirect(`/staff/allocations?flash=done`);
+  redirect(withFlash("/staff/allocations", "Teaching role removed."));
 }
 
 /** Release the MAIN class-teacher seat of a class. */
@@ -316,7 +301,7 @@ export async function clearMainClassTeacher(slug: string, classId: string) {
   await db.update(classes).set({ classTeacherId: null })
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
   revalidatePath("/staff/allocations");
-  redirect(`/staff/allocations?flash=done`);
+  redirect(withFlash("/staff/allocations", "Class teacher seat cleared."));
 }
 
 /** The pastoral tag — every class's responsible teacher. Empty means
@@ -327,7 +312,7 @@ export async function setFormMaster(slug: string, classId: string, f: FormData) 
     .set({ formMasterId: String(f.get("staffId") || "") || null })
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
   revalidatePath("/staff/allocations");
-  redirect(`/staff/allocations?flash=saved`);
+  redirect(withFlash("/staff/allocations", "Form master saved."));
 }
 
 /* ── the Allocation Matrix — one grid, whole school. Every drop writes the

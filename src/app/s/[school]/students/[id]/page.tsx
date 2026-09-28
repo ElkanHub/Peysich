@@ -9,10 +9,10 @@ import {
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
-import { Card, DataTable, Field, PageHeader, Tr, Td, Badge, Empty, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { Card, DataTable, Field, Tr, Td, Badge, Empty, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { PhotoUploader, DocumentUploader } from "./uploaders";
-import { addStudentItem, returnStudentItem, savePaymentNote, cancelExit } from "./actions";
+import { addStudentItem, returnStudentItem, savePaymentNote, cancelExit, updateStudentDetails } from "./actions";
 import { addGuardianToStudent, unlinkChild } from "../../guardians/actions";
 import { cn } from "@/lib/utils";
 import { SubmitButton } from "@/ui/feedback";
@@ -139,7 +139,7 @@ export default async function StudentFile({ params, searchParams }: {
                 ["Nationality", s.nationality], ["Hometown", s.hometown],
                 ["Religion", s.religion], ["Residential address", s.address],
                 ["Previous school", s.previousSchool],
-                ["Attendance", s.boarding ? "Boarder" : "Day student"]].map(([l, v]) => (
+                ["Day student / Boarder", s.boarding ? "Boarder" : "Day student"]].map(([l, v]) => (
                 <div key={String(l)} className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">{l}</dt>
                   <dd className="text-right">{v ?? "—"}</dd>
@@ -163,7 +163,7 @@ export default async function StudentFile({ params, searchParams }: {
             )}
           </Card>
           <Card>
-            <h2 className="font-semibold">Guardians</h2>
+            <h2 className="font-semibold">Parents & guardians</h2>
             {gs.length === 0 && <p className="mt-2 text-sm text-muted-foreground">None linked.</p>}
             <ul className="mt-2 space-y-1.5 text-sm">
               {gs.map((g) => (
@@ -188,35 +188,9 @@ export default async function StudentFile({ params, searchParams }: {
                 </li>
               ))}
             </ul>
-            {isAdmin && (
-              <details className="mt-3 border-t border-border pt-3">
-                <summary className="cursor-pointer text-[14px] font-medium text-primary">Add a guardian</summary>
-                <form action={addGuardianToStudent.bind(null, slug, id)} className="mt-2 grid grid-cols-2 gap-2.5">
-                  <Field label="Full name"><input name="name" required className={inputCls} /></Field>
-                  <Field label="Phone (reuses an existing parent)"><input name="phone" required className={inputCls} /></Field>
-                  <Field label="Relation">
-                    <select name="relation" className={inputCls}>
-                      {["parent", "mother", "father", "grandparent", "aunt", "uncle", "sibling", "other"]
-                        .map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                  </Field>
-                  <Field label="How to reach them">
-                    <select name="contactPref" className={inputCls}>
-                      <option value="phone">Phone call — not a portal user</option>
-                      <option value="sms">SMS — not a portal user</option>
-                      <option value="portal">Uses the parent portal</option>
-                    </select>
-                  </Field>
-                  <label className="col-span-2 flex items-center gap-2 text-[14px]">
-                    <input type="checkbox" name="isPrimary" /> Primary contact
-                  </label>
-                  <SubmitButton className={btnGhostCls + " col-span-2"}>Add guardian</SubmitButton>
-                </form>
-              </details>
-            )}
           </Card>
           {isAdmin && <Card>
-            <h2 className="font-semibold">Access & photo</h2>
+            <h2 className="font-semibold">Login</h2>
             <dl className="mt-2.5 space-y-1.5 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-muted-foreground">Student login</dt>
@@ -224,9 +198,9 @@ export default async function StudentFile({ params, searchParams }: {
                   {s.userId ? (
                     <>
                       <span className="font-mono text-xs">{login?.username ?? login?.email}</span>
-                      {isAdmin && <ResetPasswordButton slug={slug} kind="student" id={s.id} />}
+                      <ResetPasswordButton slug={slug} kind="student" id={s.id} />
                     </>
-                  ) : isAdmin ? <IssueLoginButton slug={slug} kind="student" id={s.id} /> : "—"}
+                  ) : <IssueLoginButton slug={slug} kind="student" id={s.id} />}
                 </dd>
               </div>
               <div className="flex justify-between">
@@ -234,12 +208,15 @@ export default async function StudentFile({ params, searchParams }: {
                 <dd>{s.admittedOn ?? s.createdAt.toISOString().slice(0, 10)}</dd>
               </div>
             </dl>
-            <div className="mt-3"><PhotoUploader slug={slug} studentId={id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} /></div>
           </Card>}
+
+          {isAdmin && (
+            <MoreDetails slug={slug} s={s} photoUrl={photoUrl} hasGuardian={gs.length > 0} />
+          )}
         </div>
       )}
 
-      {tab === "academics" && <AcademicsTab schoolId={school.id} studentId={id} termId={term?.id} />}
+      {tab === "academics" && <AcademicsTab studentId={id} termId={term?.id} />}
 
       {tab === "performance" && (
         <PerformanceTab schoolId={school.id} studentId={id} classId={s.classId} termId={term?.id} />
@@ -254,6 +231,146 @@ export default async function StudentFile({ params, searchParams }: {
           paymentNote={s.paymentNote} isAdmin={isAdmin} />
       )}
     </div>
+  );
+}
+
+type S = typeof students.$inferSelect;
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group border-b border-border last:border-b-0">
+      <summary className="flex cursor-pointer items-center justify-between py-3 text-[15px] font-medium">
+        {title}<span className="text-muted-foreground transition-transform group-open:rotate-90">›</span>
+      </summary>
+      <div className="pb-4">{children}</div>
+    </details>
+  );
+}
+const SaveBtn = () => <SubmitButton className={btnGhostCls + " col-span-2 mt-1"} pendingText="Saving…">Save</SubmitButton>;
+
+/** Everything the one-screen Add form left out, folded away. Each group is
+ *  its own form and writes only its own fields (updateStudentDetails). */
+function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
+  slug: string; s: S; photoUrl: string | null; hasGuardian: boolean;
+}) {
+  const save = updateStudentDetails.bind(null, slug, s.id);
+  return (
+    <Card className="md:col-span-2">
+      <h2 className="font-semibold">Add more details</h2>
+      <p className="mt-0.5 text-[14px] text-muted-foreground">Open a group when you have the information. Nothing here is required.</p>
+      <div className="mt-2">
+        <Group title="Date of birth & ID">
+          <form action={save} className="grid grid-cols-2 gap-2.5">
+            <Field label="Date of birth"><input name="dob" type="date" defaultValue={s.dob ?? ""} className={inputCls} /></Field>
+            <Field label="National ID / birth cert no"><input name="idNumber" defaultValue={s.idNumber ?? ""} placeholder="GHA-XXXXXXXXX-X" className={inputCls} /></Field>
+            <Field label="Other names"><input name="otherNames" defaultValue={s.otherNames ?? ""} className={inputCls} /></Field>
+            <Field label="Day student / Boarder">
+              <select name="attendance" defaultValue={s.boarding ? "boarder" : "day"} className={inputCls}>
+                <option value="day">Day student</option><option value="boarder">Boarder</option>
+              </select>
+            </Field>
+            <Field label="Place of birth"><input name="placeOfBirth" defaultValue={s.placeOfBirth ?? ""} className={inputCls} /></Field>
+            <Field label="Nationality"><input name="nationality" defaultValue={s.nationality ?? ""} placeholder="Ghanaian" className={inputCls} /></Field>
+            <Field label="Hometown"><input name="hometown" defaultValue={s.hometown ?? ""} className={inputCls} /></Field>
+            <Field label="Religion"><input name="religion" defaultValue={s.religion ?? ""} className={inputCls} /></Field>
+            <div className="col-span-2"><Field label="Residential address"><input name="address" defaultValue={s.address ?? ""} className={inputCls} /></Field></div>
+            <SaveBtn />
+          </form>
+        </Group>
+        <Group title="Health">
+          <form action={save} className="grid grid-cols-2 gap-2.5">
+            <Field label="Blood group">
+              <select name="bloodGroup" defaultValue={s.bloodGroup ?? ""} className={inputCls}>
+                <option value="">Unknown</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((g) => <option key={g}>{g}</option>)}
+              </select>
+            </Field>
+            <div />
+            <div className="col-span-2">
+              <Field label="Allergies, conditions, medication — teachers of the class see a flag">
+                <textarea name="medicalNotes" rows={3} defaultValue={s.medicalNotes ?? ""}
+                  placeholder="e.g. Asthmatic — inhaler in school bag. No groundnuts." className={inputCls} />
+              </Field>
+            </div>
+            <SaveBtn />
+          </form>
+        </Group>
+        <Group title="Previous school">
+          <form action={save} className="grid grid-cols-2 gap-2.5">
+            <div className="col-span-2">
+              <Field label="Previous school & last grade completed">
+                <input name="previousSchool" defaultValue={s.previousSchool ?? ""} placeholder="Sunrise Academy — completed B3" className={inputCls} />
+              </Field>
+            </div>
+            <SaveBtn />
+          </form>
+        </Group>
+        <Group title="Photo">
+          <PhotoUploader slug={slug} studentId={s.id} enabled={r2Enabled} currentUrl={photoUrl} initials={`${s.firstName[0]}${s.lastName[0]}`} />
+        </Group>
+        <Group title="Documents">
+          <p className="mb-3 text-[13.5px] text-muted-foreground">
+            Birth certificate, immunization card, past reports. Everything filed so far is on the{" "}
+            <Link href="?tab=documents" className="font-medium text-primary">Documents tab</Link>.
+          </p>
+          {r2Enabled
+            ? <DocumentUploader slug={slug} studentId={s.id} />
+            : <p className="text-sm text-muted-foreground">Uploads switch on once file storage is set up — record paper originals below.</p>}
+          <form action={addStudentItem.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-2.5 border-t border-border pt-4">
+            <p className="col-span-2 text-[13px] font-semibold">School items they are holding</p>
+            <Field label="Item"><input name="itemName" placeholder="Birth certificate (original)" className={inputCls} /></Field>
+            <Field label="Kept at (be precise)"><input name="location" placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
+            <Field label="Received from"><input name="receivedFrom" className={inputCls} /></Field>
+            <Field label="Note"><input name="note" className={inputCls} /></Field>
+            <SubmitButton className={btnGhostCls + " col-span-2 mt-1"} pendingText="Saving…">Record item</SubmitButton>
+          </form>
+        </Group>
+        <Group title="Second parent / emergency contact">
+          <form action={addGuardianToStudent.bind(null, slug, s.id)} className="grid grid-cols-2 gap-2.5">
+            <p className="col-span-2 text-[13px] font-semibold">{hasGuardian ? "Another parent or guardian" : "Parent or guardian"}</p>
+            <Field label="Full name"><input name="name" required className={inputCls} /></Field>
+            <Field label="Phone (reuses an existing parent)"><input name="phone" required className={inputCls} /></Field>
+            <Field label="Who">
+              <select name="relation" className={inputCls}>
+                {["parent", "mother", "father", "grandparent", "aunt", "uncle", "sibling", "other"]
+                  .map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </Field>
+            <Field label="How to reach them">
+              <select name="contactPref" className={inputCls}>
+                <option value="phone">Phone call — not a portal user</option>
+                <option value="sms">SMS — not a portal user</option>
+                <option value="portal">Uses the parent portal</option>
+              </select>
+            </Field>
+            <label className="col-span-2 flex items-center gap-2 text-[14px]">
+              <input type="checkbox" name="isPrimary" defaultChecked={!hasGuardian} /> Primary contact (billing & pickups)
+            </label>
+            <SubmitButton className={btnGhostCls + " col-span-2 mt-1"} pendingText="Saving…">Add guardian</SubmitButton>
+          </form>
+          <form action={save} className="mt-4 grid grid-cols-2 gap-2.5 border-t border-border pt-4">
+            <p className="col-span-2 text-[13px] font-semibold">Emergency contact — who the school calls if no parent answers</p>
+            <Field label="Name & relation"><input name="emergencyName" defaultValue={s.emergencyName ?? ""} placeholder="Uncle — Kwame Mensah" className={inputCls} /></Field>
+            <Field label="Phone"><input name="emergencyPhone" defaultValue={s.emergencyPhone ?? ""} className={inputCls} /></Field>
+            <SaveBtn />
+          </form>
+        </Group>
+        <Group title="Fee arrangement">
+          <form action={savePaymentNote.bind(null, slug, s.id)}>
+            <Field label="How & where this family pays (kept on the student file)">
+              <textarea name="paymentNote" rows={2} defaultValue={s.paymentNote ?? ""}
+                placeholder="e.g. Father pays via MoMo 024 XXX XXXX, week 2 of term. Sibling discount approved by head."
+                className={inputCls} />
+            </Field>
+            <SubmitButton className={btnGhostCls + " mt-2"} pendingText="Saving…">Save</SubmitButton>
+          </form>
+          <p className="mt-3 text-[13.5px] text-muted-foreground">
+            Transport, scholarships and one-off adjustments are on the{" "}
+            <Link href="?tab=fees" className="font-medium text-primary">Fees tab</Link>.
+          </p>
+        </Group>
+      </div>
+    </Card>
   );
 }
 
@@ -311,9 +428,7 @@ async function PerformanceTab({ schoolId, studentId, classId, termId }: {
   );
 }
 
-async function AcademicsTab({ schoolId, studentId, termId }: {
-  schoolId: string; studentId: string; termId?: string;
-}) {
+async function AcademicsTab({ studentId, termId }: { studentId: string; termId?: string }) {
   const [history, reports, att] = await Promise.all([
     db.select({ year: academicYears.name, className: classes.name, status: enrollments.status })
       .from(enrollments)
@@ -442,12 +557,12 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
       </Card>
 
       <Card>
-        <h2 className="font-semibold">Physical items in custody</h2>
+        <h2 className="font-semibold">School items they are holding</h2>
         <p className="mt-0.5 text-[14px] text-muted-foreground">
           Originals handed to the office — what was received, from whom, and exactly where it is kept.
         </p>
         {items.length === 0
-          ? <div className="mt-3"><Empty title="Nothing in custody"
+          ? <div className="mt-3"><Empty title="Nothing held"
               hint='e.g. "Birth certificate (original) — Office cabinet A, folder 12".' /></div>
           : (
             <div className="mt-3">
@@ -484,7 +599,7 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
             <Field label="Kept at (be precise)"><input name="location" required placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
             <Field label="Received from"><input name="receivedFrom" placeholder="Mother — Akosua Mensah" className={inputCls} /></Field>
             <Field label="Note"><input name="note" className={inputCls} /></Field>
-            <SubmitButton className={btnGhostCls + " col-span-2"}>Record item into custody</SubmitButton>
+            <SubmitButton className={btnGhostCls + " col-span-2"}>Record item</SubmitButton>
           </form>
         )}
       </Card>

@@ -1,5 +1,8 @@
 # SchoolSpec — the simplicity audit
 
+> **Status (28 Sept 2026):** built. What was done, what got in the way and what
+> was left for later is in `SIMPLICITY_BUILD_REPORT.md`.
+
 **What this is.** `PROCESSES.md` lists the 214 things a person can do in SchoolSpec.
 This document walks the ones people do *every day or every term* as they exist in the
 code today, counts the real taps and fields, and says what to cut. The companion file
@@ -55,7 +58,7 @@ today). "Fields" are what the person must fill, not what is on the screen.
 | M14 Send fee reminders | Admin | 1 tap, texts everyone, no preview, re-sends on second tap | 1 tap + 1 confirm with count, cost, message | And "sent this morning already" guard |
 | I7 Publish report cards | Admin | 2 taps, no confirm, no readiness check, locks scores | 2 taps + 1 confirm that names the unready classes | The most irreversible action in the app |
 | I6 Release a test | Admin | 2 taps, allowed at 0 of N classes ready | Button disabled until ready; 1 confirm | |
-| Q3 Parent pays fees | Parent | **Impossible in the app** (the code exists, nothing shows it) | **2 taps + MoMo PIN** | Ship the button that already exists |
+| Q3 Parent pays fees | Parent | "How to pay" text, small links; dead online-pay code | **1 tap to "How to pay"** | Parents pay the school directly, by decision; the app records it. Dead code removed |
 | Q5 Parent gets the report card | Parent | 1 tap, then "use your browser's Print" in 11px | 1 tap, then a big **Download** button | |
 | E1 Admit one student | Admin | 7 stages, ~39 fields, 2 marked required, class refused at the end | **1 screen, 5 fields** | Everything else lives on the student's page under "Add more details" |
 | E2 Import students | Admin | 2 steps; ends with no way to the list | 2 steps; ends on the list with a banner | |
@@ -130,10 +133,12 @@ hits it.
 - **Words:** "Ledger", "lines frozen at issue", "mints the next receipt", "Defaulters",
   "Catalog", "carry forward". → "Who owes what", drop the frozen note, "Save payment",
   "Owing past the due date", "Fee amounts", "brought forward from last term".
-- **The parent cannot pay in the app.** `PayFeesButton` and `startFeePayment` exist and
-  nothing renders them. → Put **Pay GHS 250** on the child card and on the fees page.
-  Amount pre-filled, editable for part payment, then Paystack. This is the single
-  feature that makes parents open the app. It is already written.
+- **No parent money passes through SchoolSpec, by decision.** Parents pay the school
+  directly (MoMo to the school's number, cash at the office) and the office records
+  it; Paystack is only for the school's own SchoolSpec subscription. The dead
+  online-pay code (`PayFeesButton`, `startFeePayment`) is removed so nobody wires
+  it by accident. → **How to pay** is the one big button on the child card, and the
+  page it opens carries the school's number, the name to confirm, and office hours.
 
 ### 3.4 Report cards and releases (admin, three times a year)
 
@@ -281,7 +286,7 @@ Ranked by (how many people × how often) ÷ effort. Each line is one PR.
    changes.
 3. **Fees desk:** search-first "Who is paying?", pre-filled payment, receipt page.
 4. **The five confirms** in §4, and the readiness gate on releases.
-5. **Parent pay button** (already written) and the report card Download button.
+5. **"How to pay" as the parent's one big button** and the report card Download button.
 6. **Score sheet:** autosave, Enter-moves-down, inline errors, "marked out of" up front.
 7. **Admit student / Add staff:** one-screen forms; "Add more details" on the record page.
 8. **Sidebar regroup and plain words**, bottom tabs on phones, Help / Switch account.

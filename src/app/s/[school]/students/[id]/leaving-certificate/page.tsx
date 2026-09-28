@@ -95,7 +95,7 @@ export default async function LeavingCertificate({ params }: {
         <p><span className="text-neutral-500">Reason for leaving:</span> {REASON_LABEL[s.exitReason] ?? s.exitReason}</p>
         <p><span className="text-neutral-500">Transferring to:</span> {s.exitDestination ?? "—"}</p>
         <p><span className="text-neutral-500">Overall attendance:</span> {Number(att.total) ? `${att.present}/${att.total} days` : "—"}</p>
-        <p><span className="text-neutral-500">Attendance type:</span> {s.boarding ? "Boarder" : "Day student"}</p>
+        <p><span className="text-neutral-500">Day student / Boarder:</span> {s.boarding ? "Boarder" : "Day student"}</p>
       </div>
 
       <table className="mt-5 w-full border-collapse text-sm">

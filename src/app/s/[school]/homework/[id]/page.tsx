@@ -44,7 +44,8 @@ export default async function HomeworkDetail({ params }: {
           </Card>
         )}
         <SubmitHomework slug={slug} assignmentId={id} uploadsEnabled={r2Enabled}
-          existingNote={mine?.note ?? ""} submittedAt={mine?.submittedAt?.toISOString() ?? null} />
+          existingNote={mine?.note ?? ""} hasFile={!!mine?.fileUrl}
+          submittedAt={mine?.submittedAt?.toISOString() ?? null} />
       </div>
     );
   }
@@ -75,7 +76,7 @@ export default async function HomeworkDetail({ params }: {
                     <span className="text-[13px] text-muted-foreground">hand-ins not tracked in-app</span>
                   ) : s ? (
                     <span className="text-[13.5px] font-medium text-success">
-                      handed in ✓{cfg.recordMarks && s.mark != null ? ` · mark ${s.mark}` : ""}
+                      Handed in ✓{cfg.recordMarks && s.mark != null ? ` · mark ${s.mark}` : ""}
                     </span>
                   ) : (
                     <span className={`text-[13.5px] ${a.dueDate < today ? "font-medium text-danger" : "text-muted-foreground"}`}>
@@ -126,37 +127,41 @@ export default async function HomeworkDetail({ params }: {
   return (
     <div className="max-w-3xl">
       <PageHeader title={a.title}
-        sub={`${a.className} · ${a.subject} · due ${a.dueDate} · ${subs.length}/${roster.length} submitted`} />
+        sub={`${a.className} · ${a.subject} · due ${a.dueDate} · ${subs.length}/${roster.length} handed in`} />
       {a.instructions && <Card className="mb-4 text-sm">{a.instructions}</Card>}
-      <DataTable head={cfg.recordMarks ? ["Student", "Status", "Work", "Mark & feedback"] : ["Student", "Status", "Work", ""]}>
+      <DataTable head={cfg.recordMarks ? ["Student", "Status", "Work", "Mark & comment"] : ["Student", "Status", "Work", ""]}>
         {roster.map((r) => {
           const s = byStudent.get(r.id);
           return (
             <Tr key={r.id}>
               <Td className="font-medium">{r.lastName}, {r.firstName}</Td>
               <Td>{s
-                ? <span className="text-success">submitted {s.submittedAt.toISOString().slice(0, 10)}</span>
-                : <span className="text-muted-foreground">missing</span>}</Td>
+                ? <span className="font-medium text-success">Handed in {s.submittedAt.toISOString().slice(0, 10)}</span>
+                : <span className="text-muted-foreground">Not yet</span>}</Td>
               <Td className="max-w-40 truncate text-xs">
                 {s?.note}
                 {fileLinks.has(r.id) && (
-                  <a href={fileLinks.get(r.id)} className="ml-1 text-primary" target="_blank">file ↓</a>
+                  <a href={fileLinks.get(r.id)} className="ml-1 text-primary" target="_blank">Open work ↓</a>
                 )}
               </Td>
               <Td>
                 {cfg.recordMarks && s && (
-                  <form action={markSubmission.bind(null, slug, id, r.id)} className="flex items-center gap-1">
-                    <input name="mark" type="number" min={0} max={100} defaultValue={s.mark ?? ""}
-                      className="w-16 rounded-md border border-border px-2 py-1 text-xs" />
-                    <input name="feedback" defaultValue={s.feedback ?? ""} placeholder="feedback"
-                      className="w-32 rounded-md border border-border px-2 py-1 text-xs" />
-                    <SubmitButton className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">✓</SubmitButton>
+                  <form action={markSubmission.bind(null, slug, id, r.id)} className="flex flex-wrap items-center gap-1">
+                    <input name="mark" type="number" min={0} max={100} defaultValue={s.mark ?? ""} placeholder="Mark"
+                      aria-label="Mark out of 100" className="w-16 rounded-md border border-border px-2 py-1 text-xs" />
+                    <input name="feedback" defaultValue={s.feedback ?? ""} placeholder="Comment"
+                      aria-label="Comment" className="w-32 rounded-md border border-border px-2 py-1 text-xs" />
+                    <SubmitButton pendingText="Saving…"
+                      className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                      Save mark
+                    </SubmitButton>
+                    {s.mark != null && <span className="text-xs font-medium text-success">Marked ✓ · {s.mark}</span>}
                   </form>
                 )}
                 {!s && (
                   <form action={recordSubmissionReceipt.bind(null, slug, id, r.id)}>
-                    <SubmitButton className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted"
-                      pendingText="…">✓ handed in</SubmitButton>
+                    <SubmitButton className="rounded-md border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-muted"
+                      pendingText="Saving…">Handed in</SubmitButton>
                   </form>
                 )}
               </Td>

@@ -5,9 +5,7 @@ import { attendanceRecords, classes, levels, students, terms, academicYears } fr
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { getHolidayMap, termWeeks } from "@/core/calendar";
-import { addHoliday } from "../../calendar/actions";
 import { Card, PageHeader, Empty, inputCls, btnGhostCls, btnCls } from "@/ui/kit";
-import { SubmitButton } from "@/ui/feedback";
 
 type Kid = { id: string; firstName: string; lastName: string };
 type Rec = { studentId: string; date: string; status: string };
@@ -15,8 +13,8 @@ type Rec = { studentId: string; date: string; status: string };
 /** The digital version of the class attendance book schools keep for GES:
  *  one grid per class, weeks across the top, Monday–Friday day columns, a
  *  row per child and the term tally at the end — the same shape as the
- *  paper book, so it reads instantly. Read-only for everyone; an admin's
- *  corrections live behind the ⋯ menu, never in the cells. */
+ *  paper book, so it reads instantly. Read-only for everyone; an admin
+ *  corrects a day by re-marking it, never in the cells. */
 function BookGrid({ term, kids, recs, holidayMap, today, color }: {
   term: { startsAt: string; endsAt: string };
   kids: Kid[]; recs: Rec[]; holidayMap: Map<string, string>; today: string; color?: string;
@@ -36,8 +34,9 @@ function BookGrid({ term, kids, recs, holidayMap, today, color }: {
   };
   const tally = (sid: string) => {
     let att = 0, abs = 0;
-    for (const r of recs) if (r.studentId === sid && inTerm(r.date))
-      r.status === "absent" ? abs++ : att++;
+    for (const r of recs) if (r.studentId === sid && inTerm(r.date)) {
+      if (r.status === "absent") abs++; else att++;
+    }
     const total = att + abs;
     return { att, abs, pct: total ? Math.round((att / total) * 100) : null };
   };
@@ -246,8 +245,8 @@ export default async function RecordBook({ params, searchParams }: {
 
   return (
     <div>
-      <PageHeader title="Attendance record book"
-        sub={`${yearName.get(term.yearId)} · ${term.name} — the class register as GES knows it, kept for the whole year`} />
+      <PageHeader title="Record book"
+        sub={`${yearName.get(term.yearId)} · ${term.name} — the term's attendance book`} />
       {termPicker(`/attendance/register?c=${active.id}&`)}
       <div className="mb-4 flex flex-wrap gap-1.5">
         {allowed.map((x) => (
@@ -263,31 +262,17 @@ export default async function RecordBook({ params, searchParams }: {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">{active.name} <span className="text-[13.5px] font-normal text-muted-foreground" data-nums="">· {roster.length} students · read-only</span></h2>
           {isAdmin && (
-            <details className="relative">
-              <summary className={btnGhostCls + " inline-flex cursor-pointer list-none px-2.5 py-1 text-[13.5px]"}>⋯ Corrections & holidays</summary>
-              <div className="absolute right-0 z-20 mt-1 w-72 rounded-lg border border-border bg-card p-3 shadow-lg">
-                <p className="text-[13px] font-semibold">Correct a day&apos;s register</p>
-                <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                  Cells are never edited in place — pick the day and re-mark it. The record keeps who edited.
-                </p>
-                <form action={`/attendance/${active.id}`} method="get" className="mt-2 flex gap-1.5">
-                  <input name="date" type="date" max={today} required className={inputCls + " flex-1"} />
-                  <button className={btnCls + " px-3"}>Open</button>
-                </form>
-                <p className="mt-3 text-[13px] font-semibold">Mark a holiday</p>
-                <form action={addHoliday.bind(null, slug)} className="mt-1.5 space-y-1.5">
-                  <input type="hidden" name="back" value={`/attendance/register?c=${active.id}`} />
-                  <input name="name" required placeholder="e.g. Founders' Day" className={inputCls} />
-                  <div className="flex gap-1.5">
-                    <input name="from" type="date" required className={inputCls + " flex-1"} />
-                    <SubmitButton className={btnCls + " px-3"} pendingText="…">Mark</SubmitButton>
-                  </div>
-                  <p className="text-[12px] text-muted-foreground">
-                    Shows as H on every sheet and drops out of tallies. Ranges &amp; removal on the <Link href="/calendar" className="text-primary">Calendar</Link>.
-                  </p>
-                </form>
-              </div>
-            </details>
+            <div className="flex flex-wrap items-end gap-3">
+              {/* cells are never edited in place — pick the day and re-mark it; the record keeps who edited */}
+              <form action={`/attendance/${active.id}`} method="get" className="flex items-end gap-1.5">
+                <label className="text-[13px] font-medium">
+                  Correct a past day
+                  <input name="date" type="date" max={today} required className={inputCls + " mt-1 w-auto"} />
+                </label>
+                <button className={btnCls + " px-3"}>Open</button>
+              </form>
+              <Link href="/calendar" className={btnGhostCls}>Holidays</Link>
+            </div>
           )}
         </div>
         <div className="mt-3">

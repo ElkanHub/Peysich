@@ -45,8 +45,8 @@ export default async function SkillsPage({ params }: {
   return (
     <div>
       <PageHeader title={`${cls.name} · Skills assessment`}
-        sub={`${term.name} · tap a cell to cycle ${scale.join(" → ")}`} />
-      <SkillsGrid slug={slug} classId={classId} scale={scale}
+        sub={`${term.name} · tap a child's box to choose ${scale.join(" · ")} · every tap saves itself${term.scoresLocked ? " · term closed" : ""}`} />
+      <SkillsGrid slug={slug} classId={classId} scale={scale} closed={term.scoresLocked}
         domains={domains.map((d) => ({ id: d.id, name: d.name }))}
         roster={roster}
         initial={Object.fromEntries(existing.map((r) => [`${r.studentId}:${r.domainId}`, r.rating]))} />

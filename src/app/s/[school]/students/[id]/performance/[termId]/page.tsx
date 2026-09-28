@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import {
-  students, classes, terms, academicYears, componentScores, scoreSheets,
+  students, terms, academicYears, componentScores, scoreSheets,
   scorePublications, gradingSchemes, skillRatings, skillDomains,
 } from "@/db/schema";
 import { requireSchool, getTeacherScope } from "@/core/school-context";

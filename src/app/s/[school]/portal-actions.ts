@@ -1,32 +1,12 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { feeInvoices, feeCheckouts, submissions, assignments } from "@/db/schema";
-import { requireSchool, requireModule } from "@/core/school-context";
-import { assertParentOf, getStudentSelf } from "@/core/portal";
-import { initCheckout } from "@/lib/paystack";
-import { uid } from "@/lib/utils";
-
-/** Parent pays fees online (full or partial). Fulfilled by webhook/fake-pay. */
-export async function startFeePayment(slug: string, invoiceId: string, amountGhs: number) {
-  const { school, user } = await requireSchool(slug, ["parent"]);
-  const [inv] = await db.select().from(feeInvoices)
-    .where(and(eq(feeInvoices.id, invoiceId), eq(feeInvoices.schoolId, school.id)));
-  if (!inv) return { error: "Invoice not found" };
-  if (!(await assertParentOf(school.id, user.id, inv.studentId))) return { error: "Not your child" };
-  const balance = inv.totalPesewas - inv.paidPesewas;
-  const amount = Math.min(Math.round(amountGhs * 100), balance);
-  if (amount <= 0) return { error: "Nothing to pay" };
-  const reference = `fee_${uid()}`;
-  await db.insert(feeCheckouts).values({ reference, schoolId: school.id, invoiceId, amountPesewas: amount });
-  const { checkoutUrl } = await initCheckout({
-    email: (user as { email?: string }).email ?? "parent@school",
-    amountPesewas: amount, reference, callbackUrl: `/`,
-    metadata: { kind: "fee", reference },
-  });
-  return { checkoutUrl };
-}
+import { submissions, assignments, students } from "@/db/schema";
+import { requireModule } from "@/core/school-context";
+import { getStudentSelf } from "@/core/portal";
+import { withFlash } from "@/lib/flash";
 
 /** Student submits homework (note + optional uploaded file key). */
 export async function submitHomework(slug: string, assignmentId: string, f: FormData) {
@@ -38,32 +18,40 @@ export async function submitHomework(slug: string, assignmentId: string, f: Form
   const [a] = await db.select().from(assignments)
     .where(and(eq(assignments.id, assignmentId), eq(assignments.schoolId, school.id)));
   if (!a || a.classId !== me.classId) return { error: "Not your assignment" };
+  const note = String(f.get("note") || "").trim() || null;
+  const fileUrl = String(f.get("fileKey") || "") || null;
+  const [prev] = await db.select({ fileUrl: submissions.fileUrl }).from(submissions)
+    .where(and(eq(submissions.assignmentId, assignmentId), eq(submissions.studentId, me.id)));
+  // nothing is ever handed in empty; a resubmit without a new photo keeps the old one
+  if (!note && !fileUrl && !prev?.fileUrl) return { error: "Add a photo or type an answer first" };
+  const submittedAt = new Date();
   await db.insert(submissions)
-    .values({
-      assignmentId, studentId: me.id, schoolId: school.id,
-      note: String(f.get("note") || "") || null,
-      fileUrl: String(f.get("fileKey") || "") || null,
-    })
+    .values({ assignmentId, studentId: me.id, schoolId: school.id, note, fileUrl, submittedAt })
     .onConflictDoUpdate({
       target: [submissions.assignmentId, submissions.studentId],
-      set: {
-        note: String(f.get("note") || "") || null,
-        fileUrl: String(f.get("fileKey") || "") || null,
-        submittedAt: new Date(),
-      },
+      set: { note, fileUrl: fileUrl ?? prev?.fileUrl ?? null, submittedAt },
     });
   revalidatePath(`/homework/${assignmentId}`);
-  return { ok: true };
+  return { ok: true, submittedAt: submittedAt.toISOString() };
 }
 
 /** Teacher marks a submission; assessed marks can feed CA manually via score sheet. */
 export async function markSubmission(slug: string, assignmentId: string, studentId: string, f: FormData) {
   const { school } = await requireModule(slug, "homework", ["admin", "teacher"]);
-  await db.update(submissions).set({
-    mark: Number(f.get("mark")) || null,
-    feedback: String(f.get("feedback") || "") || null,
-  }).where(and(
+  const raw = String(f.get("mark") ?? "").trim();
+  const mark = raw === "" ? null : Number(raw);
+  const feedback = String(f.get("feedback") || "").trim() || null;
+  const back = `/homework/${assignmentId}`;
+  if (mark !== null && !(Number.isInteger(mark) && mark >= 0 && mark <= 100))
+    redirect(withFlash(back, "The mark must be a whole number from 0 to 100.", { error: true }));
+  if (mark === null && !feedback)
+    redirect(withFlash(back, "Type a mark or a comment first.", { error: true }));
+  await db.update(submissions).set({ mark, feedback }).where(and(
     eq(submissions.assignmentId, assignmentId), eq(submissions.studentId, studentId),
     eq(submissions.schoolId, school.id)));
-  revalidatePath(`/homework/${assignmentId}`);
+  const [s] = await db.select({ firstName: students.firstName, lastName: students.lastName })
+    .from(students).where(eq(students.id, studentId));
+  const who = s ? `${s.firstName} ${s.lastName}` : "the student";
+  revalidatePath(back);
+  redirect(withFlash(back, mark === null ? `Comment saved for ${who}.` : `Marked ${mark} for ${who}.`));
 }

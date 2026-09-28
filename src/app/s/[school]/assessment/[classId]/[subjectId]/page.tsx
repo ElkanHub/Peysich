@@ -6,7 +6,7 @@ import { componentScores, scoreSheets, scorePublications, gradingSchemes, studen
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getStructure } from "@/core/academics";
 import { PageHeader } from "@/ui/kit";
-import { Sheet, UnlockDisclosure, type SheetComp } from "./sheet";
+import { Sheet, UnlockDisclosure, plainName, type SheetComp } from "./sheet";
 
 const ERR: Record<string, string> = {
   closed: "This term is closed — scores can no longer change.",
@@ -65,32 +65,37 @@ export default async function ScorePage({ params, searchParams }: {
     const submitted = sheet?.submitted ?? false;
     return {
       id: c.id, name: c.name, weight: c.weight, isExam: c.isExam,
-      outOf: sheet?.outOf ?? 100, submitted, published: published.has(c.id),
+      outOf: sheet?.outOf ?? 100, started: !!sheet, submitted, published: published.has(c.id),
       editable: !locked && (isTeacher ? !submitted : (!submitted || unlock)),
     };
   });
   const initial = Object.fromEntries(
     marks.map((m) => [`${m.componentId}_${m.studentId}`, { raw: m.raw, absent: m.absent }]));
   const anySubmitted = sheetComps.some((c) => c.submitted);
+  // a new test suggests the last started test's "marked out of"
+  const lastOutOf = [...sheetComps].reverse().find((c) => c.started)?.outOf ?? 100;
 
   return (
     <div>
       <PageHeader title={`${cls.name} · ${sub.name}`}
-        sub={`${term.name} · ${roster.length} students · scheme: ${comps.map((c) => `${c.name} /${c.weight}`).join(" + ")} = 100`} />
+        sub={`${term.name} · ${roster.length} pupils · ${comps.map((c) => `${plainName(c.name)} counts for ${c.weight}`).join(" + ")} = 100`} />
 
       {sp.err && ERR[sp.err] && (
         <p className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[sp.err]}</p>
       )}
       {unlock && (
         <p className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/50 bg-warning-soft px-3 py-2 text-sm">
-          <span>You are adjusting <b>submitted</b> columns — changes are recorded under your name.</span>
+          <span>You are adjusting <b>locked</b> tests — changes are recorded under your name.</span>
           <Link href={`/assessment/${classId}/${subjectId}`} className="font-medium text-primary">Done adjusting</Link>
         </p>
       )}
 
-      <Sheet slug={slug} classId={classId} subjectId={subjectId} roster={roster}
+      {locked && (
+        <p className="mb-4 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">This term is closed — scores can no longer change.</p>
+      )}
+      <Sheet slug={slug} classId={classId} subjectId={subjectId} className={cls.name} roster={roster}
         comps={sheetComps} initial={initial} bands={scheme?.bands ?? DEFAULT_BANDS}
-        isTeacher={isTeacher} />
+        lastOutOf={lastOutOf} isTeacher={isTeacher} />
 
       {!isTeacher && anySubmitted && !unlock && !locked && (
         <UnlockDisclosure href={`/assessment/${classId}/${subjectId}?unlock=1`} />

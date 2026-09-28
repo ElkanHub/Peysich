@@ -288,20 +288,24 @@ One card per child, big:
 │  ✓ In school today                     │
 │  Owing GHS 250 · due 30 Sept           │
 │                                        │
-│  [ Pay GHS 250 ]   [ Report card ]     │
+│  [ How to pay ]    [ Report card ]     │
 │  See everything about Ama →            │
 └────────────────────────────────────────┘
 ```
 
-### Q3 · Pay fees  *(today: not possible in the app · proposed: 2 taps and your MoMo PIN)*
+### Q3 · Pay fees  *(no money passes through the app, on purpose)*
 
-1. Tap **Pay GHS 250**. The amount is filled in; change it to pay part.
-2. Tap **Pay with MoMo**. Your phone asks for your PIN as usual.
+Parents pay the **school**, not SchoolSpec: MoMo to the school's own number, or cash
+at the office. The app tells them how, and the office records what came in.
 
-*"Paid GHS 250. Receipt sent by SMS. Ama now owes GHS 0."* The receipt stays under
-**Fees** forever with a **Download** button.
+1. Tap **How to pay**. The page shows the amount owing, the school's MoMo number
+   with the name to confirm before sending, and the office hours for cash.
+2. Pay the school. Keep the MoMo message.
+3. When the office records it, the card updates and a receipt SMS arrives. The
+   receipt stays under **Fees** forever with a **Download** button.
 
-If you paid cash at the school, the same card updates when the office records it.
+*Why not a Pay button?* Because then SchoolSpec would be holding the school's money.
+The only Paystack payment in the app is the school paying for SchoolSpec itself.
 
 ### Q5 · Get the report card
 
@@ -400,7 +404,7 @@ developer does; the audit has the detail.
 - Fees page opens on "Who is paying?"; payment form pre-filled; receipt with Print.
 - Reference required for MoMo and bank.
 - Confirms on Create bills and Text all parents, with counts and cost; sent-today guard.
-- Parent **Pay** button wired to the existing `PayFeesButton` and `startFeePayment`.
+- Parent card: **How to pay** as the one big button (no online pay by design).
 
 **Report cards**
 - Readiness shown in words; Send disabled until ready for tests; confirm with the

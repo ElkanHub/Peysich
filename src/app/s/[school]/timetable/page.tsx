@@ -5,14 +5,12 @@ import {
   getStructure, SECTIONS, SECTION_LABELS, DAYS, DAY_LABELS, fmtMin,
   type Day, type Section, type Structure,
 } from "@/core/academics";
-import { PageHeader, Card, Empty, btnGhostCls } from "@/ui/kit";
+import { PageHeader, Empty, btnGhostCls } from "@/ui/kit";
 import { SlotEditor } from "./slot-editor";
 
-const ERR: Record<string, string> = {
-  clash: "", // detail carries the message
-  notsubject: "That subject isn't on this class's list — adjust it under Settings → Day plan & subjects.",
-  notpool: "That teacher isn't on this subject for this class — add it to their profile first.",
-};
+/** Non-teaching periods are written as words — "Break", "Assembly" — with
+ *  the emoji as decoration only. */
+const KIND_WORD: Record<string, string> = { assembly: "🏫 Assembly", break: "☕ Break", lunch: "🍽 Lunch" };
 
 /** Short label so a grid cell stays a grid cell. */
 function abbr(name: string) {
@@ -52,6 +50,10 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
     .sort((a, b) => a.name.localeCompare(b.name));
   const mine = S.entries.filter((e) => e.classId === classId);
   const at = new Map(mine.map((e) => [`${e.day}:${e.slotId}`, e]));
+  // reading order of the week's lesson periods, so the panel can jump on
+  // to the next empty one after a placement
+  const order = DAYS.flatMap((d) => slots.filter((sl) => sl.kind === "teaching").map((sl) => `${d}:${sl.id}`));
+  const nextEmptyAfter = (k: string) => order.slice(order.indexOf(k) + 1).find((x) => !at.has(x)) ?? null;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
@@ -73,7 +75,7 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
               <td className="border-r border-border px-2 py-2 font-semibold">{DAY_LABELS[d].slice(0, 3)}</td>
               {slots.map((sl) => {
                 if (sl.kind !== "teaching") {
-                  return <td key={sl.id} className={`px-1.5 py-2 text-center text-[11px] uppercase tracking-wide ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.kind === "assembly" ? "🏫" : "☕"}</td>;
+                  return <td key={sl.id} className={`min-h-11 px-1.5 py-2 text-center text-[11px] uppercase tracking-wide ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{KIND_WORD[sl.kind] ?? sl.name}</td>;
                 }
                 const e = at.get(`${d}:${sl.id}`);
                 const isSel = sel === `${d}:${sl.id}`;
@@ -85,7 +87,7 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
                 const cell = canEdit ? (
                   <SlotEditor slug={slug} classId={classId} day={d} slotId={sl.id} base={base}
                     label={e ? abbr(S.subjectById.get(e.subjectId)?.name ?? "?") : null}
-                    subjects={gridSubjects}
+                    subjects={gridSubjects} nextEmpty={nextEmptyAfter(`${d}:${sl.id}`)}
                     entry={e ? {
                       id: e.id, subjectId: e.subjectId, chosen: !!e.teacherId, teacherName: tName,
                       pool: S.poolFor(classId, e.subjectId).map((pm) => ({
@@ -93,7 +95,7 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
                       })),
                     } : null} />
                 ) : (
-                  <span className="block px-1 py-2"
+                  <span className="flex min-h-11 items-center justify-center px-1 py-2"
                     title={e ? `${S.subjectById.get(e.subjectId)?.name ?? ""}${tName ? ` — ${tName}` : ""}` : undefined}>
                     {e
                       ? <span className={dim ? "text-faint" : "font-medium"}>{abbr(S.subjectById.get(e.subjectId)?.name ?? "?")}</span>
@@ -108,7 +110,7 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
                   : e ? "text-faint" : "";
                 return (
                   <td key={sl.id}
-                    className={`text-center align-middle ${ramp} ${isSel ? "ring-2 ring-inset ring-primary" : ""} ${focusSubjectId && e?.subjectId === focusSubjectId ? "ring-1 ring-inset ring-primary/50" : ""}`}>
+                    className={`p-0 text-center align-middle ${ramp} ${isSel ? "ring-2 ring-inset ring-primary" : ""} ${focusSubjectId && e?.subjectId === focusSubjectId ? "ring-1 ring-inset ring-primary/50" : ""}`}>
                     {cell}
                   </td>
                 );
@@ -123,7 +125,7 @@ function ClassGrid({ S, slug, classId, base, sel, canEdit, focusSubjectId }: {
 
 export default async function Timetable({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ view?: string; c?: string; t?: string; sub?: string; sec?: string; d?: string; sel?: string; err?: string; detail?: string }>;
+  searchParams: Promise<{ view?: string; c?: string; t?: string; sub?: string; sec?: string; d?: string; sel?: string }>;
 }) {
   const { school: slug } = await params;
   const sp = await searchParams;
@@ -156,16 +158,12 @@ export default async function Timetable({ params, searchParams }: {
   const view = (tabs as readonly string[]).includes(sp.view ?? "") ? sp.view! : tabs[0];
 
   const clashes = isAdmin ? S.findClashes() : [];
-  const detailMsg = sp.err === "clash" && sp.detail ? sp.detail : sp.err ? ERR[sp.err] : null;
 
   // ── shared bits ──
   const header = (
     <>
       <PageHeader title="Timetable"
-        sub={isAdmin ? "Click any period to see details or place a lesson — who teaches it follows your allocations automatically." : "Click any period for its details."} />
-      {detailMsg && (
-        <p className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{detailMsg}</p>
-      )}
+        sub={isAdmin ? "Tap any period to add or change a lesson — the teacher follows who teaches what." : "Tap any period for its details."} />
       {clashes.length > 0 && (
         <div className="mb-4 rounded-lg border border-danger/40 bg-danger/5 px-4 py-3 text-sm">
           <p className="font-semibold text-danger">⚠ {clashes.length} timetable clash{clashes.length === 1 ? "" : "es"}</p>
@@ -177,7 +175,7 @@ export default async function Timetable({ params, searchParams }: {
             ))}
           </ul>
           <p className="mt-1.5 text-[13px] text-muted-foreground">
-            Usually caused by changing allocations after lessons were placed — move one of the lessons, or change the allocation.
+            Usually caused by changing who teaches what after lessons were placed — move one of the lessons, or change the teacher.
           </p>
         </div>
       )}
@@ -256,7 +254,7 @@ export default async function Timetable({ params, searchParams }: {
         <p className="mb-3 text-sm text-muted-foreground">
           <b className="text-foreground">{activeTeacher.name}</b> · <span data-nums="">{periodsPerWeek}</span> period{periodsPerWeek === 1 ? "" : "s"} a week — green slots are free.
         </p>
-        {mySections.length === 0 && <Empty title="No lessons yet" hint="Nothing on the timetable resolves to this teacher — place lessons on a class timetable, or check Teaching & allocations." />}
+        {mySections.length === 0 && <Empty title="No lessons yet" hint="Nothing on the timetable is taught by this teacher — add lessons on a class timetable, or check who teaches what." />}
         {mySections.map((section) => {
           const slots = S.slotsBySection(section);
           return (
@@ -281,7 +279,7 @@ export default async function Timetable({ params, searchParams }: {
                         <td className="border-r border-border px-2 py-2 font-semibold">{DAY_LABELS[d].slice(0, 3)}</td>
                         {slots.map((sl) => {
                           if (sl.kind !== "teaching")
-                            return <td key={sl.id} className={`px-1.5 py-2 text-center text-[11px] uppercase ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{sl.kind === "assembly" ? "🏫" : "☕"}</td>;
+                            return <td key={sl.id} className={`min-h-11 px-1.5 py-2 text-center text-[11px] uppercase ${KIND_TINT[sl.kind] ?? "bg-muted/40 text-faint"}`}>{KIND_WORD[sl.kind] ?? sl.name}</td>;
                           // any entry of this teacher overlapping this slot's time on this day
                           const hit = myEntries.find((e) => {
                             if (e.day !== d) return false;
@@ -289,13 +287,13 @@ export default async function Timetable({ params, searchParams }: {
                             return !!es && es.startMin < sl.endMin && sl.startMin < es.endMin;
                           });
                           return (
-                            <td key={sl.id} className={`px-1 py-2 text-center ${hit ? "bg-primary/10" : "bg-success/5"}`}>
+                            <td key={sl.id} className={`p-0 text-center ${hit ? "bg-primary/10" : "bg-success/5"}`}>
                               {hit ? (
-                                <Link href={`?view=class&c=${hit.classId}&sel=${d}:${hit.slotId}`} className="block">
+                                <Link href={`?view=class&c=${hit.classId}&sel=${d}:${hit.slotId}`} className="block min-h-11 px-1 py-2">
                                   <span className="font-medium">{S.classById.get(hit.classId)?.name}</span>
                                   <span className="block text-[11.5px] text-muted-foreground">{abbr(S.subjectById.get(hit.subjectId)?.name ?? "")}</span>
                                 </Link>
-                              ) : <span className="text-[11.5px] text-success">free</span>}
+                              ) : <span className="flex min-h-11 items-center justify-center text-[11.5px] text-success">free</span>}
                             </td>
                           );
                         })}
@@ -418,15 +416,15 @@ export default async function Timetable({ params, searchParams }: {
                         const e = entryAt.get(`${c.id}:${sl.id}`);
                         const tid = e ? S.teacherFor(c.id, e.subjectId, e.teacherId) : null;
                         return (
-                          <td key={c.id} className={`px-1 py-1.5 text-center ${e ? "bg-success/5" : ""}`}>
+                          <td key={c.id} className={`p-0 text-center ${e ? "bg-success/5" : ""}`}>
                             {e ? (
-                              <Link href={`?view=class&c=${c.id}&sel=${day}:${sl.id}`} className="block">
+                              <Link href={`?view=class&c=${c.id}&sel=${day}:${sl.id}`} className="block min-h-11 px-1 py-1.5">
                                 <span className="font-medium">{abbr(S.subjectById.get(e.subjectId)?.name ?? "?")}</span>
                                 <span className="block text-[11px] text-muted-foreground">
                                   {tid ? S.staffById.get(tid)?.name.split(" ")[0] : "—"}
                                 </span>
                               </Link>
-                            ) : <span className="text-faint">·</span>}
+                            ) : <span className="flex min-h-11 items-center justify-center text-faint">·</span>}
                           </td>
                         );
                       })}

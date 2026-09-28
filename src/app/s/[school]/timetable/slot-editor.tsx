@@ -1,12 +1,14 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { placeEntry, clearEntry, setEntryTeacher } from "./actions";
 import { SubmitButton } from "@/ui/feedback";
 
-/* Inline slot editing — the cell IS the editor. Click a period and a small
- * panel opens right there: one click on a subject places (or replaces) the
- * lesson, Remove clears it, and when several teachers are eligible the
- * period's teacher is picked in the same panel. No scrolling to a card. */
+/* Inline slot editing — the cell IS the editor. Tap a period and a small
+ * panel opens right there: one tap on a subject places (or replaces) the
+ * lesson and the panel jumps to the next empty period, so a week is filled
+ * by tapping subjects one after another. Remove clears; when several
+ * teachers are eligible the period's teacher is picked in the same panel. */
 
 export type SlotSubject = { id: string; name: string; teacher: string | null };
 export type SlotEntry = {
@@ -15,47 +17,70 @@ export type SlotEntry = {
   pool: { id: string; name: string; role: string }[];
 };
 
-export function SlotEditor({ slug, classId, day, slotId, base, label, entry, subjects }: {
+/* ponytail: one open panel per page, shared through a module-level store so
+ * a cell can hand the panel on to the next empty cell without lifting state
+ * through the server-rendered grid. */
+let openSlot: string | null = null;
+const listeners = new Set<() => void>();
+const setOpenSlot = (k: string | null) => { openSlot = k; listeners.forEach((l) => l()); };
+const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
+const getOpen = () => openSlot;
+const getServerOpen = () => null;
+
+export function SlotEditor({ slug, classId, day, slotId, base, label, entry, subjects, nextEmpty }: {
   slug: string; classId: string; day: string; slotId: string; base: string;
   /** abbreviated subject label for the cell, or null when the period is free */
   label: string | null;
   entry: SlotEntry | null;
   subjects: SlotSubject[];
+  /** "day:slotId" of the next free period after this one, if any */
+  nextEmpty: string | null;
 }) {
-  const [open, setOpen] = useState(false);
+  const key = `${day}:${slotId}`;
+  const open = useSyncExternalStore(subscribe, getOpen, getServerOpen) === key;
   const [pos, setPos] = useState({ x: 0, y: 0, up: false, maxH: 320 });
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
   const btn = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
-  const toggle = () => {
+  useEffect(() => {
+    if (!open) return;
     const r = btn.current?.getBoundingClientRect();
-    if (r) {
-      // open downward when there's room, otherwise flip above the cell —
-      // and never let the panel run past the viewport edge
-      const below = window.innerHeight - r.bottom - 12;
-      const above = r.top - 12;
-      const up = below < 280 && above > below;
-      setPos({
-        x: Math.min(Math.max(8 + 128, r.left + r.width / 2), window.innerWidth - 8 - 128),
-        y: up ? r.top - 4 : r.bottom + 4,
-        up,
-        maxH: Math.max(180, Math.min(420, up ? above : below)),
-      });
-    }
-    setOpen((o) => !o);
-  };
+    if (!r) return;
+    // open downward when there's room, otherwise flip above the cell —
+    // and never let the panel run past the viewport edge
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    const up = below < 280 && above > below;
+    setPos({
+      x: Math.min(Math.max(8 + 128, r.left + r.width / 2), window.innerWidth - 8 - 128),
+      y: up ? r.top - 4 : r.bottom + 4,
+      up,
+      maxH: Math.max(180, Math.min(420, up ? above : below)),
+    });
+    setError(null);
+  }, [open]);
+
+  const place = (subjectId: string) => start(async () => {
+    const r = await placeEntry(slug, classId, day, slotId, subjectId);
+    if ("error" in r) { setError(r.error); return; }
+    router.refresh();
+    setOpenSlot(nextEmpty);
+  });
 
   return (
     <>
-      <button ref={btn} type="button" onClick={toggle} data-slot={`${day}:${slotId}`}
-        title={entry ? `${subjects.find((s) => s.id === entry.subjectId)?.name ?? ""}${entry.teacherName ? ` — ${entry.teacherName}` : ""}` : "Place a lesson"}
-        className="block w-full px-1 py-2 text-center hover:bg-primary/10">
+      <button ref={btn} type="button" onClick={() => setOpenSlot(open ? null : key)} data-slot={key}
+        title={entry ? `${subjects.find((s) => s.id === entry.subjectId)?.name ?? ""}${entry.teacherName ? ` — ${entry.teacherName}` : ""}` : "Add a lesson"}
+        className="flex min-h-11 w-full items-center justify-center px-1 py-2 text-center hover:bg-primary/10">
         {label
           ? <span className="font-medium">{label}</span>
-          : <span className="text-faint">+</span>}
+          : <span className="text-[12px] text-faint">Add</span>}
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpenSlot(null)} />
           <div
             className="fixed z-50 flex w-64 flex-col rounded-lg border border-border bg-card p-1.5 text-left shadow-[var(--shadow-lg)]"
             style={{
@@ -68,31 +93,30 @@ export function SlotEditor({ slug, classId, day, slotId, base, label, entry, sub
                 {entry.chosen && " (chosen for this period)"}
               </p>
             )}
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            {error && (
+              <p role="alert" className="mx-1 mb-1 rounded-md bg-danger/10 px-2 py-1.5 text-[12.5px] font-medium text-danger">{error}</p>
+            )}
+            <div className="min-h-0 flex-1 overflow-y-auto" aria-busy={pending}>
               {subjects.map((s) => (
-                <form key={s.id} action={placeEntry.bind(null, slug, classId, day, slotId)}>
-                  <input type="hidden" name="subjectId" value={s.id} />
-                  <input type="hidden" name="back" value={base} />
-                  <SubmitButton pendingText="Placing…"
-                    className={`flex w-full items-baseline justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-muted ${
-                      entry?.subjectId === s.id ? "bg-brand-soft font-semibold text-primary" : "font-medium"}`}>
-                    <span className="min-w-0 truncate">
-                      {entry?.subjectId === s.id && "✓ "}{s.name}
-                    </span>
-                    <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
-                      {s.teacher ?? "no teacher yet"}
-                    </span>
-                  </SubmitButton>
-                </form>
+                <button key={s.id} type="button" disabled={pending} onClick={() => place(s.id)}
+                  className={`flex w-full items-baseline justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-muted disabled:opacity-60 ${
+                    entry?.subjectId === s.id ? "bg-brand-soft font-semibold text-primary" : "font-medium"}`}>
+                  <span className="min-w-0 truncate">
+                    {entry?.subjectId === s.id && "✓ "}{s.name}
+                  </span>
+                  <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                    {s.teacher ?? "no teacher yet"}
+                  </span>
+                </button>
               ))}
             </div>
             {entry && entry.pool.length > 1 && (
               <form action={setEntryTeacher.bind(null, slug, entry.id)}
                 className="mt-1 flex items-center gap-1.5 border-t border-border px-1 pt-1.5">
                 <input type="hidden" name="back" value={base} />
-                <select name="teacherId" defaultValue={entry.chosen ? undefined : ""}
+                <select name="teacherId" defaultValue={entry.chosen ? undefined : ""} aria-label="Teacher for this period"
                   className="min-w-0 flex-1 rounded-md border border-border bg-card px-1.5 py-1 text-[12px]">
-                  <option value="">Auto teacher</option>
+                  <option value="">Usual teacher</option>
                   {entry.pool.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}{p.role === "assistant" ? " (assistant)" : ""}

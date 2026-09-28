@@ -11,16 +11,17 @@ import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { canFeeAction, type FeeActionKey } from "@/core/access";
 import { invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
+import { withFlash } from "@/lib/flash";
 import {
-  generateInvoicesForTerm, recordPaymentFor, voidPaymentFor, overdueInvoices,
+  generateInvoicesForTerm, recordPaymentFor, voidPaymentFor, overdueInvoices, sendReceiptSms,
 } from "@/modules/fees/engine";
-import { getFeesConfig } from "@/modules/fees/config";
+import { getFeesConfig, getRemindersSent, reminderBody, ghs } from "@/modules/fees/config";
 
 /** Gate: signed-in fees admin AND granted this money action (Team & access). */
 async function requireFees(slug: string, action?: FeeActionKey) {
   const ctx = await requireModule(slug, "fees", ["admin"]);
   if (action && !(await canFeeAction(ctx.school.id, ctx.user.id, ctx.user.role, action)))
-    redirect(`/fees?err=notallowed`);
+    redirect(withFlash("/fees", "Your access doesn't cover that money action — ask a full admin under Settings → Team & access.", { error: true }));
   return ctx;
 }
 
@@ -209,36 +210,62 @@ export async function addAdjustment(slug: string, studentId: string, f: FormData
 }
 
 // ── generation ─────────────────────────────────────────────────────────
+/** Create this term's bills, then tell each parent by SMS. */
 export async function generateInvoices(slug: string) {
   const { school, user } = await requireFees(slug, "generate");
   const term = await getCurrentTerm(school.id);
-  if (!term) redirect(`/fees?flash=error`);
+  if (!term) redirect(withFlash("/fees", "No current term — set one under Settings first.", { error: true }));
   const r = await generateInvoicesForTerm(school, term.id, user.id);
   touch();
-  redirect(`/fees?flash=${r.created ? "done" : "saved"}`);
+  if (!r.created) redirect(withFlash("/fees", "Every child already has a bill for this term. Nothing new to create."));
+  const gs = await db.select({ phone: guardians.phone, sid: studentGuardians.studentId, isPrimary: studentGuardians.isPrimary })
+    .from(studentGuardians)
+    .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
+    .where(inArray(studentGuardians.studentId, r.bills.map((b) => b.studentId)));
+  const cfg = getFeesConfig(school.settings);
+  const { sendSmsBatch } = await import("@/lib/notify");
+  const seen = new Set<string>();
+  await sendSmsBatch(r.bills.flatMap((b) => {
+    const g = gs.find((x) => x.sid === b.studentId && x.isPrimary) ?? gs.find((x) => x.sid === b.studentId);
+    if (!g || seen.has(g.phone)) return [];
+    seen.add(g.phone);
+    return [{
+      schoolId: school.id, to: g.phone, kind: "fees", senderId: school.branding.smsSenderId,
+      body: `${school.name}: ${term.name} fees are ${ghs(b.total)}, due ${b.dueDate}. Pay at the office${cfg.confirmPhone ? ` — confirm payment numbers on ${cfg.confirmPhone}` : ""}.`,
+    }];
+  }));
+  redirect(withFlash("/fees", `${r.created} bill${r.created === 1 ? "" : "s"} created. Parents told.`));
 }
 
 // ── collection ─────────────────────────────────────────────────────────
 export async function recordPayment(slug: string, invoiceId: string, f: FormData) {
   const { school, user } = await requireFees(slug, "record");
   const amount = Math.round(Number(f.get("amountGhs")) * 100);
+  const method = String(f.get("method") || "cash");
+  const reference = String(f.get("reference") || "").trim();
+  const back = `/fees/invoice/${invoiceId}`;
+  if (!(amount > 0)) redirect(withFlash(back, "Type an amount above zero — nothing was saved.", { error: true }));
+  if (method !== "cash" && !reference)
+    redirect(withFlash(back, `A ${method === "momo" ? "MoMo" : "bank"} payment needs its reference — nothing was saved.`, { error: true }));
   const r = await recordPaymentFor(school, {
-    invoiceId, amountPesewas: amount,
-    method: String(f.get("method") || "cash"),
-    reference: String(f.get("reference") || "") || undefined,
+    invoiceId, amountPesewas: amount, method,
+    reference: reference || undefined,
     note: String(f.get("note") || "") || undefined,
     byUserId: user.id,
   });
-  touch(`/fees/invoice/${invoiceId}`);
-  if (!r) redirect(`/fees/invoice/${invoiceId}?flash=error`);
-  redirect(`/fees/receipt/${r.paymentId}?flash=done`);
+  touch(back);
+  if (!r) redirect(withFlash(back, "That bill could not be found — nothing was saved.", { error: true }));
+  const texted = await sendReceiptSms(school, { ...r, amountPesewas: amount });
+  redirect(withFlash(`/fees/receipt/${r.paymentId}`,
+    `Payment of ${ghs(amount)} saved. ${texted ? `Receipt SMS sent to ${texted}.` : "No phone on file, so no receipt SMS."}`));
 }
 
 export async function voidPayment(slug: string, paymentId: string) {
   const { school, user } = await requireFees(slug, "voidPay");
   const ok = await voidPaymentFor(school, paymentId, user.id);
   touch(`/fees/receipt/${paymentId}`);
-  redirect(`/fees/receipt/${paymentId}?flash=${ok ? "done" : "error"}`);
+  redirect(withFlash(`/fees/receipt/${paymentId}`,
+    ok ? "Receipt voided. The money is back on the child's balance." : "That receipt is already void.", { error: !ok }));
 }
 
 // ── papers out ─────────────────────────────────────────────────────────
@@ -247,9 +274,10 @@ export async function emailInvoice(slug: string, invoiceId: string) {
   const { school } = await requireFees(slug);
   const { loadInvoiceDoc, guardianEmailsFor } = await import("@/modules/fees/docs");
   const d = await loadInvoiceDoc(school, invoiceId);
-  if (!d) redirect(`/fees?flash=error`);
+  if (!d) redirect(withFlash("/fees", "That bill could not be found.", { error: true }));
   const to = await guardianEmailsFor(school.id, d.student.id);
-  if (!to.length) redirect(`/fees/invoice/${invoiceId}?err=noemail`);
+  if (!to.length) redirect(withFlash(`/fees/invoice/${invoiceId}`,
+    "No guardian of this child has an email on file — add one under Guardians first.", { error: true }));
   const { invoicePdfBuffer } = await import("@/modules/fees/pdf");
   const { sendEmail } = await import("@/lib/notify");
   const pdf = await invoicePdfBuffer(d);
@@ -278,17 +306,23 @@ export async function emailInvoice(slug: string, invoiceId: string) {
     });
   }
   touch(`/fees/invoice/${invoiceId}`);
-  redirect(`/fees/invoice/${invoiceId}?flash=done`);
+  redirect(withFlash(`/fees/invoice/${invoiceId}`,
+    sentAny ? `Invoice emailed to ${to.map((g) => g.name).join(", ")}.` : "Email is not switched on yet — the invoice was queued, not sent.", { error: !sentAny }));
 }
 
-/** Reminder SMS to guardians of OVERDUE invoices, confirm-number included. */
+/** Reminder SMS to guardians of OVERDUE invoices, confirm-number included.
+ *  One send per day: the time and count live in schools.settings.feeRemindersSent. */
 export async function sendFeeReminders(slug: string) {
   const { school } = await requireFees(slug);
   const term = await getCurrentTerm(school.id);
-  if (!term) redirect(`/fees?flash=error`);
+  const back = "/fees?tab=reminders";
+  if (!term) redirect(withFlash(back, "No current term — set one under Settings first.", { error: true }));
+  const last = getRemindersSent(school.settings);
+  if (last && last.at.toDateString() === new Date().toDateString())
+    redirect(withFlash(back, "Reminders already went out today. Try again tomorrow.", { error: true }));
   const today = new Date().toISOString().slice(0, 10);
   const due = await overdueInvoices(school.id, term.id, today);
-  if (!due.length) redirect(`/fees?flash=done`);
+  if (!due.length) redirect(withFlash(back, "Nobody is past the due date — no reminders to send."));
   const gs = await db.select({ phone: guardians.phone, sid: studentGuardians.studentId })
     .from(studentGuardians)
     .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
@@ -298,8 +332,13 @@ export async function sendFeeReminders(slug: string) {
   const { sendSmsBatch } = await import("@/lib/notify");
   await sendSmsBatch(gs.map((g) => ({
     schoolId: school.id, to: g.phone, kind: "fees", senderId: school.branding.smsSenderId,
-    body: `${school.name}: fees of GHS ${((balance.get(g.sid) ?? 0) / 100).toFixed(2)} are past due. Please settle at the office${cfg.confirmPhone ? ` — confirm payment numbers on ${cfg.confirmPhone}` : ""}.`,
+    body: reminderBody(school.name, cfg, balance.get(g.sid) ?? 0),
   })));
+  const at = new Date();
+  await db.update(schools).set({
+    settings: { ...(school.settings as Record<string, unknown>), feeRemindersSent: { at: at.toISOString(), n: gs.length } },
+  }).where(eq(schools.id, school.id));
+  invalidateSchool(slug);
   touch();
-  redirect(`/fees?flash=done`);
+  redirect(withFlash(back, `Sent at ${at.toTimeString().slice(0, 5)} to ${gs.length} parent${gs.length === 1 ? "" : "s"}.`));
 }

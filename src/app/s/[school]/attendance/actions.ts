@@ -7,6 +7,7 @@ import { attendanceRecords, students, classes, staff, staffNudges, terms } from 
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getHolidayMap, isWeekend } from "@/core/calendar";
 import { uid } from "@/lib/utils";
+import { withFlash } from "@/lib/flash";
 
 /** Save a class register. Default-present: form posts only exceptions,
  *  everyone else is recorded present. Idempotent per (student, date).
@@ -42,18 +43,26 @@ export async function saveRegister(slug: string, classId: string, f: FormData) {
     .where(and(eq(students.schoolId, school.id), eq(students.classId, classId),
       eq(students.status, "active")));
   const ids = roster.map((r) => r.id);
-  if (!ids.length) return;
+  if (!ids.length) return { told: 0, absent: 0 };
 
-  await db.delete(attendanceRecords).where(and(
+  // what was saved before — so a correction only texts the NEWLY absent
+  const where = and(
     eq(attendanceRecords.schoolId, school.id), eq(attendanceRecords.date, date),
-    inArray(attendanceRecords.studentId, ids)));
+    inArray(attendanceRecords.studentId, ids));
+  const before = new Map((await db.select({ sid: attendanceRecords.studentId, status: attendanceRecords.status })
+    .from(attendanceRecords).where(where)).map((r) => [r.sid, r.status]));
+  const status = (sidv: string) => String(f.get(`st_${sidv}`) || "present");
+
+  await db.delete(attendanceRecords).where(where);
   await db.insert(attendanceRecords).values(ids.map((sidv) => ({
     id: uid(), schoolId: school.id, studentId: sidv, classId, termId: term.id,
-    date, status: String(f.get(`st_${sidv}`) || "present"), markedBy: user.id,
+    date, status: status(sidv), markedBy: user.id,
   })));
-  // absence alerts → guardians (today only — corrections don't re-alert)
-  const absent = date === today
-    ? ids.filter((sidv) => String(f.get(`st_${sidv}`)) === "absent") : [];
+  // absence alerts → guardians (today only; only children who were not
+  // already recorded absent — correcting one child never re-texts everyone)
+  const absentAll = ids.filter((sidv) => status(sidv) === "absent");
+  const absent = date === today ? absentAll.filter((sidv) => before.get(sidv) !== "absent") : [];
+  let told = 0;
   if (absent.length) {
     const { guardians, studentGuardians } = await import("@/db/schema");
     const gs = await db.select({ phone: guardians.phone, sid: studentGuardians.studentId })
@@ -68,9 +77,12 @@ export async function saveRegister(slug: string, classId: string, f: FormData) {
       senderId: school.branding.smsSenderId,
       body: `${names.get(g.sid)} was marked absent today at ${school.name}. Contact the office if unexpected.`,
     })));
+    told = gs.length;
   }
   revalidatePath(`/attendance`);
   revalidatePath(`/attendance/register`);
+  revalidatePath(`/attendance/${classId}`);
+  return { told, absent: absentAll.length };
 }
 
 /** Admin nudge: "the register isn't marked yet" — SMS/email to the class
@@ -83,12 +95,15 @@ export async function remindClassTeacher(slug: string, classId: string, f?: Form
   const back = f?.get("from") === "wall" ? `/attendance` : `/attendance/${classId}`;
   const [cls] = await db.select().from(classes)
     .where(and(eq(classes.id, classId), eq(classes.schoolId, school.id)));
+  const noTeacher = withFlash(back,
+    "This class has no class teacher yet — assign one on Teaching & allocations first.", { error: true });
   const responsibleId = cls?.formMasterId ?? cls?.classTeacherId;
-  if (!responsibleId) redirect(`${back}?err=noteacher`);
+  if (!responsibleId) redirect(noTeacher);
   const [t] = await db.select().from(staff).where(eq(staff.id, responsibleId!));
-  if (!t) redirect(`${back}?err=noteacher`);
+  if (!t) redirect(noTeacher);
+  const first = t.name.split(" ")[0];
 
-  const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} register for today hasn't been marked yet. Please mark it in SchoolSpec. — ${school.name}`;
+  const message = `Good day ${first} —the ${cls.name} register for today hasn't been marked yet. Please mark it in SchoolSpec. — ${school.name}`;
   await db.insert(staffNudges).values({
     id: uid(), schoolId: school.id, staffId: t.id,
     kind: "attendance", refId: classId, message, sentBy: user.name,
@@ -107,7 +122,7 @@ export async function remindClassTeacher(slug: string, classId: string, f?: Form
   }
   revalidatePath(`/attendance/${classId}`);
   revalidatePath(`/attendance`);
-  redirect(`${back}?flash=done`);
+  redirect(withFlash(back, `Reminder sent to ${first}.`));
 }
 
 /** All attendance nudges sent today, latest per class — powers the

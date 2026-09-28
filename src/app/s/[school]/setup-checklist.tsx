@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { Card } from "@/ui/kit";
@@ -13,12 +13,13 @@ import { Card } from "@/ui/kit";
 export type SetupItem = { key: string; label: string; href: string; done: boolean };
 
 export function SetupChecklist({ schoolName, items }: { schoolName: string; items: SetupItem[] }) {
-  const [hidden, setHidden] = useState(true); // avoid a flash before we read storage
   const key = "schoolspec-setup-dismissed";
-
-  useEffect(() => {
-    try { setHidden(!!(localStorage.getItem(key) || localStorage.getItem("peysich-setup-dismissed"))); } catch { setHidden(false); }
-  }, []);
+  const [dismissed, setDismissed] = useState(false);
+  // read storage without an effect; the server snapshot hides it so nothing flashes
+  const stored = useSyncExternalStore(() => () => {}, () => {
+    try { return !!(localStorage.getItem(key) || localStorage.getItem("peysich-setup-dismissed")); } catch { return false; }
+  }, () => true);
+  const hidden = stored || dismissed;
 
   const done = items.filter((i) => i.done).length;
   const complete = done === items.length;
@@ -26,7 +27,7 @@ export function SetupChecklist({ schoolName, items }: { schoolName: string; item
 
   const dismiss = () => {
     try { localStorage.setItem(key, "1"); } catch { /* fine */ }
-    setHidden(true);
+    setDismissed(true);
   };
 
   return (

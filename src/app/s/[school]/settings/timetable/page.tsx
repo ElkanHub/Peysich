@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireModule } from "@/core/school-context";
 import {
-  getStructure, SECTIONS, SECTION_LABELS, fmtMin, type Section,
+  getStructure, SECTIONS, SECTION_LABELS, type Section,
 } from "@/core/academics";
 import { PageHeader, Card, Badge, Field, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";

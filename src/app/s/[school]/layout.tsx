@@ -13,6 +13,8 @@ import { Shell } from "@/ui/shell";
  *  actions room to ride the wake-up out. */
 export const maxDuration = 60;
 
+const daysUntil = (d: Date) => Math.max(0, Math.ceil((+d - Date.now()) / 86400000));
+
 export default async function SchoolLayout({ children, params }: {
   children: React.ReactNode; params: Promise<{ school: string }>;
 }) {
@@ -34,7 +36,7 @@ export default async function SchoolLayout({ children, params }: {
   }
 
   const trialDays = school.status === "trial" && school.trialEndsAt
-    ? Math.max(0, Math.ceil((+school.trialEndsAt - Date.now()) / 86400000)) : null;
+    ? daysUntil(school.trialEndsAt) : null;
   const [badges, unacked] = await Promise.all([
     getNavBadges(school.id, user.role, user.id),
     getUnackedAnnouncements(school.id, user.id, user.role),
@@ -53,7 +55,11 @@ export default async function SchoolLayout({ children, params }: {
       badges={badges} logoUrl={logoUrl} avatarUrl={avatarUrl} allowedTabs={grants?.tabs ?? null}>
       {trialDays !== null && user.role === "admin" && (
         <div className="mb-5 flex items-center justify-between rounded-lg border border-primary/30 bg-brand-soft px-4 py-2.5 text-[14px]">
-          <span><b>Free trial</b> — {trialDays} day{trialDays === 1 ? "" : "s"} left. Your data stays safe either way.</span>
+          <span>
+            {trialDays <= 1
+              ? <><b>Your free trial ends {trialDays === 1 ? "tomorrow" : "today"}.</b> Choose a plan to keep going — nothing is deleted either way.</>
+              : <><b>Free trial</b> — {trialDays} days left. Your data stays safe either way.</>}
+          </span>
           <a href="/billing" className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
             Choose a plan
           </a>

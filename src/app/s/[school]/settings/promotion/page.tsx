@@ -5,7 +5,7 @@ import { levels, classes, students } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { Card, Field, PageHeader, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { runPromotion } from "../promotion-actions";
-import { SubmitButton } from "@/ui/feedback";
+import { ConfirmButton } from "@/ui/confirm";
 
 /** YEAR-END PROMOTION — mirrors what actually happens on the ground:
  *  each class is sent somewhere (next class, graduate, or stay), and the
@@ -40,22 +40,27 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
     return cls.find((x) => x.levelId === nextLevel.id)?.id ?? "stay";
   };
   const y = new Date().getFullYear();
+  const yearLabel = `${y}/${y + 1}`;
+  const placed = roster.filter((s) => s.classId).length;
+  const leavers = ordered.filter((c) => defaultTarget(c) === "graduate")
+    .reduce((n, c) => n + (byClass.get(c.id)?.length ?? 0), 0);
+  const topName = ordered.find((c) => defaultTarget(c) === "graduate")
+    ? (lvs.at(-1)?.name ?? "top-level") : "top-level";
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Year-end promotion"
-        sub="Choose where each class goes, untick nobody — tick only the students who will REPEAT their class." />
+      <PageHeader title="End of year"
+        sub="Every class already has its next class filled in. Tick only the children who are repeating." />
       <form action={runPromotion.bind(null, slug)} className="space-y-4">
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <Field label="New academic year">
               <input name="yearName" placeholder={`${y}/${y + 1}`} className={inputCls + " w-44"} />
             </Field>
-            <p className="max-w-sm text-[13px] text-muted-foreground">
-              Submitting creates the new year, moves every class to its destination,
-              keeps ticked students back as <em>repeated</em>, and graduates the top level to alumni.
-              Students who are leaving should be <b>exited from their Student File first</b> —
-              exited students are not carried into the new year.
+            <p className="max-w-sm text-[14px] text-muted-foreground">
+              Go opens the new year, moves every class up, keeps ticked children back as
+              <em> repeating</em>, and the top level leaves the school as past students.
+              Children who are leaving should be exited from their Student File first.
             </p>
           </div>
         </Card>
@@ -75,7 +80,7 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
                     className="rounded-md border border-border px-2 py-1.5 text-sm">
                     {cls.filter((x) => x.id !== c.id).map((x) =>
                       <option key={x.id} value={x.id}>{x.name}</option>)}
-                    <option value="graduate">🎓 Graduate (alumni)</option>
+                    <option value="graduate">Leaves the school (past student)</option>
                     <option value="stay">No change (stay in {c.name})</option>
                   </select>
                 </label>
@@ -102,7 +107,11 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
 
         <div className="flex items-center justify-between">
           <Link href="/settings" className={btnGhostCls}>Keep everything as it is</Link>
-          <SubmitButton className={btnCls + " bg-danger"} pendingText="Promoting…">Run promotion</SubmitButton>
+          <ConfirmButton className={btnCls + " h-11 bg-danger px-6 text-[15px]"} danger confirmLabel="Go"
+            title={`Move ${placed} children up one class and start ${yearLabel}?`}
+            body={`${leavers} ${topName} leavers become past students. Ticked children repeat their class.`}>
+            Move everyone up
+          </ConfirmButton>
         </div>
       </form>
     </div>

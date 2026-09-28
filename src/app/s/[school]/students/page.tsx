@@ -7,12 +7,12 @@ import { r2Enabled, presignDownload } from "@/lib/r2";
 import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "@/ui/kit";
 import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
-import { discardAdmission } from "./new/wizard-actions";
+import { discardAdmission } from "./new/actions";
 import { SubmitButton } from "@/ui/feedback";
 
 export default async function Students({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ page?: string; search?: string; classId?: string; status?: string; sex?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; classId?: string; status?: string; sex?: string; issues?: string }>;
 }) {
   const { school: slug } = await params;
   const sp = await searchParams;
@@ -60,7 +60,6 @@ export default async function Students({ params, searchParams }: {
     isAdmin
       ? db.select({
           id: students.id, firstName: students.firstName, lastName: students.lastName,
-          step: students.admissionStep,
         }).from(students)
           .where(and(eq(students.schoolId, school.id), eq(students.status, "draft")))
       : [],
@@ -83,7 +82,21 @@ export default async function Students({ params, searchParams }: {
   return (
     <div>
       <PageHeader title={isAdmin ? "Students" : "My students"} sub={`${count} ${status}`}
-        action={isAdmin ? { href: "/admissions", label: "Admit student" } : undefined} />
+        action={isAdmin ? { href: "/students/new", label: "Add a student" } : undefined} />
+
+      {/* after an import: the rows that did not go in, straight from the URL */}
+      {isAdmin && sp.issues && (
+        <div className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-sm">
+          <div className="flex items-start justify-between gap-3">
+            <p className="font-medium">These rows in the sheet need a look — fix them and import again.</p>
+            <Link href="/students" className="shrink-0 text-[13px] text-muted-foreground underline-offset-2 hover:underline">Dismiss</Link>
+          </div>
+          <ul className="mt-1.5 list-inside list-disc space-y-0.5">
+            {sp.issues.split("\n").map((line, i) => <li key={i}>{line}</li>)}
+          </ul>
+          <p className="mt-1.5 text-[13px] text-muted-foreground">Students already imported are skipped by admission number, so re-uploading the whole sheet is safe.</p>
+        </div>
+      )}
 
       {/* data at a glance + the actions an office actually reaches for */}
       {isAdmin && (
@@ -96,7 +109,8 @@ export default async function Students({ params, searchParams }: {
       )}
       {isAdmin && (
         <div className="mb-4 flex flex-wrap gap-2">
-          <Link href="/students/import" className={btnGhostCls}>Import from Excel</Link>
+          <Link href="/students/import" className={btnGhostCls}>Import from a sheet</Link>
+          <Link href="/admissions" className={btnGhostCls}>Admissions</Link>
           <Link href="/settings/promotion" className={btnGhostCls}>Year-end promotion</Link>
           <Link href="/settings" className={btnGhostCls}>Classes & rooms</Link>
         </div>
@@ -104,15 +118,14 @@ export default async function Students({ params, searchParams }: {
 
       {drafts.length > 0 && (
         <div className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
-          <p className="text-sm font-medium">Admissions in progress</p>
+          <p className="text-sm font-medium">Started in Admissions, not yet saved</p>
           <ul className="mt-1.5 space-y-1 text-sm">
             {drafts.map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-2">
-                <span>{d.firstName} {d.lastName}
-                  <span className="ml-2 text-xs text-muted-foreground">stage {Math.min((d.step ?? 0) + 1, 7)} of 7</span></span>
+                <span>{d.firstName} {d.lastName}</span>
                 <span className="flex items-center gap-2">
                   <Link href={`/students/new?draft=${d.id}`}
-                    className="text-[14px] font-medium text-primary">Continue →</Link>
+                    className="text-[14px] font-medium text-primary">Finish →</Link>
                   <form action={discardAdmission.bind(null, slug, d.id)}>
                     <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard</SubmitButton>
                   </form>

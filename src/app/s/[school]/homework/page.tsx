@@ -8,6 +8,7 @@ import { getHomeworkConfig } from "@/modules/homework/config";
 import { mondayOf, todayIso } from "@/core/calendar";
 import Link from "next/link";
 import { createHomework, saveHomeworkConfig } from "./actions";
+import { SetHomeworkForm } from "./set-form";
 import { Card, DataTable, Field, PageHeader, Empty, Stat, Tr, Td, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 
@@ -66,7 +67,7 @@ export default async function Homework({ params, searchParams }: {
                   </span>
                   <span className={`shrink-0 text-[13.5px] font-medium ${done.has(r.id) ? "text-success"
                     : r.dueDate < today ? "text-danger" : "text-muted-foreground"}`} data-nums="">
-                    {done.has(r.id) ? "handed in ✓" : r.dueDate < today ? `was due ${r.dueDate}` : `due ${r.dueDate}`}
+                    {done.has(r.id) ? "Handed in ✓" : r.dueDate < today ? `was due ${r.dueDate}` : `due ${r.dueDate}`}
                   </span>
                 </span>
               </Link>
@@ -147,7 +148,7 @@ export default async function Homework({ params, searchParams }: {
                     </span>
                     {cfg.recordSubmissions && (
                       handedIn.has(`${r.id}:${k.id}`)
-                        ? <span className="shrink-0 text-[13px] font-medium text-success">handed in ✓</span>
+                        ? <span className="shrink-0 text-[13px] font-medium text-success">Handed in ✓</span>
                         : <span className={`shrink-0 text-[13px] ${r.dueDate < today ? "text-danger" : "text-muted-foreground"}`}>
                             {r.dueDate < today ? "not handed in" : "pending"}
                           </span>
@@ -180,13 +181,17 @@ export default async function Homework({ params, searchParams }: {
     const scope = await getTeacherScope(school.id, user.id);
     const myCls = clsOrdered.filter((c) => scope?.allClassIds.has(c.id));
     if (!myCls.length)
-      return <Empty title="No classes assigned" hint="Homework covers the classes you teach — ask your admin about allocations." />;
+      return <Empty title="No classes assigned" hint="Homework covers the classes you teach — ask your admin to set who teaches what." />;
     const S = await getStructure(school.id);
-    // subjects this teacher can set for: their allocations + everything a
-    // homeroom takes (class-teacher mode)
-    const mySubjectIds = new Set(scope!.cells.map((c) => c.subjectId));
-    for (const hid of scope!.homeroomIds) for (const sid of S.effectiveSubjectIds(hid)) mySubjectIds.add(sid);
-    const mySubs = allSubs.filter((s) => mySubjectIds.has(s.id));
+    // class × subject this teacher can set for: their allocations + everything
+    // a homeroom takes (class-teacher mode)
+    const pairs = [...scope!.cells];
+    for (const hid of scope!.homeroomIds) for (const sid of S.effectiveSubjectIds(hid)) pairs.push({ classId: hid, subjectId: sid });
+    const [last] = await db.select({ classId: assignments.classId }).from(assignments)
+      .where(and(eq(assignments.schoolId, school.id), eq(assignments.createdBy, user.id)))
+      .orderBy(desc(assignments.createdAt)).limit(1);
+    const defaultClassId = myCls.find((c) => c.id === last?.classId)?.id ?? myCls[0].id;
+    const tomorrow = new Date(new Date(`${today}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
     const rows = await db.select({
       id: assignments.id, title: assignments.title, dueDate: assignments.dueDate,
       className: classes.name, subject: subjects.name,
@@ -217,21 +222,11 @@ export default async function Homework({ params, searchParams }: {
         </DataTable>
         <Card className="mt-5">
           <h2 className="font-semibold">Set homework</h2>
-          <p className="mt-0.5 text-[13.5px] text-muted-foreground">For your classes and subjects only.</p>
-          <form action={createHomework.bind(null, slug)} className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Title"><input name="title" required className={inputCls} /></Field>
-            <Field label="Due date"><input name="dueDate" type="date" required className={inputCls} /></Field>
-            <Field label="Class">
-              <select name="classId" className={inputCls}>{myCls.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-            </Field>
-            <Field label="Subject">
-              <select name="subjectId" className={inputCls}>{mySubs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
-            </Field>
-            <div className="col-span-2">
-              <Field label="Instructions"><textarea name="instructions" rows={3} className={inputCls} /></Field>
-            </div>
-            <SubmitButton className={btnCls + " col-span-2"}>Assign</SubmitButton>
-          </form>
+          <p className="mt-0.5 text-[13.5px] text-muted-foreground">Due tomorrow, for the class you used last — change either if you need to.</p>
+          <SetHomeworkForm action={createHomework.bind(null, slug)}
+            classes={myCls.map((c) => ({ id: c.id, name: c.name }))}
+            subjects={allSubs.map((s) => ({ id: s.id, name: s.name }))}
+            pairs={pairs} defaultClassId={defaultClassId} defaultDue={tomorrow} />
         </Card>
       </div>
     );
@@ -272,7 +267,7 @@ export default async function Homework({ params, searchParams }: {
   const activeClasses = clsOrdered.filter((c) => (rosterN.get(c.id) ?? 0) > 0);
   const classesQuietThisWeek = activeClasses.filter((c) => !thisWeek.some((r) => r.classId === c.id));
   // hand-in rate over homework already due (last 14 days) — how much comes back
-  const recentDue = rows.filter((r) => r.dueDate <= today && r.dueDate >= new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10));
+  const recentDue = rows.filter((r) => r.dueDate <= today && r.dueDate >= new Date(new Date(`${today}T12:00:00Z`).getTime() - 14 * 86400000).toISOString().slice(0, 10));
   const expected = recentDue.reduce((a, r) => a + (rosterN.get(r.classId) ?? 0), 0);
   const received = recentDue.reduce((a, r) => a + (nOf.get(r.id) ?? 0), 0);
   const rate = expected ? Math.round((received / expected) * 100) : null;

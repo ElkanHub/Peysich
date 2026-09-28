@@ -1,12 +1,13 @@
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { Megaphone, CalendarDays, MessageSquareText, Mail, CheckCircle2 } from "lucide-react";
 import { db } from "@/db";
-import { announcements, announcementAcks, events, classes, smsLog } from "@/db/schema";
+import { announcements, announcementAcks, events, classes, smsLog, guardians } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { postAnnouncement, createEvent, sendBlast, acknowledgeOne } from "./actions";
 import { Card, Field, PageHeader, Empty, inputCls, btnCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
+import { BlastForm } from "./blast-form";
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
@@ -46,6 +47,23 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
   const seeEvts = visible ? evts.filter((e) => !e.classId || visible.has(e.classId)) : evts;
   const canPost = ["admin", "teacher", "platform_admin"].includes(user.role);
   const isAdmin = ["admin", "platform_admin"].includes(user.role);
+  // who a blast reaches — the same distinct-phone / distinct-email rule sendBlast uses
+  const reach = isAdmin
+    ? await db.select({ phone: guardians.phone, email: guardians.email }).from(guardians)
+        .where(eq(guardians.schoolId, school.id))
+    : [];
+  const phones = new Set(reach.map((g) => g.phone).filter(Boolean)).size;
+  const emails = new Set(reach.map((g) => g.email).filter(Boolean)).size;
+  const audienceChips = (
+    <div className="flex flex-wrap gap-2">
+      {[["", "School-wide"], ...cls.map((c) => [c.id, c.name])].map(([v, label]) => (
+        <label key={v} className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-[14px] font-medium has-[:checked]:border-primary has-[:checked]:bg-brand-soft has-[:checked]:text-primary">
+          <input type="radio" name="classId" value={v} defaultChecked={v === ""} className="sr-only" />
+          {label}
+        </label>
+      ))}
+    </div>
+  );
 
   // one feed, newest first, typed
   type FeedItem =
@@ -150,14 +168,9 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
               <h2 className="flex items-center gap-2 font-semibold"><Megaphone size={15} className="text-primary" /> Post an announcement</h2>
               <form action={postAnnouncement.bind(null, slug)} className="mt-3 space-y-2.5">
                 <Field label="Title"><input name="title" required className={inputCls} /></Field>
-                <Field label="Message"><textarea name="body" rows={3} required className={inputCls} /></Field>
-                <Field label="Audience">
-                  <select name="classId" className={inputCls}>
-                    <option value="">School-wide</option>
-                    {cls.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </Field>
-                <SubmitButton className={btnCls + " w-full"} pendingText="Posting…">Post</SubmitButton>
+                <Field label="Notice"><textarea name="body" rows={3} required className={inputCls} /></Field>
+                <Field label="Who sees it">{audienceChips}</Field>
+                <SubmitButton className={btnCls + " w-full"} pendingText="Sending…">Send</SubmitButton>
                 <p className="text-[12.5px] text-muted-foreground">
                   Shows to everyone it concerns the next time they open the app, until acknowledged.
                 </p>
@@ -171,25 +184,16 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
                 <form action={createEvent.bind(null, slug)} className="mt-3 space-y-2.5">
                   <Field label="Event title"><input name="title" required className={inputCls} /></Field>
                   <Field label="Starts"><input name="startsAt" type="datetime-local" required className={inputCls} /></Field>
+                  <Field label="Who it is for">{audienceChips}</Field>
                   <SubmitButton className={btnCls + " w-full"} pendingText="Adding…">Add event</SubmitButton>
                 </form>
               </Card>
               <Card>
-                <h2 className="flex items-center gap-2 font-semibold"><MessageSquareText size={15} className="text-muted-foreground" /> Message all guardians</h2>
-                <form action={sendBlast.bind(null, slug)} className="mt-3 space-y-2.5">
-                  <Field label="Message">
-                    <textarea name="body" rows={3} maxLength={300} required className={inputCls} />
-                  </Field>
-                  <div className="flex gap-4 text-[14px]">
-                    <label className="flex items-center gap-1.5"><input type="checkbox" name="viaSms" defaultChecked /> SMS</label>
-                    <label className="flex items-center gap-1.5"><input type="checkbox" name="viaEmail" /> Email</label>
-                  </div>
-                  <SubmitButton className={btnCls + " w-full"} pendingText="Sending…">Send</SubmitButton>
-                  <p className="text-[12.5px] text-muted-foreground">
-                    Goes only to {school.name}&apos;s guardians, signed with the school&apos;s name.
-                    Email reaches guardians with an email on file.
-                  </p>
-                </form>
+                <h2 className="flex items-center gap-2 font-semibold"><MessageSquareText size={15} className="text-muted-foreground" /> Text all parents</h2>
+                <BlastForm action={sendBlast.bind(null, slug)} schoolName={school.name} phones={phones} emails={emails} />
+                <p className="mt-2 text-[13px] text-muted-foreground">
+                  Goes only to {school.name}&apos;s parents, signed with the school&apos;s name.
+                </p>
               </Card>
             </>
           )}

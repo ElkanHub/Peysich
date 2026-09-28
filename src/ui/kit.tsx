@@ -1,5 +1,7 @@
+import { Children, Suspense, cloneElement, isValidElement, type ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { TableSearch } from "./table-search";
 
 /* Assembly UI kit — capsules for action, calm radii for structure,
    hairline borders, one accent, stable action placement (doc 06 laws). */
@@ -13,11 +15,17 @@ export const btnGhostCls =
 export const btnDangerCls =
   "inline-flex h-9 items-center justify-center rounded-full bg-danger px-4.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90";
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** A labelled control. `required` shows a visible marker, `optional` says so
+ *  in the label; by default the label says neither. */
+export function Field({ label, children, required, optional }: {
+  label: string; children: React.ReactNode; required?: boolean; optional?: boolean;
+}) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+      <span className="mb-1.5 block font-mono text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         {label}
+        {required && <span className="ml-1.5 normal-case tracking-normal text-danger">required</span>}
+        {optional && <span className="ml-1.5 normal-case tracking-normal text-faint">(optional)</span>}
       </span>
       {children}
     </label>
@@ -128,18 +136,42 @@ export function Empty({ title, hint, action, icon }: {
   );
 }
 
+/** Tag each Td with its column header so the phone card list (globals.css
+ *  `.data-table`) can print "Header: value". Rows that are not a literal
+ *  <Tr> (a custom row component) render as cards without the labels. */
+function labelCells(rows: ReactNode, head: string[]): ReactNode {
+  return Children.map(rows, (row) => {
+    if (!isValidElement<{ children?: ReactNode }>(row) || row.type !== Tr) return row;
+    const cells = Children.map(row.props.children, (cell, i) =>
+      isValidElement<{ "data-label"?: string }>(cell) && cell.type === Td
+        ? cloneElement(cell, { "data-label": head[i] ?? "" })
+        : cell);
+    return cloneElement(row, {}, cells);
+  });
+}
+
 /** Data table: sticky uppercase head, fixed row height, actions LAST column.
- *  Scrolls inside its frame on small screens — the page never scrolls sideways. */
-export function DataTable({ head, children }: { head: string[]; children: React.ReactNode }) {
+ *  Below md every row becomes a card of "Header: value" lines, so the page
+ *  never scrolls sideways. `search` puts a name box above the table bound
+ *  to a URL param (the URL is the state; the page reads it from searchParams). */
+export function DataTable({ head, children, search }: {
+  head: string[]; children: React.ReactNode;
+  search?: { placeholder?: string; param?: string };
+}) {
   return (
-    <div className="overflow-x-auto rounded-lg bg-card shadow-[var(--shadow-md)]">
+    <div className="data-table overflow-x-auto rounded-lg bg-card shadow-[var(--shadow-md)]">
+      {search && (
+        <Suspense fallback={<div className="h-14" />}>
+          <TableSearch placeholder={search.placeholder} param={search.param} />
+        </Suspense>
+      )}
       <table className="w-full min-w-[560px] text-sm">
         <thead className="sticky top-0 z-10">
           <tr className="border-b border-border bg-muted/60 text-left font-mono text-[10.5px] uppercase tracking-[0.07em] text-muted-foreground backdrop-blur">
             {head.map((h, i) => <th key={i} className="px-4 py-2.5 font-medium">{h}</th>)}
           </tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody>{labelCells(children, head)}</tbody>
       </table>
     </div>
   );
@@ -147,8 +179,8 @@ export function DataTable({ head, children }: { head: string[]; children: React.
 export function Tr({ children }: { children: React.ReactNode }) {
   return <tr className="h-12 border-b border-border transition-colors last:border-0 hover:bg-muted/50">{children}</tr>;
 }
-export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
-  return <td className={cn("px-4 py-2 align-middle", className)}>{children}</td>;
+export function Td({ children, className, ...rest }: { children?: React.ReactNode; className?: string; "data-label"?: string }) {
+  return <td {...rest} className={cn("px-4 py-2 align-middle", className)}>{children}</td>;
 }
 
 /* ── Skeletons ───────────────────────────────────────────── */

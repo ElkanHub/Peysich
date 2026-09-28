@@ -22,7 +22,7 @@ export default async function HR({ params }: { params: Promise<{ school: string 
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Staff HR" sub="Leave tracking" />
+      <PageHeader title="Leave" sub="Staff leave, recorded and approved" />
       <DataTable head={["Staff", "From", "To", "Reason", "Status", ""]}>
         {rows.map((r) => (
           <Tr key={r.id}>

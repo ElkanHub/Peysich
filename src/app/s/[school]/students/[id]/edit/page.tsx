@@ -59,7 +59,7 @@ export default async function EditStudent({ params, searchParams }: {
             <Field label="Admission number"><input name="admissionNo" defaultValue={s.admissionNo} className={inputCls} /></Field>
             <Field label="National ID / birth cert no"><input name="idNumber" defaultValue={s.idNumber ?? ""} className={inputCls} /></Field>
             <Field label="Admission date"><input name="admittedOn" type="date" defaultValue={s.admittedOn ?? ""} className={inputCls} /></Field>
-            <Field label="Attendance type">
+            <Field label="Day student / Boarder">
               <label className="flex h-10 items-center gap-2 text-sm">
                 <input type="checkbox" name="boarding" defaultChecked={s.boarding} /> Boarder (unticked = day student)
               </label>

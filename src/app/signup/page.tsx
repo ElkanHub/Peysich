@@ -2,64 +2,75 @@
 import { useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { rememberAccount } from "@/lib/device-accounts";
 import { createMySchool } from "./actions";
 import { Door, doorInputCls, doorBtnCls } from "@/ui/door";
 import { cn } from "@/lib/utils";
 
 const label = "block font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground";
-const STEPS = ["Your account", "Your school", "Ready"];
-const PLANS = [
-  { key: "trial", name: "Free trial", sub: "14 days · up to 50 students · no card", price: "GHS 0" },
-  { key: "starter", name: "Starter", sub: "Up to 200 students", price: "GHS 99/mo" },
-  { key: "standard", name: "Standard", sub: "Up to 600 students · fees & timetable", price: "GHS 249/mo" },
-  { key: "premium", name: "Premium", sub: "Unlimited · every module", price: "GHS 499/mo" },
-];
+const input = cn(doorInputCls, "mt-1.5 text-[16px]");
+const btn = cn(doorBtnCls, "text-[16px]");
+const STEPS = ["You", "Your school"];
+// ponytail: naive slug guess — the person can always tap "change"
+const FILLER = new Set(["the", "of", "and", "school", "basic", "academy", "international", "ltd", "limited"]);
+function suggestSlug(name: string) {
+  const words = name.toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean);
+  const kept = words.filter((w) => !FILLER.has(w));
+  return (kept.length ? kept : words).join("").slice(0, 40);
+}
 
-/** Self-serve funnel: account → school → plan → trial or pay. */
+/** Self-serve funnel: you → your school → straight into the dashboard (free trial). */
 export default function Signup() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [plan, setPlan] = useState("trial");
-  const [done, setDone] = useState<{ slug: string } | null>(null);
+  const [school, setSchool] = useState("");
+  const [slug, setSlug] = useState<string | null>(null); // null = follow the school name
+  const [editing, setEditing] = useState(false);
+
+  const host = typeof window !== "undefined" ? window.location.host : "";
+  const bareHost = host.replace(/^www\./, "");
+  const link = slug ?? suggestSlug(school);
 
   async function createAccount(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setPending(true); setError("");
     const f = new FormData(e.currentTarget);
+    const id = String(f.get("email"));
     const { error } = await authClient.signUp.email({
-      name: String(f.get("name")), email: String(f.get("email")), password: String(f.get("password")),
+      name: String(f.get("name")), email: id, password: String(f.get("password")),
     });
     setPending(false);
     if (error) return setError(error.message ?? "That didn't go through — try again.");
+    rememberAccount({ id, name: String(f.get("name")) });
     setStep(2);
   }
 
   async function createSchool(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setPending(true); setError("");
-    const r = await createMySchool(null, new FormData(e.currentTarget));
-    setPending(false);
-    if (r && "error" in r && r.error) return setError(r.error);
-    if (r && "checkoutUrl" in r && r.checkoutUrl) return void (window.location.href = r.checkoutUrl);
-    if (r && "slug" in r && r.slug) { setDone({ slug: r.slug }); setStep(3); }
+    const f = new FormData(e.currentTarget);
+    f.set("slug", link);
+    const r = await createMySchool(null, f);
+    if (r && "error" in r && r.error) { setPending(false); return setError(r.error); }
+    // /go re-reads the session (schoolId just changed) and lands on the dashboard —
+    // via the subdomain in production, via the tenant cookie in preview.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- /go is a route handler: it sets cookies and may hop to the school subdomain, so a full navigation is required
+    window.location.href = "/go";
   }
-
-  const host = typeof window !== "undefined" ? window.location.host : "";
-  const bareHost = host.replace(/^www\./, "");
 
   return (
     <Door
       side={{
         title: "Your school, running by tomorrow morning.",
-        body: "Create the account, name the school, and pick a plan — the classes, subjects and a free trial are set up for you. Import students from a spreadsheet and mark your first register in the morning.",
+        body: "Create the account and name the school — classes, subjects and a free trial are set up for you. Import students from a spreadsheet and mark your first register in the morning.",
       }}
       footer={<p>Already set up? <a href="/sign-in" className="font-semibold text-primary hover:underline">Sign in</a></p>}
     >
-      <ol className="flex items-center gap-2 text-[12.5px] font-medium">
+      <ol className="flex items-center gap-2 text-[14px] font-medium">
         {STEPS.map((s, i) => {
           const n = i + 1, state = n < step ? "done" : n === step ? "now" : "next";
           return (
             <li key={s} className="flex items-center gap-2">
-              <span className={cn("flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold",
+              <span className={cn("flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-semibold",
                 state === "done" ? "bg-success text-white" : state === "now" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                 {state === "done" ? <Check size={12} /> : n}
               </span>
@@ -70,22 +81,22 @@ export default function Signup() {
         })}
       </ol>
 
-      {error && <p role="alert" className="mt-5 rounded-xl bg-danger-soft px-3.5 py-2.5 text-[14px] text-danger">{error}</p>}
+      {error && <p role="alert" className="mt-5 rounded-xl bg-danger-soft px-3.5 py-2.5 text-[15px] text-danger">{error}</p>}
 
       {step === 1 && (
         <form onSubmit={createAccount} className="mt-6 space-y-4">
           <div>
             <h2 className="text-[26px] font-semibold leading-tight tracking-tight">Create your account</h2>
-            <p className="mt-1.5 text-[15px] text-muted-foreground">You&apos;ll be the school&apos;s main admin.</p>
+            <p className="mt-1.5 text-[16px] text-muted-foreground">You&apos;ll be the school&apos;s main admin.</p>
           </div>
           <div><label className={label} htmlFor="name">Your name</label>
-            <input id="name" name="name" required autoComplete="name" className={cn(doorInputCls, "mt-1.5")} /></div>
+            <input id="name" name="name" required autoComplete="name" className={input} /></div>
           <div><label className={label} htmlFor="email">Email</label>
-            <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" className={cn(doorInputCls, "mt-1.5")} /></div>
+            <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" className={input} /></div>
           <div><label className={label} htmlFor="password">Password</label>
-            <input id="password" name="password" type="password" minLength={8} required autoComplete="new-password" className={cn(doorInputCls, "mt-1.5")} />
-            <p className="mt-1.5 text-[12.5px] text-muted-foreground">At least 8 characters.</p></div>
-          <button disabled={pending} className={doorBtnCls}>{pending ? "Creating…" : <>Continue <ArrowRight size={16} /></>}</button>
+            <input id="password" name="password" type="password" minLength={8} required autoComplete="new-password" className={input} />
+            <p className="mt-1.5 text-[14px] text-muted-foreground">At least 8 characters.</p></div>
+          <button disabled={pending} className={btn}>{pending ? "Creating…" : <>Continue <ArrowRight size={16} /></>}</button>
         </form>
       )}
 
@@ -93,54 +104,32 @@ export default function Signup() {
         <form onSubmit={createSchool} className="mt-6 space-y-4">
           <div>
             <h2 className="text-[26px] font-semibold leading-tight tracking-tight">Name your school</h2>
-            <p className="mt-1.5 text-[15px] text-muted-foreground">This is how it appears on every paper you print.</p>
+            <p className="mt-1.5 text-[16px] text-muted-foreground">This is how it appears on every paper you print.</p>
           </div>
           <div><label className={label} htmlFor="school">School name</label>
-            <input id="school" name="name" required className={cn(doorInputCls, "mt-1.5")} placeholder="St. Mary's Basic School" /></div>
-          <div>
-            <label className={label} htmlFor="slug">Your address</label>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input id="slug" name="slug" required pattern="[a-z0-9-]+" autoCapitalize="none"
-                className={cn(doorInputCls, "min-w-0 flex-1")} placeholder="stmarys" />
-              <span className="shrink-0 text-[13px] text-muted-foreground">.{bareHost}</span>
+            <input id="school" name="name" required value={school} onChange={(e) => setSchool(e.target.value)}
+              className={input} placeholder="St. Mary's Basic School" /></div>
+          {editing ? (
+            <div>
+              <label className={label} htmlFor="slug">Your school&apos;s link</label>
+              <div className="mt-1.5 flex items-center gap-2">
+                <input id="slug" value={link} onChange={(e) => setSlug(e.target.value.toLowerCase())} autoFocus
+                  required pattern="[a-z0-9][a-z0-9-]{0,38}[a-z0-9]" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                  className={cn(doorInputCls, "min-w-0 flex-1 text-[16px]")} placeholder="stmarys" />
+                <span className="shrink-0 text-[14px] text-muted-foreground">.{bareHost}</span>
+              </div>
+              <p className="mt-1.5 text-[14px] text-muted-foreground">Lowercase letters, numbers and dashes.</p>
             </div>
-            <p className="mt-1.5 text-[12.5px] text-muted-foreground">Lowercase letters, numbers and dashes.</p>
-          </div>
-          <div>
-            <p className={label}>Plan</p>
-            <div className="mt-1.5 grid gap-2">
-              {PLANS.map((p) => (
-                <label key={p.key} className={cn("flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors",
-                  plan === p.key ? "border-primary bg-brand-soft" : "border-border bg-card hover:bg-muted")}>
-                  <input type="radio" name="planKey" value={p.key} checked={plan === p.key} onChange={() => setPlan(p.key)} className="accent-primary" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[14.5px] font-semibold">{p.name}</span>
-                    <span className="block text-[12.5px] text-muted-foreground">{p.sub}</span>
-                  </span>
-                  <span className="text-[13px] font-semibold" data-nums="">{p.price}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <button disabled={pending} className={doorBtnCls}>{pending ? "Setting up…" : <>Create my school <ArrowRight size={16} /></>}</button>
-        </form>
-      )}
-
-      {step === 3 && done && (
-        <div className="mt-6">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-success-soft text-success"><Check size={24} /></span>
-          <h2 className="mt-4 text-[26px] font-semibold leading-tight tracking-tight">Your school is ready.</h2>
-          <p className="mt-1.5 text-[15px] text-muted-foreground">
-            Classes and subjects are in place. Sign in there with the account you just created — the walkthrough will show you around.
-          </p>
-          {host.endsWith("vercel.app") || host.includes("localhost") ? (
-            <a className={cn(doorBtnCls, "mt-6")} href={`/t/${done.slug}`}>Open your school <ArrowRight size={16} /></a>
           ) : (
-            <a className={cn(doorBtnCls, "mt-6")} href={`${window.location.protocol}//${done.slug}.${host}`}>
-              Open {done.slug}.{bareHost} <ArrowRight size={16} />
-            </a>
+            <p className="text-[16px] text-muted-foreground">
+              Your school&apos;s link will be <b className="break-all text-foreground">{link || "…"}.{bareHost}</b>
+              {" · "}
+              <button type="button" onClick={() => { setSlug(link); setEditing(true); }}
+                className="min-h-12 font-semibold text-primary hover:underline">change</button>
+            </p>
           )}
-        </div>
+          <button disabled={pending || !link} className={btn}>{pending ? "Setting up…" : <>Create my school <ArrowRight size={16} /></>}</button>
+        </form>
       )}
     </Door>
   );

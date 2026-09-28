@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { students, scorePublications, scoreSheets, reportCards, levels, terms, academicYears } from "@/db/schema";
+import { students, scorePublications, scoreSheets, reportCards, levels, terms, academicYears, user } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { getStructure, SECTIONS, SECTION_LABELS, type Section } from "@/core/academics";
 import { getReportConfig, REPORT_CONFIG_LABELS, REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/report-config";
 import { Card, PageHeader, Badge, Empty, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
-import { releaseComponent, releaseTermReports, releasePreschoolReports, saveReportConfig } from "./actions";
+import { ConfirmButton } from "@/ui/confirm";
+import { cn } from "@/lib/utils";
+import { releaseComponent, releaseTermReports, releasePreschoolReports, saveReportConfig, unlockScores } from "./actions";
 import { skillRatings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 
@@ -26,7 +28,7 @@ export default async function Reports({ params, searchParams }: {
   const sp = await searchParams;
   const { school } = await requireModule(slug, "assessment", ["admin"]);
   const current = await getCurrentTerm(school.id);
-  if (!current) return <div><PageHeader title="Reports" sub="No current term" />
+  if (!current) return <div><PageHeader title="Report cards" sub="No current term" />
     <Empty title="Set up your academic year first" hint="Settings → Academic year & terms." /></div>;
   // any term, any year — records stay findable long after a term closes
   const [allTerms, yrs] = await Promise.all([
@@ -65,6 +67,17 @@ export default async function Reports({ params, searchParams }: {
     const done = subs.filter((sid) => submittedBy.has(`${classId}:${sid}:${compId}`)).length;
     return { done, total: subs.length, ready: subs.length > 0 && done === subs.length };
   };
+  // a class is "fully marked" for report cards when every component of its
+  // section (tests + exam) is submitted for every subject it studies
+  const classFullyMarked = (cl: { id: string; levelId: string }) =>
+    S.componentsFor(S.sectionOfClass(cl)).every((c) => classReady(cl.id, c.id).ready);
+  const unmarked = testClasses.filter((cl) => !classFullyMarked(cl)).map((cl) => cl.name);
+  const [parentRow] = await db.select({ n: sql<number>`count(*)` }).from(user)
+    .where(and(eq(user.schoolId, school.id), eq(user.role, "parent")));
+  const parents = Number(parentRow?.n ?? 0);
+  // at least 44px tall on a phone; the desktop kit size above that
+  const bigBtn = cn(btnCls, "h-11 sm:h-9");
+  const bigGhost = cn(btnGhostCls, "h-11 sm:h-9 disabled:pointer-events-none disabled:opacity-55");
 
   // preschool: their whole assessment is the skills grid, released end of term
   const preClasses = S.classes.filter((c) => preschool.has(c.levelId))
@@ -106,8 +119,8 @@ export default async function Reports({ params, searchParams }: {
 
   return (
     <div>
-      <PageHeader title="Reports"
-        sub={`${yearName.get(term.yearId)} · ${term.name} · what families receive — released per test, tracked separately`} />
+      <PageHeader title="Report cards"
+        sub={`${yearName.get(term.yearId)} · ${term.name} · what families receive — sent per test, tracked separately`} />
 
       {/* records are term-scoped and year-scoped — every past term stays reachable */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -128,16 +141,16 @@ export default async function Reports({ params, searchParams }: {
       </div>
       {viewingPast && (
         <p className="mb-4 rounded-md bg-muted px-3 py-2 text-[13.5px] text-muted-foreground">
-          You are looking at a past term&apos;s records — reference only, nothing here can be released or changed.
+          You are looking at a past term&apos;s records — reference only, nothing here can be sent or changed.
         </p>
       )}
 
-      {/* ── releases: one row per test, its own state, nothing blurred ── */}
+      {/* ── sent to parents: one row per test, its own state, nothing blurred ── */}
       <Card className="mb-5">
-        <h2 className="font-semibold">{viewingPast ? `Releases in ${term.name}` : "Releases this term"}</h2>
+        <h2 className="font-semibold">{viewingPast ? `Sent to parents in ${term.name}` : "Sent to parents this term"}</h2>
         <p className="mt-1 text-[13.5px] text-muted-foreground">
-          Each test is released on its own — families see exactly what has been released and
-          nothing else. A release always carries the child&apos;s full record, every subject at once.
+          Each test goes out on its own — families see exactly what has been sent and
+          nothing else. Every send carries the child&apos;s full record, every subject at once.
         </p>
         <div className="mt-3 space-y-4">
           {testSections.map((sec) => (
@@ -149,34 +162,36 @@ export default async function Reports({ params, searchParams }: {
                   const readiness = secClasses.map((cl) => ({ cl, ...classReady(cl.id, c.id) }));
                   const readyCount = readiness.filter((r) => r.ready).length;
                   const gaps = readiness.filter((r) => !r.ready);
+                  const allReady = secClasses.length > 0 && gaps.length === 0;
                   const p = pubBy.get(c.id);
                   return (
-                    <li key={c.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+                    <li key={c.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                       <span className="w-44 shrink-0 font-medium">{c.name}</span>
                       {p ? (
                         <>
-                          <Badge tone="success">released ✓</Badge>
+                          <Badge tone="success">sent ✓</Badge>
                           <span className="text-[13.5px] text-muted-foreground">
                             {fmtDate(p.publishedAt)} by {p.publishedBy}
                           </span>
                         </>
                       ) : (
                         <>
-                          <Badge tone="default">not released</Badge>
-                          <span className={`text-[13.5px] ${readyCount === secClasses.length ? "text-success" : "text-warning"}`} data-nums="">
-                            {readyCount}/{secClasses.length} classes fully submitted
+                          <span className={`text-[13.5px] ${allReady ? "text-success" : "text-warning"}`} data-nums="">
+                            {allReady ? "every class ready" : `${readyCount} of ${secClasses.length} classes ready`}
                           </span>
                           {gaps.length > 0 && (
-                            <span className="text-[12.5px] text-muted-foreground"
-                              title={gaps.map((g) => `${g.cl.name}: ${g.done}/${g.total} subjects`).join(" · ")}>
-                              waiting on {gaps.slice(0, 3).map((g) => g.cl.name).join(", ")}{gaps.length > 3 ? ` +${gaps.length - 3}` : ""}
+                            <span className="basis-full text-[13.5px] text-muted-foreground sm:basis-auto">
+                              waiting on {gaps.map((g) => `${g.cl.name} (${g.done}/${g.total} subjects)`).join(", ")}
                             </span>
                           )}
                           {!viewingPast && (
                             <form action={releaseComponent.bind(null, slug, c.id)} className="ml-auto">
-                              <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[13.5px]"} pendingText="Releasing…">
-                                Release {c.name}
-                              </SubmitButton>
+                              <ConfirmButton className={bigGhost} disabled={!allReady}
+                                title={`Send ${c.name} results to ${parents} parents?`}
+                                body="Every class has submitted. Parents get a message; there is no un-send."
+                                confirmLabel="Send">
+                                Send to parents
+                              </ConfirmButton>
                             </form>
                           )}
                         </>
@@ -188,7 +203,7 @@ export default async function Reports({ params, searchParams }: {
             </div>
           ))}
 
-          {/* preschool — skills-based, so their release IS the end-of-term report */}
+          {/* preschool — skills-based, so their send IS the end-of-term report card */}
           {preClasses.length > 0 && (
             <div className="border-t border-border pt-3">
               <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Preschool</p>
@@ -196,64 +211,102 @@ export default async function Reports({ params, searchParams }: {
                 <span className="w-44 shrink-0 font-medium">Skills report (end of term)</span>
                 {preReleased.length > 0 ? (
                   <>
-                    <Badge tone="success">released ✓</Badge>
+                    <Badge tone="success">sent ✓</Badge>
                     <span className="text-[13.5px] text-muted-foreground" data-nums="">
                       {preReleased.length} of {preKidIds.length} children
                       {preReleasedAt ? ` · ${fmtDate(preReleasedAt)}` : ""}
                     </span>
                   </>
                 ) : (
-                  <>
-                    <Badge tone="default">not released</Badge>
-                    <span className={`text-[13.5px] ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "text-success" : "text-warning"}`} data-nums="">
-                      {ratedCount}/{preKidIds.length} children rated on the skills grid
-                    </span>
-                  </>
+                  <span className={`text-[13.5px] ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "text-success" : "text-warning"}`} data-nums="">
+                    {ratedCount} of {preKidIds.length} children rated on the skills grid
+                  </span>
                 )}
                 {!viewingPast && (
                   <form action={releasePreschoolReports.bind(null, slug)} className="ml-auto">
-                    <SubmitButton className={btnGhostCls + " px-2.5 py-1 text-[13.5px]"} pendingText="Releasing…">
-                      {preReleased.length ? "Re-release skills reports" : "Release skills reports"}
-                    </SubmitButton>
+                    <ConfirmButton className={bigGhost}
+                      title={`Send preschool skills reports to ${parents} parents?`}
+                      body={`${ratedCount} of ${preKidIds.length} children have been rated; children with nothing rated are skipped. Parents get a message.`}
+                      confirmLabel="Send">
+                      {preReleased.length ? "Send again" : "Send to parents"}
+                    </ConfirmButton>
                   </form>
                 )}
               </div>
               <p className="mt-1.5 text-[13px] text-muted-foreground">
-                Preschool is assessed on the skills grid, not tests — this single release sends each
+                Preschool is assessed on the skills grid, not tests — this one send gives each
                 child&apos;s Learning &amp; Development record to their family. Children with nothing
                 rated yet are skipped, and the term stays open.
               </p>
             </div>
           )}
 
-          {/* terminal report — its own, separate release */}
+          {/* end-of-term report card — its own, separate send */}
           <div className="border-t border-border pt-3">
-            <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Terminal report</p>
+            <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">End-of-term report card</p>
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="w-44 shrink-0 font-medium">Report cards (incl. exam)</span>
               {reportsN > 0 ? (
                 <>
-                  <Badge tone="success">released ✓</Badge>
+                  <Badge tone="success">sent ✓</Badge>
                   <span className="text-[13.5px] text-muted-foreground" data-nums="">
-                    {reportsN} report cards with families · scores locked
+                    {reportsN} report cards with families{term.scoresLocked ? " · scores locked" : " · scores unlocked"}
                   </span>
                 </>
               ) : (
-                <Badge tone="default">not released</Badge>
+                <span className={`text-[13.5px] ${unmarked.length ? "text-warning" : "text-success"}`} data-nums="">
+                  {testClasses.length - unmarked.length} of {testClasses.length} classes ready
+                </span>
+              )}
+              {unmarked.length > 0 && (
+                <span className="basis-full text-[13.5px] text-muted-foreground sm:basis-auto">
+                  not fully marked: {unmarked.join(", ")}
+                </span>
               )}
               {!viewingPast && (
                 <form action={releaseTermReports.bind(null, slug)} className="ml-auto">
-                  <SubmitButton className={reportsN ? btnGhostCls + " px-2.5 py-1 text-[13.5px]" : btnCls} pendingText="Publishing…">
-                    {reportsN ? "Re-publish report cards" : "Publish report cards"}
-                  </SubmitButton>
+                  <ConfirmButton className={reportsN ? bigGhost : bigBtn}
+                    title={`Send ${term.name} report cards to parents?`}
+                    body={`${testClasses.length + preClasses.length} classes.${unmarked.length
+                      ? ` ${unmarked.join(", ")} ${unmarked.length === 1 ? "is" : "are"} not fully marked and will go out incomplete.` : ""} Scores lock after this. ${parents} parents get a message.`}
+                    confirmLabel="Send" cancelLabel="Wait">
+                    {reportsN ? "Send again" : "Send report cards to parents"}
+                  </ConfirmButton>
                 </form>
               )}
             </div>
             <p className="mt-1.5 text-[13px] text-muted-foreground">
-              Publishing the terminal report computes every child&apos;s CA + exam totals, locks the
-              term&apos;s scores, and includes preschool skills reports.
-              {" "}<Link href="/assessment/matrix" className="font-medium text-primary">Score-entry completeness matrix →</Link>
+              Sending the end-of-term report card works out every child&apos;s class work + exam totals,
+              locks the term&apos;s scores, and includes the preschool skills reports.
+              {" "}<Link href="/assessment/matrix" className="font-medium text-primary">Which scores are still missing →</Link>
             </p>
+
+            {/* unlock — the lock is on the term, so this reopens every class; the
+                class named here is what the audit line records */}
+            {!viewingPast && term.scoresLocked && (
+              <form action={unlockScores.bind(null, slug)} className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
+                <p className="text-[14px] font-semibold">Unlock a class</p>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
+                  Need to change a score after sending? Scores are locked for the whole term, so
+                  unlocking reopens every class — say which one and why; it is written down with your
+                  name and the time. Send the report cards again when the change is done.
+                </p>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <label className="flex flex-col gap-1 text-[13px] font-medium">
+                    Which class?
+                    <select name="classId" className="h-11 rounded-md border border-border bg-card px-2 text-sm font-normal sm:h-9">
+                      {allClasses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-1 flex-col gap-1 text-[13px] font-medium">
+                    Why?
+                    <input name="reason" required maxLength={200} placeholder="e.g. Maths exam mark entered wrongly for Ama"
+                      className="h-11 rounded-md border border-border bg-card px-2 text-sm font-normal sm:h-9" />
+                  </label>
+                  <SubmitButton className={bigGhost} pendingText="Unlocking…">Unlock scores</SubmitButton>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </Card>
@@ -278,7 +331,7 @@ export default async function Reports({ params, searchParams }: {
               </label>
             ))}
           </div>
-          <SubmitButton className={btnCls + " mt-3"} pendingText="Saving…">Save design</SubmitButton>
+          <SubmitButton className={cn(bigBtn, "mt-3")} pendingText="Saving…">Save design</SubmitButton>
         </form>
       </Card>
 
@@ -291,7 +344,7 @@ export default async function Reports({ params, searchParams }: {
         <div className="mt-3 flex flex-wrap gap-1.5">
           {allClasses.map((c) => (
             <Link key={c.id} href={`?c=${c.id}&t=${term.id}`}
-              className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === activeClass?.id
+              className={`inline-flex min-h-11 items-center rounded-md border px-3 text-[13.5px] font-medium sm:min-h-0 sm:py-1 ${c.id === activeClass?.id
                 ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
               {c.name}
             </Link>

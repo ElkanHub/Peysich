@@ -9,9 +9,8 @@ import {
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm } from "@/core/school-context";
 import { assertParentOf } from "@/core/portal";
-import { Card, DataTable, PageHeader, Tr, Td } from "@/ui/kit";
-
-const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+import { ghs } from "@/modules/fees/config";
+import { Card, DataTable, PageHeader, Tr, Td, btnCls, btnGhostCls } from "@/ui/kit";
 
 /** Parent child-detail: results, attendance, fees + receipts, reports (doc 10). */
 export default async function ChildDetail({ params }: {
@@ -48,8 +47,11 @@ export default async function ChildDetail({ params }: {
           .where(and(eq(componentScores.studentId, id), eq(componentScores.termId, term.id)))
           .orderBy(desc(componentScores.updatedAt)).limit(12)
       : [],
-    db.select().from(feeInvoices).where(and(
-      eq(feeInvoices.studentId, id), eq(feeInvoices.schoolId, school.id)))
+    db.select({
+      id: feeInvoices.id, termId: feeInvoices.termId, termName: terms.name,
+      totalPesewas: feeInvoices.totalPesewas, paidPesewas: feeInvoices.paidPesewas,
+    }).from(feeInvoices).leftJoin(terms, eq(feeInvoices.termId, terms.id))
+      .where(and(eq(feeInvoices.studentId, id), eq(feeInvoices.schoolId, school.id)))
       .orderBy(desc(feeInvoices.createdAt)),
     db.select({ termId: reportCards.termId, name: terms.name })
       .from(reportCards).innerJoin(terms, eq(reportCards.termId, terms.id))
@@ -60,6 +62,8 @@ export default async function ChildDetail({ params }: {
         .where(eq(feePayments.invoiceId, invoices[0].id)).orderBy(desc(feePayments.createdAt))
     : [];
   const present = att.filter((a) => a.status !== "absent").length;
+  const current = term ? invoices.find((i) => i.termId === term.id) : undefined;
+  const owing = current ? Math.max(0, current.totalPesewas - current.paidPesewas) : 0;
   const sheetRows = term && s.classId
     ? await db.select().from(scoreSheets).where(and(
         eq(scoreSheets.termId, term.id), eq(scoreSheets.classId, s.classId)))
@@ -121,21 +125,37 @@ export default async function ChildDetail({ params }: {
 
       <Card>
         <h2 className="font-semibold">Fees</h2>
+        {current && (
+          <p className={`mt-1 text-[24px] font-bold ${owing ? "text-danger" : "text-success"}`} data-nums="">
+            {owing ? `${ghs(owing)} to pay` : "Cleared ✓"}
+            <span className="ml-2 text-[13px] font-medium text-muted-foreground">{term?.name}</span>
+          </p>
+        )}
+        {/* parents pay the school directly (MoMo to the school's number, or cash at
+            the office) and the office records it — no parent money passes through
+            SchoolSpec, so "How to pay" is the whole path */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href={`/fees?child=${id}`} className={(owing > 0 ? btnCls : btnGhostCls) + " h-11 text-[14.5px]"}>
+            {owing > 0 ? "How to pay" : "Bills and receipts"}
+          </Link>
+        </div>
+        <div className="mt-4">
         <DataTable head={["Term", "Total", "Paid", "Balance", ""]}>
           {invoices.map((i) => {
             const bal = i.totalPesewas - i.paidPesewas;
             return (
               <Tr key={i.id}>
-                <Td>{i.createdAt.toISOString().slice(0, 10)}</Td>
+                <Td>{i.termName ?? "—"}</Td>
                 <Td>{ghs(i.totalPesewas)}</Td>
                 <Td className="text-success">{ghs(i.paidPesewas)}</Td>
                 <Td className={bal > 0 ? "text-danger" : "text-success"}>{ghs(bal)}</Td>
-                <Td><Link href={`/fees?child=${id}`} className="text-[12.5px] font-medium text-primary">
-                  {bal > 0 ? "how to pay →" : "details →"}</Link></Td>
+                <Td><Link href={`/fees?child=${id}`} className="inline-flex h-11 items-center text-[14px] font-medium text-primary">
+                  {bal > 0 ? "How to pay →" : "Details →"}</Link></Td>
               </Tr>
             );
           })}
         </DataTable>
+        </div>
         {payments.length > 0 && (
           <div className="mt-3 text-xs text-muted-foreground">
             <p className="font-medium text-foreground">Receipts</p>

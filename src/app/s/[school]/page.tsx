@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { and, eq, desc, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   students, staff, classes, subjects, staffNudges, timetableEntries, periodSlots,
   assignments, submissions, announcements, events, attendanceRecords, feeInvoices,
-  scorePublications, feeItems,
+  scorePublications, feeItems, componentScores,
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getStructure } from "@/core/academics";
@@ -14,7 +15,42 @@ import { Card, PageHeader, Stat } from "@/ui/kit";
 import { ChildAvatar } from "@/ui/child-avatar";
 import { TermPulseBar } from "@/ui/term-pulse-bar";
 import { r2Enabled, presignDownload } from "@/lib/r2";
+import { uid } from "@/lib/utils";
+import { withFlash } from "@/lib/flash";
+import { SubmitButton } from "@/ui/feedback";
 import { SetupChecklist } from "./setup-checklist";
+
+/** "Remind the teacher" for a score sheet — the register nudge, aimed at a
+ *  class·subject sheet: a nudge row, an SMS and a push. No confirm (one
+ *  person, small), a toast says who was told. */
+async function remindScoreTeacher(slug: string, f: FormData) {
+  "use server";
+  const { school, user } = await requireSchool(slug, ["admin"]);
+  const classId = String(f.get("classId") ?? ""), subjectId = String(f.get("subjectId") ?? "");
+  const S = await getStructure(school.id);
+  const cls = S.classById.get(classId), sub = S.subjectById.get(subjectId);
+  const t = cls && sub ? S.staffById.get(S.teacherFor(classId, subjectId) ?? "") : undefined;
+  if (!cls || !sub || !t) {
+    redirect(withFlash("/", "No teacher is allocated to that sheet yet — allocate one under Staff.", { error: true }));
+  }
+  const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} ${sub.name} scores for this term are still missing. Please enter them in SchoolSpec. — ${school.name}`;
+  await db.insert(staffNudges).values({
+    id: uid(), schoolId: school.id, staffId: t.id, kind: "scores",
+    refId: `${classId}:${subjectId}`, message, sentBy: user.name,
+  });
+  const { sendSmsBatch } = await import("@/lib/notify");
+  if (t.phone) await sendSmsBatch([{
+    schoolId: school.id, to: t.phone, kind: "staff-nudge", senderId: school.branding.smsSenderId, body: message,
+  }]);
+  if (t.userId) {
+    const { pushToUsers } = await import("@/lib/push");
+    await pushToUsers([t.userId], {
+      title: `${cls.name} · ${sub.name} scores`, body: "Still missing for this term — a few minutes and it's done.",
+      url: `/assessment/${classId}/${subjectId}`, tag: `nudge-scores-${classId}-${subjectId}`,
+    });
+  }
+  redirect(withFlash("/", `Reminder sent to ${t.name}.`));
+}
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -26,51 +62,65 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
 
   if (user.role === "parent") {
     const kids = await getParentChildren(school.id, user.id, term?.id);
+    const invIds = kids.map((k) => k.invoiceId).filter(Boolean) as string[];
+    const dueByInvoice = new Map((invIds.length
+      ? await db.select({ id: feeInvoices.id, dueDate: feeInvoices.dueDate }).from(feeInvoices)
+          .where(inArray(feeInvoices.id, invIds))
+      : []).map((i) => [i.id, i]));
     return (
       <div>
-        <PageHeader title="My Children" sub={sub} />
+        <PageHeader title="My children" sub={sub} />
         <TermPulseBar school={school} />
         {kids.length === 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[16px] text-muted-foreground">
             No children linked to your account yet — please contact the school office.
           </p>
         )}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {kids.map((k) => (
-            <Card key={k.id} className="p-4">
-              <div className="flex items-center gap-3">
-                <ChildAvatar photoUrl={k.photoUrl} initials={`${k.firstName[0]}${k.lastName[0]}`}
-                  owing={k.owingPesewas > 0} className="h-11 w-11 text-[13px]" />
-                <div className="min-w-0 flex-1">
-                  <Link href={`/children/${k.id}`}
-                    className="block truncate text-[15px] font-semibold leading-tight hover:text-primary">
-                    {k.firstName} {k.lastName}
-                  </Link>
-                  <p className="truncate text-[12.5px] text-muted-foreground">{k.className ?? "—"}</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {kids.map((k) => {
+            const inv = k.invoiceId ? dueByInvoice.get(k.invoiceId) : null;
+            const due = inv?.dueDate
+              ? new Date(inv.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : null;
+            const reportTerm = k.reportTermIds.at(-1);
+            return (
+              <Card key={k.id} className="p-5">
+                <div className="flex items-center gap-4">
+                  <ChildAvatar photoUrl={k.photoUrl} initials={`${k.firstName[0]}${k.lastName[0]}`}
+                    owing={k.owingPesewas > 0} className="h-16 w-16 text-[18px]" />
+                  <div className="min-w-0">
+                    <p className="text-[18px] font-semibold leading-tight">{k.firstName} {k.lastName}</p>
+                    <p className="text-[15px] text-muted-foreground">{k.className ?? "No class yet"}</p>
+                  </div>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                  k.today === "absent" ? "bg-danger/10 text-danger"
-                    : k.today ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
-                  {k.today ?? "not marked"}
-                </span>
-              </div>
-              <div className="mt-2.5 flex items-center justify-between text-[13px]">
-                <span className="text-muted-foreground">Fees</span>
-                {k.owingPesewas > 0
-                  ? <span className="font-semibold text-danger" data-nums="">{ghs(k.owingPesewas)} owing</span>
-                  : <span className="font-medium text-success">cleared ✓</span>}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-2 text-[12.5px] font-medium">
-                <Link href={`/children/${k.id}`} className="text-primary">Full details →</Link>
-                {k.owingPesewas > 0 && <Link href={`/fees?child=${k.id}`} className="text-primary">How to pay</Link>}
-                {k.reportTermIds.length > 0 && (
-                  <Link href={`/students/${k.id}/report/${k.reportTermIds.at(-1)}`} className="text-primary">
-                    Report card
-                  </Link>
-                )}
-              </div>
-            </Card>
-          ))}
+                <p className={`mt-4 text-[16px] font-medium ${
+                  k.today === "absent" ? "text-danger" : k.today ? "text-success" : "text-muted-foreground"}`}>
+                  {k.today === "absent" ? "Absent today" : k.today ? "✓ In school today" : "Not marked yet"}
+                </p>
+                <p className={`mt-1 text-[16px] font-medium ${k.owingPesewas > 0 ? "text-danger" : "text-success"}`} data-nums="">
+                  {k.owingPesewas > 0
+                    ? <>Owing {ghs(k.owingPesewas)}{due ? ` · due ${due}` : ""}</>
+                    : "Fees cleared ✓"}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {k.owingPesewas > 0 && (
+                    <Link href={`/fees?child=${k.id}`}
+                      className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-[15px] font-semibold text-primary-foreground hover:bg-brand-strong">
+                      How to pay
+                    </Link>
+                  )}
+                  {reportTerm && (
+                    <Link href={`/students/${k.id}/report/${reportTerm}`}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-card px-5 text-[15px] font-semibold hover:bg-muted">
+                      Report card
+                    </Link>
+                  )}
+                </div>
+                <Link href={`/children/${k.id}`} className="mt-4 block text-[16px] font-medium text-primary">
+                  See everything about {k.firstName} →
+                </Link>
+              </Card>
+            );
+          })}
         </div>
       </div>
     );
@@ -210,7 +260,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
             <ul className="mt-2 space-y-1.5 text-sm">
               {released.length > 0 && term && (
                 <li><Link href={`/students/${me.id}/performance/${term.id}`}
-                  className="text-primary underline-offset-2 hover:underline">My results this term →</Link></li>
+                  data-tour="tab:Results" className="text-primary underline-offset-2 hover:underline">My results this term →</Link></li>
               )}
               <li><Link href="/attendance/register" className="text-primary underline-offset-2 hover:underline">My attendance record →</Link></li>
               <li><Link href="/homework" className="text-primary underline-offset-2 hover:underline">All my homework →</Link></li>
@@ -283,8 +333,10 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
     // a nudge stays visible only while its register is still unmarked today
-    const liveNudges = nudges.filter((n) =>
-      n.sentAt >= startOfDay && n.kind === "attendance" && n.refId && !marked.has(n.refId));
+    // a register nudge stays visible only while that register is still unmarked
+    // today; a scores nudge stays for the day it was sent
+    const liveNudges = nudges.filter((n) => n.sentAt >= startOfDay && n.refId
+      && (n.kind === "attendance" ? !marked.has(n.refId) : n.kind === "scores"));
 
     return (
       <div>
@@ -298,8 +350,17 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
 
         {liveNudges.map((n) => (
           <div key={n.id} className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warning/50 bg-warning-soft px-4 py-2.5 text-sm">
-            <span>📣 <b>{n.sentBy}</b>: the {clsName.get(n.refId!) ?? ""} register for today isn&apos;t marked yet.</span>
-            <Link href={`/attendance/${n.refId}`} className="font-medium text-primary">Mark it now →</Link>
+            {n.kind === "scores" ? (
+              <>
+                <span>📣 <b>{n.sentBy}</b>: the {clsName.get(n.refId!.split(":")[0]) ?? ""} · {S.subjectById.get(n.refId!.split(":")[1] ?? "")?.name ?? ""} scores are still missing.</span>
+                <Link href={`/assessment/${n.refId!.replace(":", "/")}`} className="font-medium text-primary">Enter them now →</Link>
+              </>
+            ) : (
+              <>
+                <span>📣 <b>{n.sentBy}</b>: the {clsName.get(n.refId!) ?? ""} register for today isn&apos;t marked yet.</span>
+                <Link href={`/attendance/${n.refId}`} className="font-medium text-primary">Mark it now →</Link>
+              </>
+            )}
           </div>
         ))}
 
@@ -366,10 +427,9 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
 
   // ── admin (and platform_admin visiting): the 90-second morning check ──
   const today = new Date().toISOString().slice(0, 10);
-  const [[st], [sf], allCls, attToday, fees, anns, evts, rosters] = await Promise.all([
+  const [[st], allCls, attToday, fees, anns, evts, rosters] = await Promise.all([
     db.select({ n: sql<number>`count(*)` }).from(students)
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active"))),
-    db.select({ n: sql<number>`count(*)` }).from(staff).where(eq(staff.schoolId, school.id)),
     db.select().from(classes).where(eq(classes.schoolId, school.id)),
     db.select({
       classId: attendanceRecords.classId,
@@ -393,10 +453,19 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active")))
       .groupBy(students.classId),
   ]);
-  const [[feeItemCount], [invitedTeachers]] = await Promise.all([
+  const S = await getStructure(school.id);
+  const [[feeItemCount], [invitedTeachers], entered] = await Promise.all([
     db.select({ n: sql<number>`count(*)` }).from(feeItems).where(eq(feeItems.schoolId, school.id)),
     db.select({ n: sql<number>`count(*)` }).from(staff)
       .where(and(eq(staff.schoolId, school.id), sql`${staff.userId} is not null`)),
+    term
+      ? db.select({
+          classId: componentScores.classId, subjectId: componentScores.subjectId,
+          n: sql<number>`count(distinct ${componentScores.studentId})`,
+        }).from(componentScores)
+          .where(and(eq(componentScores.schoolId, school.id), eq(componentScores.termId, term.id)))
+          .groupBy(componentScores.classId, componentScores.subjectId)
+      : [],
   ]);
   const docSign = (school.settings as { docSign?: { headSigKey?: string; adminSigKey?: string } }).docSign ?? {};
   const setupItems = [
@@ -404,7 +473,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     { key: "students", label: "Add your first students", href: "/students", done: Number(st.n) > 0 },
     { key: "colour", label: "Pick your school colour", href: "/settings?tab=school", done: !!school.branding.primaryColor },
     { key: "signature", label: "Collect the head teacher's signature", href: "/settings?tab=school", done: !!(docSign.headSigKey || docSign.adminSigKey) },
-    { key: "fees", label: "Set the fee catalog", href: "/fees/setup", done: Number(feeItemCount.n) > 0 },
+    { key: "fees", label: "Enter this term's fees", href: "/fees/setup", done: Number(feeItemCount.n) > 0 },
     { key: "teachers", label: "Invite your teachers", href: "/staff", done: Number(invitedTeachers.n) > 0 },
   ];
   const f = fees[0];
@@ -414,10 +483,16 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
   const presentToday = attToday.reduce((a, r) => a + Number(r.present), 0);
   const totalToday = attToday.reduce((a, r) => a + Number(r.total), 0);
   const outstanding = Number(f.billed) - Number(f.paid);
+  // a "sheet" is one class × subject that takes scores (preschool is skills-based);
+  // it is missing while fewer children have a mark than sit in the class
+  const enteredN = new Map(entered.map((e) => [`${e.classId}:${e.subjectId}`, Number(e.n)]));
+  const sheets = allCls.flatMap((c) => S.sectionOfClass(c) === "preschool" || !(rosterN.get(c.id) ?? 0) ? []
+    : S.effectiveSubjectIds(c.id).map((subjectId) => ({ classId: c.id, subjectId })));
+  const missing = sheets.filter((x) => (enteredN.get(`${x.classId}:${x.subjectId}`) ?? 0) < (rosterN.get(x.classId) ?? 0));
 
   return (
     <div>
-      <PageHeader title="Dashboard" sub={sub} />
+      <PageHeader title="Home" sub={sub} />
       <TermPulseBar school={school} />
       {!term && (
         <Card className="mb-6">
@@ -475,12 +550,46 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
         </Card>
 
         <div className="space-y-4">
+          {term && sheets.length > 0 && (
+            <Card>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-semibold">Scores still missing</h2>
+                <span className="text-[14px] text-muted-foreground" data-nums="">{missing.length} of {sheets.length} sheets</span>
+              </div>
+              {missing.length === 0 && <p className="mt-1 text-[14px] text-success">Every sheet is complete ✓</p>}
+              <ul className="mt-2 space-y-2">
+                {missing.slice(0, 5).map((x) => {
+                  const teacher = S.staffById.get(S.teacherFor(x.classId, x.subjectId) ?? "");
+                  return (
+                    <li key={`${x.classId}:${x.subjectId}`} className="flex items-center justify-between gap-2 text-[14px]">
+                      <Link href={`/assessment/${x.classId}/${x.subjectId}`} className="min-w-0 truncate font-medium text-primary hover:underline">
+                        {S.classById.get(x.classId)?.name} · {S.subjectById.get(x.subjectId)?.name}
+                      </Link>
+                      <form action={remindScoreTeacher.bind(null, slug)} className="shrink-0">
+                        <input type="hidden" name="classId" value={x.classId} />
+                        <input type="hidden" name="subjectId" value={x.subjectId} />
+                        <SubmitButton pendingText="Sending…" title={teacher ? `Text ${teacher.name}` : "No teacher allocated"}
+                          className="rounded-full border border-border px-3 py-1 text-[13px] font-medium hover:bg-muted">
+                          Remind the teacher
+                        </SubmitButton>
+                      </form>
+                    </li>
+                  );
+                })}
+              </ul>
+              {missing.length > 5 && (
+                <Link href="/assessment/matrix" className="mt-3 inline-block text-[14px] font-medium text-primary">
+                  All {missing.length} missing sheets →
+                </Link>
+              )}
+            </Card>
+          )}
           <Card>
             <h2 className="font-semibold">Quick actions</h2>
             <div className="mt-3 grid gap-2">
-              {[["/students/new", "Add a student"], ["/students/import", "Import students (CSV)"],
-                ["/comms", "Post an announcement"], ["/assessment/matrix", "Term closing status"],
-                ["/fees", "Fees & invoices"]].map(([href, label]) => (
+              {[["/students/new", "Add a student"], ["/students/import", "Import students from a sheet"],
+                ["/comms", "Post an announcement"], ["/assessment/matrix", "Which scores are still missing"],
+                ["/fees", "Fees"]].map(([href, label]) => (
                 <Link key={href} href={href}
                   className="rounded-md border border-border px-3 py-2 text-[14px] font-medium transition-colors hover:border-border-strong hover:bg-muted">
                   {label}

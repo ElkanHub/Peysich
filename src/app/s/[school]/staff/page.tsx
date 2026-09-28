@@ -10,7 +10,7 @@ import { PER_PAGE } from "@/lib/utils";
 import { discardOnboarding } from "./staff-actions";
 import { SubmitButton } from "@/ui/feedback";
 
-const TYPE_LABEL: Record<string, string> = { teaching: "Teaching", admin: "Administrative", support: "Support" };
+const TYPE_LABEL: Record<string, string> = { teaching: "Teacher", admin: "Office", support: "Support" };
 
 /** STAFF DIRECTORY — one unified list for every employee (teachers, office,
  *  kitchen, security), filtered by category. Teachers get their dedicated
@@ -38,7 +38,7 @@ export default async function Staff({ params, searchParams }: {
     db.select({ type: staff.staffType, n: sql<number>`count(*)` }).from(staff)
       .where(and(eq(staff.schoolId, school.id), eq(staff.status, "active")))
       .groupBy(staff.staffType),
-    db.select({ id: staff.id, name: staff.name, step: staff.onboardingStep }).from(staff)
+    db.select({ id: staff.id, name: staff.name }).from(staff)
       .where(and(eq(staff.schoolId, school.id), eq(staff.status, "draft"))),
   ]);
   const tally = (t: string) => Number(mix.find((m) => m.type === t)?.n ?? 0);
@@ -55,25 +55,24 @@ export default async function Staff({ params, searchParams }: {
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="All staff" value={String(total)} />
-        <Stat label="Teaching" value={String(tally("teaching"))} tone="success" />
-        <Stat label="Admin / support" value={`${tally("admin")} / ${tally("support")}`} />
-        <Stat label="Onboarding in progress" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
+        <Stat label="Teachers" value={String(tally("teaching"))} tone="success" />
+        <Stat label="Office / support" value={`${tally("admin")} / ${tally("support")}`} />
+        <Stat label="Not yet saved" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
-        <Link href="/staff/allocations" className={btnGhostCls}>Teaching & allocations</Link>
+        <Link href="/staff/allocations" className={btnGhostCls}>Who teaches which class</Link>
         <Link href="/hr" className={btnGhostCls}>Leave requests</Link>
       </div>
 
       {drafts.length > 0 && (
         <div className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
-          <p className="text-sm font-medium">Onboarding in progress</p>
+          <p className="text-sm font-medium">Started but not yet saved</p>
           <ul className="mt-1.5 space-y-1 text-sm">
             {drafts.map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-2">
-                <span>{d.name}
-                  <span className="ml-2 text-xs text-muted-foreground">stage {Math.min((d.step ?? 0) + 1, 6)} of 6</span></span>
+                <span>{d.name}</span>
                 <span className="flex items-center gap-2">
-                  <Link href={`/staff/new?draft=${d.id}`} className="text-[14px] font-medium text-primary">Continue →</Link>
+                  <Link href={`/staff/new?draft=${d.id}`} className="text-[14px] font-medium text-primary">Finish →</Link>
                   <form action={discardOnboarding.bind(null, slug, d.id)}>
                     <SubmitButton className="text-xs text-danger underline-offset-2 hover:underline">Discard</SubmitButton>
                   </form>
@@ -86,17 +85,17 @@ export default async function Staff({ params, searchParams }: {
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBox placeholder="Name or employee ID…" />
-        <FilterSelect name="type" allLabel="All categories"
-          options={[{ value: "teaching", label: "Teaching" },
-            { value: "admin", label: "Administrative" }, { value: "support", label: "Support" }]} />
+        <FilterSelect name="type" allLabel="Everyone"
+          options={[{ value: "teaching", label: "Teacher" },
+            { value: "admin", label: "Office" }, { value: "support", label: "Support" }]} />
         <FilterSelect name="status" allLabel="Active"
           options={[{ value: "left", label: "Former staff" }]} />
       </div>
 
       {rows.length === 0 ? (
-        <Empty title="No staff found" hint="Adjust the filters or onboard your first staff member." />
+        <Empty title="No staff found" hint="Adjust the filters or add your first staff member." />
       ) : (
-        <DataTable head={["Staff member", "Category", "Contact", "Login", ""]}>
+        <DataTable head={["Staff member", "What they do", "Contact", "Login", ""]}>
           {rows.map((s) => (
             <Tr key={s.id}>
               <Td className="font-medium">
@@ -119,7 +118,7 @@ export default async function Staff({ params, searchParams }: {
               <Td className="text-[14px]">{[s.phone, s.email].filter(Boolean).join(" · ") || "—"}</Td>
               <Td>{s.userId
                 ? <Badge tone="success">{s.staffRole}</Badge>
-                : <span className="text-xs text-muted-foreground">no portal</span>}</Td>
+                : <span className="text-xs text-muted-foreground">no login</span>}</Td>
               <Td className="text-right">
                 <Link href={`/staff/${s.id}`} className="text-primary">Open file</Link>
               </Td>

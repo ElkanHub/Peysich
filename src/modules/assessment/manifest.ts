@@ -6,8 +6,8 @@ export const assessmentModule: ModuleManifest = {
   description: "CA + exams, grading, terminal report cards",
   icon: "GraduationCap",
   nav: [
-    { label: "Assessment", href: "/assessment", roles: ["admin", "teacher"] },
-    { label: "Reports", href: "/reports", roles: ["admin"] },
+    { label: "Scores", href: "/assessment", roles: ["admin", "teacher"] },
+    { label: "Report cards", href: "/reports", roles: ["admin"] },
   ],
   permissions: ["assessment.enter", "assessment.publish"],
   dependsOn: ["core"],

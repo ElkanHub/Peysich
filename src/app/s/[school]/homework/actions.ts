@@ -1,30 +1,72 @@
 "use server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { assignments } from "@/db/schema";
-import { requireModule } from "@/core/school-context";
+import { assignments, classes, pushSubscriptions } from "@/db/schema";
+import { requireModule, getTeacherScope } from "@/core/school-context";
+import { withFlash } from "@/lib/flash";
 import { uid } from "@/lib/utils";
+
+/** "due Tuesday" inside the week, "due 7 Oct" beyond it. */
+function dueWord(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  const days = Math.round((d.getTime() - new Date(new Date().toDateString()).getTime()) / 86400000);
+  return days >= 0 && days < 7
+    ? d.toLocaleDateString("en-GB", { weekday: "long" })
+    : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
 
 /** Homework is set by TEACHERS for the classes they actually teach — admins
  *  read and monitor, they don't assign. */
 export async function createHomework(slug: string, f: FormData) {
   const { school, user } = await requireModule(slug, "homework", ["teacher"]);
-  const classId = String(f.get("classId"));
-  if (user.role === "teacher") {
-    const { getTeacherScope } = await import("@/core/school-context");
-    const scope = await getTeacherScope(school.id, user.id);
-    if (!scope?.allClassIds.has(classId)) redirect(`/homework?flash=error`);
-  }
+  const classId = String(f.get("classId") || "");
+  const subjectId = String(f.get("subjectId") || "");
+  const title = String(f.get("title") || "").trim();
+  const dueDate = String(f.get("dueDate") || "");
+  const back = `/homework`;
+  if (!title) redirect(withFlash(back, "Say what the homework is.", { error: true }));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) redirect(withFlash(back, "Pick a due date.", { error: true }));
+  if (!subjectId) redirect(withFlash(back, "Pick a subject.", { error: true }));
+  const scope = await getTeacherScope(school.id, user.id);
+  if (!scope?.allClassIds.has(classId))
+    redirect(withFlash(back, "That isn't one of your classes.", { error: true }));
+  // the pair must match: a subject you teach in THIS class, or any subject of your homeroom
+  const { getStructure } = await import("@/core/academics");
+  const S = await getStructure(school.id);
+  const allowed = scope.cells.some((c) => c.classId === classId && c.subjectId === subjectId)
+    || (scope.homeroomIds.has(classId) && S.effectiveSubjectIds(classId).includes(subjectId));
+  if (!allowed) redirect(withFlash(back, "You don't teach that subject in that class.", { error: true }));
+
   await db.insert(assignments).values({
-    id: uid(), schoolId: school.id,
-    classId, subjectId: String(f.get("subjectId")),
-    title: String(f.get("title")), instructions: String(f.get("instructions") || "") || null,
-    dueDate: String(f.get("dueDate")), createdBy: user.id,
+    id: uid(), schoolId: school.id, classId, subjectId, title,
+    instructions: String(f.get("instructions") || "") || null,
+    dueDate, createdBy: user.id,
   });
+
+  // tell the class's parents where push is on — count only people actually reached
+  const [cls] = await db.select({ name: classes.name }).from(classes).where(eq(classes.id, classId));
+  const className = cls?.name ?? "the class";
+  let told = 0;
+  const { pushEnabled, schoolAudience, pushToUsers } = await import("@/lib/push");
+  if (pushEnabled) {
+    const parents = await schoolAudience(school.id, { roles: ["parent"], classId });
+    const reachable = parents.length
+      ? await db.selectDistinct({ userId: pushSubscriptions.userId }).from(pushSubscriptions)
+          .where(inArray(pushSubscriptions.userId, parents))
+      : [];
+    if (reachable.length) {
+      const { sent } = await pushToUsers(reachable.map((r) => r.userId), {
+        title: `${className}: new homework`, body: `${title} — due ${dueWord(dueDate)}`,
+        url: `/homework`, tag: `homework-${classId}`,
+      });
+      if (sent > 0) told = reachable.length;
+    }
+  }
   revalidatePath(`/homework`);
-  redirect(`/homework?flash=saved`);
+  redirect(withFlash(back,
+    `Given to ${className} · due ${dueWord(dueDate)}.${told ? ` ${told} parent${told === 1 ? "" : "s"} told.` : ""}`));
 }
 
 /** School choice: track hand-ins? also record marks in-app? */
@@ -45,15 +87,15 @@ export async function saveHomeworkConfig(slug: string, f: FormData) {
   const { invalidateSchool } = await import("@/core/tenant");
   invalidateSchool(slug);
   revalidatePath(`/homework`);
-  redirect(`/homework?flash=saved`);
+  redirect(withFlash(`/homework`, "Homework settings saved."));
 }
 
-/** Teacher taps ✓ for a child who handed in on paper — a receipt, no mark. */
+/** Teacher records that a child handed in on paper — a receipt, no mark. */
 export async function recordSubmissionReceipt(
   slug: string, assignmentId: string, studentId: string,
 ) {
   const { school } = await requireModule(slug, "homework", ["admin", "teacher"]);
-  const { submissions } = await import("@/db/schema");
+  const { submissions, students } = await import("@/db/schema");
   const [existing] = await db.select().from(submissions).where(and(
     eq(submissions.assignmentId, assignmentId), eq(submissions.studentId, studentId)));
   if (!existing) {
@@ -62,6 +104,9 @@ export async function recordSubmissionReceipt(
       note: "Handed in (recorded by teacher)", submittedAt: new Date(),
     });
   }
+  const [s] = await db.select({ firstName: students.firstName, lastName: students.lastName })
+    .from(students).where(eq(students.id, studentId));
   revalidatePath(`/homework/${assignmentId}`);
-  redirect(`/homework/${assignmentId}?flash=done`);
+  redirect(withFlash(`/homework/${assignmentId}`,
+    `${s ? `${s.firstName} ${s.lastName}` : "Student"} marked as handed in.`));
 }

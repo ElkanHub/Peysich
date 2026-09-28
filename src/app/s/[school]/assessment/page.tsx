@@ -41,29 +41,32 @@ export default async function Assessment({ params, searchParams }: {
     };
     return (
       <div>
-        <PageHeader title="Assessment"
-          sub={term ? `${term.name}${term.scoresLocked ? " · closed" : ""}` : "No current term"} />
+        <PageHeader title="Scores"
+          sub={term ? `${term.name}${term.scoresLocked ? " · closed" : ""} · tap a class and subject to enter marks` : "No current term"} />
         <div className="space-y-4">
           {cls.map((c) => (
             <Card key={c.id}>
               <p className="font-medium">{c.name}
-                {preschool.has(c.levelId) && <span className="ml-2 text-xs text-muted-foreground">preschool · skills-based</span>}
+                {preschool.has(c.levelId) && <span className="ml-2 text-xs text-muted-foreground">preschool · skills, not marks</span>}
                 {!scope?.homeroomIds.has(c.id) && <span className="ml-2 text-xs text-muted-foreground">subject teacher</span>}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {preschool.has(c.levelId) ? (
                   scope?.homeroomIds.has(c.id) ? (
                     <Link href={`/assessment/skills/${c.id}`}
-                      className="rounded-md border border-primary px-3 py-1.5 text-sm text-primary hover:bg-muted">
-                      Skills assessment grid
+                      className="flex min-h-12 items-center rounded-lg border border-primary px-3 py-2 text-[15px] font-medium text-primary hover:bg-muted">
+                      {c.name} · Skills
                     </Link>
-                  ) : <span className="text-xs text-muted-foreground">Skills grid is the class teacher&apos;s</span>
+                  ) : <span className="text-xs text-muted-foreground">The skills grid is the class teacher&apos;s</span>
                 ) : subjectsFor(c.id).map((s) => (
                   <Link key={s.id} href={`/assessment/${c.id}/${s.id}`}
-                    className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">
-                    {s.name}
+                    className="flex min-h-12 items-center rounded-lg border border-border px-3 py-2 text-[15px] font-medium hover:bg-muted">
+                    {c.name} · {s.name}
                   </Link>
                 ))}
+                {!preschool.has(c.levelId) && subjectsFor(c.id).length === 0 && (
+                  <span className="text-sm text-muted-foreground">No subjects allocated to you here yet.</span>
+                )}
               </div>
             </Card>
           ))}
@@ -75,7 +78,7 @@ export default async function Assessment({ params, searchParams }: {
   }
 
   /* ── ADMIN ── */
-  if (!term) return <div><PageHeader title="Assessment" sub="No current term" />
+  if (!term) return <div><PageHeader title="Scores" sub="No current term" />
     <Empty title="Set up your academic year first" hint="Settings → Academic year & terms." /></div>;
 
   const view = sp.view === "subjects" ? "subjects" : "students";
@@ -90,20 +93,18 @@ export default async function Assessment({ params, searchParams }: {
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active")))
       .groupBy(students.classId),
   ]);
-  const submittedBy = new Set(sheets.filter((s) => s.submitted)
-    .map((s) => `${s.classId}:${s.subjectId}:${s.componentId}`));
   const sheetBy = new Map(sheets.map((s) => [`${s.classId}:${s.subjectId}:${s.componentId}`, s]));
   const rosterN = new Map(rosterCounts.map((r) => [r.classId, Number(r.n)]));
 
   return (
     <div>
-      <PageHeader title="Assessment"
+      <PageHeader title="Scores"
         sub={`${term.name}${term.scoresLocked ? " · closed" : ""} · everything here revolves around the student`} />
 
       {/* releasing to families lives on Reports — this page is for the marks */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-[14px]">
         <span className="text-muted-foreground">
-          Releasing results to families — per test, with readiness — happens on the <b className="text-foreground">Reports</b> tab.
+          Releasing results to families — per test, with readiness — happens on the <b className="text-foreground">Report cards</b> tab.
         </span>
         <span className="flex gap-3 font-medium">
           <Link href="/reports" className="text-primary">Open Reports →</Link>
@@ -135,11 +136,11 @@ export default async function Assessment({ params, searchParams }: {
       {!activeClass ? (
         <Empty title="No classes yet" hint="Create your structure under Settings first." />
       ) : view === "students" ? (
-        <StudentsView schoolId={school.id} slug={slug} termId={term.id}
-          S={S} classId={activeClass.id} openStudentId={sp.stu} submittedBy={submittedBy} />
+        <StudentsView schoolId={school.id} termId={term.id}
+          S={S} classId={activeClass.id} openStudentId={sp.stu} />
       ) : (
         <SubjectsView S={S} classId={activeClass.id} termId={term.id}
-          sheetBy={sheetBy} rosterN={rosterN.get(activeClass.id) ?? 0} schoolId={school.id} />
+          sheetBy={sheetBy} rosterN={rosterN.get(activeClass.id) ?? 0} />
       )}
 
       {preClasses.length > 0 && (
@@ -161,10 +162,10 @@ export default async function Assessment({ params, searchParams }: {
 
 /* ── Students view: the class roster, each child's completeness, and the
  *    full record inline — exactly what the parent will receive. ── */
-async function StudentsView({ schoolId, slug, termId, S, classId, openStudentId, submittedBy }: {
-  schoolId: string; slug: string; termId: string;
+async function StudentsView({ schoolId, termId, S, classId, openStudentId }: {
+  schoolId: string; termId: string;
   S: Awaited<ReturnType<typeof getStructure>>; classId: string;
-  openStudentId?: string; submittedBy: Set<string>;
+  openStudentId?: string;
 }) {
   const cls = S.classById.get(classId)!;
   const comps = S.componentsFor(S.sectionOfClass(cls));
@@ -234,9 +235,9 @@ async function StudentsView({ schoolId, slug, termId, S, classId, openStudentId,
 }
 
 /* ── Subjects view: has every teacher submitted? subject × test grid. ── */
-async function SubjectsView({ S, classId, termId, sheetBy, rosterN, schoolId }: {
+async function SubjectsView({ S, classId, termId, sheetBy, rosterN }: {
   S: Awaited<ReturnType<typeof getStructure>>; classId: string; termId: string;
-  sheetBy: Map<string, { submitted: boolean }>; rosterN: number; schoolId: string;
+  sheetBy: Map<string, { submitted: boolean }>; rosterN: number;
 }) {
   const cls = S.classById.get(classId)!;
   const comps = S.componentsFor(S.sectionOfClass(cls));
@@ -252,8 +253,8 @@ async function SubjectsView({ S, classId, termId, sheetBy, rosterN, schoolId }: 
   return (
     <Card>
       <p className="text-[13.5px] text-muted-foreground">
-        Submission status per subject — <span className="text-success">green = submitted (locked)</span>,{" "}
-        <span className="text-warning">amber = marks entered, not yet submitted</span>, grey = nothing yet.
+        Per subject — <span className="text-success">green = locked by the teacher</span>,{" "}
+        <span className="text-warning">amber = marks entered, not locked yet</span>, grey = nothing yet.
         Click any cell to open that sheet. Teacher per subject is on{" "}
         <Link href="/staff/allocations" className="font-medium text-primary">Teaching &amp; allocations</Link>.
       </p>
@@ -288,7 +289,7 @@ async function SubjectsView({ S, classId, termId, sheetBy, rosterN, schoolId }: 
                             className={`inline-block min-w-16 rounded-md px-2 py-1 text-[12.5px] font-medium ${submitted
                               ? "bg-success/10 text-success" : n > 0
                                 ? "bg-warning/15 text-warning" : "bg-muted text-faint hover:text-muted-foreground"}`}>
-                            {submitted ? "✓ submitted" : n > 0 ? `${n}/${rosterN} entered` : "—"}
+                            {submitted ? "✓ locked" : n > 0 ? `${n}/${rosterN} entered` : "—"}
                           </Link>
                         </td>
                       );

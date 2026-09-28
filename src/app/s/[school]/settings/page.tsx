@@ -16,10 +16,12 @@ import {
 } from "./structure-actions";
 import { updateTermDates, saveSchoolHours } from "./calendar-actions";
 import { updateMemberGrants, revokeTeamMember } from "./team-actions";
-import { AddTeamMember } from "./team";
+import { AddTeamMember, AccessPicker } from "./team";
+import { presetOf } from "./preset-of";
 import { adminAccess, user as userTable } from "@/db/schema";
-import { TAB_KEYS, FEE_ACTION_LABELS, type FeeActionKey } from "@/core/access-const";
-import { Field, PageHeader, Badge, Tabs, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { TAB_KEYS, FEE_ACTION_LABELS, ACCESS_PRESETS, type FeeActionKey } from "@/core/access-const";
+import Link from "next/link";
+import { Field, PageHeader, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { GradingEditor } from "./grading";
 import { LogoUploader } from "./logo";
@@ -134,19 +136,24 @@ export default async function Settings({ params, searchParams }: {
 
   return (
     <div className="max-w-3xl space-y-3">
-      <PageHeader title="School Settings" sub="Every section opens on its own — find what you need, change it, close it" />
+      <PageHeader title="School settings" sub="Every section opens on its own — find what you need, change it, close it" />
 
       {err && ERR[err] && (
         <p className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[err]}</p>
       )}
 
       {/* one page, one job — settings split by decision, tab in the URL */}
-      <Tabs active={tab} tabs={[
-        { key: "academics", label: "Academics", href: "/settings" },
-        { key: "school", label: "School & identity", href: "/settings?tab=school" },
-        { key: "team", label: "Team & access", href: "/settings?tab=team" },
-        { key: "yearend", label: "Year end", href: "/settings?tab=yearend" },
-      ]} />
+      <nav className="mb-5 flex flex-wrap gap-1 border-b border-border">
+        {([["academics", "Academics", "/settings"], ["school", "School & identity", "/settings?tab=school"],
+          ["team", "People", "/settings?tab=team"], ["yearend", "End of year", "/settings?tab=yearend"]] as const)
+          .map(([key, label, href]) => (
+            <Link key={key} href={href}
+              className={`border-b-2 px-3.5 py-2 text-[14px] font-medium transition-colors ${tab === key
+                ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+              {label}
+            </Link>
+          ))}
+      </nav>
 
       {tab === "academics" && <>
       {/* ── 1 · academic calendar ── */}
@@ -221,55 +228,43 @@ export default async function Settings({ params, searchParams }: {
       {tab === "team" && <>
       {/* ── team & access ── */}
       <div id="team" />
-      <Section title="Team & access"
-        hint="Who can sign in on the school's side, and exactly which sections and money actions each member may touch">
+      <Section title="People who help run the school"
+        hint="Cashiers, bursars and office staff get their own login, limited to their job">
         <ul className="mb-5 space-y-3">
           {teamUsers.map((m) => {
             const g = grantOf.get(m.id);
             const self = m.id === user.id;
+            const preset = presetOf(g);
+            const presetLabel = preset === "full" ? "Full access" : preset === "custom" ? "Custom access"
+              : (ACCESS_PRESETS[preset]?.label ?? preset);
             return (
               <li key={m.id} className="rounded-lg border border-border p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-medium">{m.name}{self && <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">(you)</span>}</p>
-                    <p className="truncate text-[12.5px] text-muted-foreground">{m.username ?? m.email}</p>
+                    <p className="font-medium">{m.name}{self && <span className="ml-1.5 text-[13px] font-normal text-muted-foreground">(you)</span>}</p>
+                    <p className="truncate text-[13px] text-muted-foreground">{m.username ?? m.email}</p>
                   </div>
-                  {g
-                    ? <span className="max-w-[55%] text-right text-[12px] text-muted-foreground">
+                  <span className="text-right text-[14px]">
+                    <Badge tone={preset === "full" ? "success" : "default"}>{presetLabel}</Badge>
+                    {preset === "custom" && g && (
+                      <span className="mt-1 block max-w-[260px] text-[13px] text-muted-foreground">
                         {g.tabs.map((t) => TAB_KEYS.find((x) => x.key === t)?.label ?? t).join(" · ") || "no sections yet"}
                         {Object.values(g.fees).some(Boolean) && <span className="text-primary"> · money: {
                           (Object.keys(g.fees) as FeeActionKey[]).filter((k) => g.fees[k])
                             .map((k) => FEE_ACTION_LABELS[k].split(" (")[0].toLowerCase()).join(", ")}</span>}
                       </span>
-                    : <Badge tone="success">full access</Badge>}
+                    )}
+                  </span>
                 </div>
                 {!self && (
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-[12.5px] font-medium text-primary">Change access…</summary>
+                    <summary className="cursor-pointer text-[14px] font-medium text-primary">Change access…</summary>
                     <form action={updateMemberGrants.bind(null, slug, m.id)} className="mt-2 rounded-md bg-muted/40 p-3">
-                      <label className="flex items-center gap-2 text-[13px] font-medium">
-                        <input type="checkbox" name="full" defaultChecked={!g} /> Full admin — everything, always
-                      </label>
-                      <p className="mb-2 mt-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">…or only these sections</p>
-                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                        {TAB_KEYS.map((t) => (
-                          <label key={t.key} className="flex items-center gap-1.5 text-[13px]">
-                            <input type="checkbox" name={`tab_${t.key}`} defaultChecked={g?.tabs.includes(t.key)} /> {t.label}
-                          </label>
-                        ))}
-                      </div>
-                      <p className="mb-1 mt-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Money actions</p>
-                      <div className="grid gap-1.5 sm:grid-cols-2">
-                        {(Object.keys(FEE_ACTION_LABELS) as FeeActionKey[]).map((k) => (
-                          <label key={k} className="flex items-center gap-1.5 text-[13px]">
-                            <input type="checkbox" name={`fee_${k}`} defaultChecked={!!g?.fees[k]} /> {FEE_ACTION_LABELS[k]}
-                          </label>
-                        ))}
-                      </div>
+                      <AccessPicker initial={preset} grant={g} />
                       <div className="mt-3 flex items-center justify-between">
                         <SubmitButton className={btnCls} pendingText="Saving…">Save access</SubmitButton>
                         <SubmitButton formAction={revokeTeamMember.bind(null, slug, m.id)}
-                          className="text-[12.5px] font-medium text-danger underline-offset-2 hover:underline"
+                          className="text-[14px] font-medium text-danger underline-offset-2 hover:underline"
                           pendingText="Removing…">
                           Remove this login
                         </SubmitButton>
@@ -282,11 +277,7 @@ export default async function Settings({ params, searchParams }: {
           })}
         </ul>
         <div className="border-t border-border pt-4">
-          <p className="mb-2 text-[13px] font-semibold">Add a member</p>
-          <p className="mb-3 text-[12.5px] text-muted-foreground">
-            A cashier, bursar or registrar gets their own login limited to exactly what you tick —
-            anything else shows them who to ask. What each cashier collects is tracked by name.
-          </p>
+          <p className="mb-3 text-[15px] font-semibold">Add a person</p>
           <AddTeamMember slug={slug} />
         </div>
       </Section>
@@ -295,7 +286,7 @@ export default async function Settings({ params, searchParams }: {
 
       {tab === "academics" && <>
       {/* ── 3 · structure: levels & classes ── */}
-      <Section title="Structure — levels & classes"
+      <Section title="Classes"
         hint="The GES ladder your school runs, each level's classes, class teachers and rooms">
         <p className="mb-3 text-[14px] text-muted-foreground">
           Renames reflect everywhere instantly; removals are blocked while history depends on them.
@@ -484,7 +475,7 @@ export default async function Settings({ params, searchParams }: {
 
       {tab === "academics" && <>
       {/* ── 5 · day plan ── */}
-      <Section title="Day plan & timetable"
+      <Section title="The school day"
         hint="Per section: teaching mode, the school day's periods and breaks, and section subjects">
         <p className="text-sm text-muted-foreground">
           Per section (Preschool · Primary · JHS): class-teacher vs subject-teaching mode, the
@@ -497,23 +488,9 @@ export default async function Settings({ params, searchParams }: {
       </>}
 
       {tab === "academics" && <>
-      {/* ── 6 · assessment scheme ── */}
-      <Section title="Assessment scheme"
-        hint="Name your class tests, set weights to 100, or shape the preschool skills list">
-        <p className="text-sm text-muted-foreground">
-          Per section: name your class tests and set their weights (they must total 100 with
-          the exam), or configure the preschool skills list and its rating scale. Score
-          sheets, publishing and report cards all follow this.
-        </p>
-        <a href="/settings/assessment" className={btnCls + " mt-3 inline-block"}>Open assessment scheme</a>
-      </Section>
-
-      </>}
-
-      {tab === "academics" && <>
       {/* ── 7 · rooms ── */}
-      <Section title="Rooms & facilities"
-        hint="Classrooms, labs and halls — seat counts feed enrolment capacity">
+      <Section title="Rooms"
+        hint="Classrooms, labs and halls">
         {rms.length > 0 && (
           <ul className="space-y-2">
             {rms.map((r) => (
@@ -555,9 +532,15 @@ export default async function Settings({ params, searchParams }: {
       </>}
 
       {tab === "academics" && <>
-      {/* ── 8 · grading ── */}
-      <Section title="Grading scale"
-        hint="CA/exam split and the grade bands printed on report cards">
+      {/* ── 6 · how marks become grades (tests & weights + the grade bands) ── */}
+      <Section title="How marks become grades"
+        hint="Which tests count and by how much, then the grade each score earns on the report card">
+        <p className="text-sm text-muted-foreground">
+          <b>Tests and weights</b> — per section, name the class tests and set their weights
+          (they must total 100 with the exam), or shape the preschool skills list.
+        </p>
+        <a href="/settings/assessment" className={btnGhostCls + " mt-2 inline-block"}>Edit tests &amp; weights</a>
+        <p className="mb-2 mt-5 border-t border-border pt-4 text-sm font-medium">Grade bands</p>
         <GradingEditor slug={slug}
           caWeight={scheme?.caWeight ?? 50} examWeight={scheme?.examWeight ?? 50}
           bands={scheme?.bands ?? [
@@ -586,7 +569,7 @@ export default async function Settings({ params, searchParams }: {
           <Field label="Address"><input name="address" defaultValue={b.address} className={inputCls} /></Field>
           <Field label="Phone"><input name="phone" defaultValue={b.phone} className={inputCls} /></Field>
           <Field label="Email"><input name="email" defaultValue={b.email} className={inputCls} /></Field>
-          <Field label="SMS sender ID"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
+          <Field label="The name parents see on SMS (11 letters max)"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
           <SubmitButton className={btnCls + " col-span-2"} pendingText="Saving…">Save branding</SubmitButton>
         </form>
         <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>
@@ -652,13 +635,13 @@ export default async function Settings({ params, searchParams }: {
 
       {tab === "yearend" && <>
       {/* ── 11 · year end ── */}
-      <Section danger title="Year end — promotion"
-        hint="Move every class up, handle repeaters, graduate the top level, open the new year">
+      <Section danger title="End of year"
+        hint="Move every class up, keep repeaters back, top-level leavers become past students, open the new year">
         <p className="text-sm text-muted-foreground">
           Guided promotion: choose each class&apos;s destination, tick the students repeating,
-          graduate the top level, and open the new academic year — in one pass.
+          the top level leaves the school as past students, and the new academic year opens — in one pass.
         </p>
-        <a href="/settings/promotion" className={btnCls + " mt-3 inline-block bg-danger"}>Start year-end promotion</a>
+        <a href="/settings/promotion" className={btnCls + " mt-3 inline-block bg-danger"}>Move everyone up</a>
       </Section>
       </>}
     </div>

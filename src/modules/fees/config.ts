@@ -28,5 +28,20 @@ export function getFeesConfig(settings: unknown): FeesConfig {
   };
 }
 
+export { SMS_COST_PESEWAS } from "@/lib/sms-cost";
+
+/** When fee reminders last went out (schools.settings.feeRemindersSent). */
+export function getRemindersSent(settings: unknown): { at: Date; n: number } | null {
+  const raw = (settings as { feeRemindersSent?: { at?: string; n?: number } } | null)?.feeRemindersSent;
+  if (!raw?.at) return null;
+  const at = new Date(raw.at);
+  return Number.isNaN(at.getTime()) ? null : { at, n: Number(raw.n ?? 0) };
+}
+
+/** The reminder text, exactly as the parent reads it — the confirm box shows this. */
+export function reminderBody(schoolName: string, cfg: FeesConfig, balancePesewas: number) {
+  return `${schoolName}: fees of GHS ${(balancePesewas / 100).toFixed(2)} are past due. Please settle at the office${cfg.confirmPhone ? ` — confirm payment numbers on ${cfg.confirmPhone}` : ""}.`;
+}
+
 export const ghs = (p: number) =>
   `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

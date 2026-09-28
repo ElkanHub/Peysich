@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { CircleHelp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { btnCls } from "@/ui/kit";
 import { LogoMark } from "./logo";
@@ -18,26 +19,33 @@ type Step = { anchor: string; title: string; body: string };
 
 const SCRIPTS: Record<string, Step[]> = {
   admin: [
-    { anchor: "Dashboard", title: "Your day at a glance", body: "Attendance, money in, money owed — the numbers a head checks before the first bell, live on the dashboard." },
+    { anchor: "Home", title: "Your day at a glance", body: "Attendance, money in, money owed — the numbers a head checks before the first bell, live on the dashboard." },
     { anchor: "Students", title: "Every child lives here", body: "The student file holds the profile, guardians, fees and report cards — one page per job, nothing buried." },
     { anchor: "Attendance", title: "The 30-second register", body: "Everyone starts present; teachers tap only the exceptions. The GES-style record book writes itself." },
     { anchor: "Fees", title: "The money desk", body: "Invoices, receipts and reminders. A red dot on a child means owing — it clears the moment the balance does." },
-    { anchor: "Reports", title: "Papers that print themselves", body: "Report cards under your school's colour and crest, signed by the right person automatically." },
+    { anchor: "Report cards", title: "Papers that print themselves", body: "Report cards under your school's colour and crest, signed by the right person automatically." },
     { anchor: "Timetable", title: "The week, without clashes", body: "Drag lessons into place — double-bookings are caught before they happen." },
-    { anchor: "Settings", title: "Make it yours", body: "Your classes, your colours, your team, your signatures — everything a school sets once lives here." },
+    { anchor: "School settings", title: "Make it yours", body: "Your classes, your colours, your team, your signatures — everything a school sets once lives here." },
   ],
   teacher: [
-    { anchor: "Dashboard", title: "Your day, not paperwork", body: "Only your classes and your lessons — scoped to exactly what you teach." },
+    { anchor: "Home", title: "Your day, not paperwork", body: "Only your classes and your lessons — scoped to exactly what you teach." },
     { anchor: "Attendance", title: "The 30-second register", body: "Everyone starts present; tap only the exceptions. Guardians of absentees get an SMS instantly." },
-    { anchor: "Assessment", title: "Score sheets that add up", body: "Enter scores, and totals, grades and positions compute themselves on the school's own scheme." },
+    { anchor: "Scores", title: "Score sheets that add up", body: "Enter scores, and totals, grades and positions compute themselves on the school's own scheme." },
     { anchor: "Homework", title: "Homework parents can see", body: "Post it once — every parent in the class sees it, with the due date." },
     { anchor: "Account", title: "Your signature, once", body: "Draw or upload it here and it appears on every report card you sign — no admin needed." },
   ],
   parent: [
-    { anchor: "Dashboard", title: "Your children, only yours", body: "Each child's day — attendance, homework and notices — strictly scoped to your family." },
+    { anchor: "Home", title: "Your children, only yours", body: "Each child's day — attendance, homework and notices — strictly scoped to your family. Report cards appear on the child's page the moment the school releases them." },
     { anchor: "Attendance", title: "Was my child in school?", body: "The register, day by day. If a child is marked absent you'll already have the SMS." },
     { anchor: "Fees", title: "Fees & receipts", body: "What's owed and what's paid, with mobile-money payment from any phone and receipts kept forever." },
-    { anchor: "Reports", title: "Report cards, released", body: "The moment the school releases results, they're here — printed beautifully if you want paper." },
+  ],
+  student: [
+    { anchor: "Home", title: "Today", body: "Your lessons, what is due and what the school has said, all on one page." },
+    { anchor: "Homework", title: "Homework", body: "Everything set for your class with its due date. Hand in from your phone." },
+    // "Results" is anchored to the phone tab; on desktop the dashboard's
+    // "My results this term" link is the place, and it sits outside this file.
+    { anchor: "tab:Results", title: "Results", body: "When the school releases a test or the term's report card, it shows up here." },
+    { anchor: "Announcements", title: "Announcements", body: "Notices from the school. Read them here so nobody has to chase you." },
   ],
 };
 
@@ -60,6 +68,14 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
   const [i, setI] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // Only stops whose control exists on this person's page count (a module
+  // may be off, a tab not granted); anything hidden in a closed drawer still counts.
+  const [count, setCount] = useState(0);
+  const welcome = useCallback(() => {
+    if (!script) return;
+    setCount(script.filter((s) => document.querySelector(`[data-tour="${s.anchor}"]`)).length);
+    setPhase("welcome");
+  }, [script]);
 
   // First sign-in on this device → offer the walk. The ? button re-offers it.
   useEffect(() => {
@@ -67,15 +83,14 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
     let stored = "1";
     try { stored = localStorage.getItem(seenKey(role)) ?? localStorage.getItem(`peysich-tour-done:${role}`) ?? ""; } catch { /* private mode */ }
     if (!stored) {
-      const t = setTimeout(() => setPhase("welcome"), 700);
+      const t = setTimeout(welcome, 700);
       return () => clearTimeout(t);
     }
-  }, [role, script]);
+  }, [role, script, welcome]);
   useEffect(() => {
-    const relaunch = () => { if (script) setPhase("welcome"); };
-    window.addEventListener("schoolspec:tour", relaunch);
-    return () => window.removeEventListener("schoolspec:tour", relaunch);
-  }, [script]);
+    window.addEventListener("schoolspec:tour", welcome);
+    return () => window.removeEventListener("schoolspec:tour", welcome);
+  }, [welcome]);
 
   const finish = useCallback(() => {
     setPhase("idle");
@@ -130,7 +145,7 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
           <h2 className="mt-4 text-[21px] font-semibold leading-snug">Welcome to {schoolName} on SchoolSpec</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             A two-minute walk shows you where everything lives. You can stop anytime — and take it
-            again from the <b>?</b> in the sidebar.
+            again from <b>Help</b> at the bottom of the menu.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
             <button type="button" className={btnCls} onClick={begin}>Show me around</button>
@@ -140,7 +155,7 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
             </button>
           </div>
           <p className="mt-3 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            {script.length} quick stops
+            {count} quick stops
           </p>
         </div>
       </div>
@@ -221,13 +236,13 @@ export function ProductTour({ role, schoolName, setDrawerOpen }: {
   );
 }
 
-/** The sidebar-footer relaunch: small, always there, never in the way. */
+/** The sidebar-footer relaunch, with its word. */
 export function TourRelaunch() {
   return (
-    <button type="button" aria-label="Take the tour again"
+    <button type="button" title="Take the tour again"
       onClick={() => window.dispatchEvent(new Event("schoolspec:tour"))}
-      className="flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-semibold text-ink-text/70 hover:bg-ink-2 hover:text-ink-text-strong">
-      ?
+      className="flex h-8 items-center gap-1.5 text-[12px] font-medium text-ink-text/60 transition-colors hover:text-ink-text-strong">
+      <CircleHelp size={12} /> Help
     </button>
   );
 }

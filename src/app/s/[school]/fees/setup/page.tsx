@@ -22,8 +22,8 @@ export default async function FeesSetup({ params }: { params: Promise<{ school: 
   const { school: slug } = await params;
   const { school, user } = await requireModule(slug, "fees", ["admin"]);
   if (!(await canFeeAction(school.id, user.id, user.role, "catalog"))) {
-    return <Empty title="Catalog access needed"
-      hint="Your access doesn't cover the fee catalog — ask a full admin under Settings → Team & access." />;
+    return <Empty title="Fee amounts access needed"
+      hint="Your access doesn't cover the fee amounts — ask a full admin under Settings → Team & access." />;
   }
   const term = await getCurrentTerm(school.id);
   if (!term) return <Empty title="No academic year yet" hint="Set up your year and terms in Settings first." />;
@@ -45,8 +45,8 @@ export default async function FeesSetup({ params }: { params: Promise<{ school: 
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Fee catalog & settings"
-        sub={`${term.year?.name} · ${term.name} — what the school charges; issued invoices never move with edits here`}
+      <PageHeader title="Fee amounts & settings"
+        sub={`${term.year?.name} · ${term.name} — what the school charges — bills already created keep their amounts`}
         action={{ href: "/fees", label: "← Fees desk" }} />
 
       {/* ── amounts grid: types × levels ── */}

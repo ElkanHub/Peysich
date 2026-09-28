@@ -15,18 +15,11 @@ export async function issueLogin(
 ): Promise<IssueResult> {
   const { school } = await requireSchool(slug, ["admin"]);
   if (kind === "staff") {
-    const [s] = await db.select().from(staff)
-      .where(and(eq(staff.id, id), eq(staff.schoolId, school.id)));
-    if (!s) return { error: "Not found" };
-    if (s.userId) return { error: "Already has a login" };
-    const r = await createSchoolLogin({
-      schoolId: school.id, schoolSlug: school.slug, name: s.name,
-      role: s.staffRole === "teacher" ? "teacher" : "admin",
-      email: s.email, phone: s.phone,
-      username: s.email ? s.email.split("@")[0] : `staff.${s.name.split(" ")[0]}.${id.slice(0, 4)}`,
-    });
+    // one guarded path for every staff login: a bursar gets a limited admin
+    // (Fees, students, parents), "no login" is refused (see staff-actions.ts)
+    const { issueStaffLogin } = await import("./staff/staff-actions");
+    const r = await issueStaffLogin(slug, id);
     if ("error" in r) return r;
-    await db.update(staff).set({ userId: r.userId }).where(eq(staff.id, id));
     revalidatePath("/staff");
     return { loginAs: r.loginAs, password: r.password };
   }

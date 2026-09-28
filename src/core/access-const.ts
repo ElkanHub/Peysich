@@ -6,13 +6,13 @@ export type FeeActionKey = "record" | "voidPay" | "catalog" | "generate";
 /** Every grantable tab, in sidebar order. Key = first path segment. */
 export const TAB_KEYS: { key: string; label: string }[] = [
   { key: "students", label: "Students" },
-  { key: "guardians", label: "Guardians" },
+  { key: "guardians", label: "Parents" },
   { key: "staff", label: "Staff" },
-  { key: "settings", label: "Settings" },
-  { key: "billing", label: "Billing" },
+  { key: "settings", label: "School settings" },
+  { key: "billing", label: "Your SchoolSpec plan" },
   { key: "attendance", label: "Attendance" },
-  { key: "assessment", label: "Assessment" },
-  { key: "reports", label: "Reports" },
+  { key: "assessment", label: "Scores" },
+  { key: "reports", label: "Report cards" },
   { key: "timetable", label: "Timetable" },
   { key: "homework", label: "Homework" },
   { key: "comms", label: "Announcements" },
@@ -22,7 +22,7 @@ export const TAB_KEYS: { key: string; label: string }[] = [
   { key: "library", label: "Library" },
   { key: "transport", label: "Transport" },
   { key: "inventory", label: "Inventory" },
-  { key: "hr", label: "Staff HR" },
+  { key: "hr", label: "Leave" },
   { key: "analytics", label: "Analytics" },
 ];
 

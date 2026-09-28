@@ -217,3 +217,21 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
   box-shadow: 0 1px 1px rgba(34,26,34,.18); pointer-events: none; }
 .riso-ph { background: radial-gradient(120% 80% at 30% 20%, #7a3a5c 0, #5E1D3E 45%, #3d1128 100%); }
 @media (prefers-reduced-motion: reduce) { .mk-btn { transition: none; } }
+
+/* ── Phone card lists ──────────────────────────────────────────────────────
+   Below md a DataTable stops being a table: each row is a card and each cell
+   a "Header: value" line (the header comes from Td's data-label, set by
+   DataTable). Above md nothing here applies. */
+@media (width < 48rem) {
+  .data-table { overflow-x: visible; }
+  .data-table thead { display: none; }
+  .data-table table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; min-width: 0; }
+  .data-table tr { height: auto; padding: 12px 16px; }
+  .data-table td { padding: 3px 0; }
+  .data-table td[data-label]:not([data-label=""])::before {
+    content: attr(data-label) ": ";
+    color: var(--muted-foreground);
+    font-weight: 500;
+  }
+  .data-table td:empty { display: none; }
+}

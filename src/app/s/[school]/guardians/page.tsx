@@ -66,7 +66,7 @@ export default async function Guardians({ params, searchParams }: {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Guardians" sub={`${n} shown`} />
+      <PageHeader title="Parents" sub={`${n} shown`} />
 
       <div className="mb-4 grid grid-cols-3 gap-3">
         <Stat label="Portal users" value={String(tally("portal"))} tone="success" />
@@ -77,7 +77,7 @@ export default async function Guardians({ params, searchParams }: {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBox placeholder="Name or phone…" />
         <FilterSelect name="show" allLabel="With active children"
-          options={[{ value: "all", label: "All guardians" }, { value: "inactive", label: "No active children" }]} />
+          options={[{ value: "all", label: "All parents" }, { value: "inactive", label: "No active children" }]} />
         <FilterSelect name="reach" allLabel="Any contact method"
           options={[{ value: "phone", label: "Phone-only" }, { value: "sms", label: "SMS" }, { value: "portal", label: "Portal" }]} />
       </div>

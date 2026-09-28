@@ -3,7 +3,7 @@ import { db } from "@/db";
 import {
   students, classes, terms, feeTypes, feeItems, feeInvoices, feeInvoiceLines,
   feePayments, feeAdjustments, scholarships, studentScholarships, ledgerEntries,
-  docCounters,
+  docCounters, guardians, studentGuardians,
 } from "@/db/schema";
 import { uid } from "@/lib/utils";
 import { getFeesConfig } from "./config";
@@ -46,12 +46,15 @@ export async function balancesFor(schoolId: string, studentIds: string[]) {
 }
 
 // ── generation: catalog + flags + scholarships + adjustments + arrears ──
+/** `dryRun` computes what WOULD be billed (count, total, per child) and
+ *  writes nothing — the confirm box shows those numbers before the real run. */
 export async function generateInvoicesForTerm(school: {
   id: string; settings: unknown;
-}, termId: string, byUserId: string) {
+}, termId: string, byUserId: string, opts?: { dryRun?: boolean }) {
   const cfg = getFeesConfig(school.settings);
+  const bills: { studentId: string; invoiceId: string; total: number; dueDate: string }[] = [];
   const [term] = await db.select().from(terms).where(eq(terms.id, termId));
-  if (!term) return { created: 0, skipped: 0 };
+  if (!term) return { created: 0, skipped: 0, totalPesewas: 0, bills };
 
   const [roster, cls, types, items, schols, grants, adjs, existing] = await Promise.all([
     db.select().from(students).where(and(
@@ -145,6 +148,9 @@ export async function generateInvoicesForTerm(school: {
     if (total <= 0 && arrears <= 0) { skipped++; continue; }
 
     const invoiceId = uid();
+    bills.push({ studentId: s.id, invoiceId, total, dueDate });
+    created++;
+    if (opts?.dryRun) continue;
     const invoiceNo = `INV ${await nextDocNo(school.id, "invoice")}`;
     await db.insert(feeInvoices).values({
       id: invoiceId, schoolId: school.id, studentId: s.id, termId,
@@ -166,15 +172,14 @@ export async function generateInvoicesForTerm(school: {
     if (myAdjs.length) await db.update(feeAdjustments)
       .set({ invoiced: true })
       .where(inArray(feeAdjustments.id, myAdjs.map((a) => a.id)));
-    created++;
   }
-  return { created, skipped };
+  return { created, skipped, totalPesewas: bills.reduce((a, b) => a + b.total, 0), bills };
 }
 
 // ── payments ───────────────────────────────────────────────────────────
 export async function recordPaymentFor(school: { id: string }, opts: {
   invoiceId: string; amountPesewas: number; method: string; reference?: string;
-  note?: string; byUserId: string;
+  note?: string; byUserId?: string;
 }) {
   const [inv] = await db.select().from(feeInvoices).where(and(
     eq(feeInvoices.id, opts.invoiceId), eq(feeInvoices.schoolId, school.id)));
@@ -185,7 +190,7 @@ export async function recordPaymentFor(school: { id: string }, opts: {
     id: paymentId, schoolId: school.id, invoiceId: inv.id,
     amountPesewas: opts.amountPesewas, method: opts.method,
     reference: opts.reference?.trim() || `pay_${paymentId}`,
-    receiptNo, note: opts.note ?? null, recordedBy: opts.byUserId,
+    receiptNo, note: opts.note ?? null, recordedBy: opts.byUserId ?? null,
   });
   const paid = inv.paidPesewas + opts.amountPesewas;
   await db.update(feeInvoices).set({
@@ -194,9 +199,36 @@ export async function recordPaymentFor(school: { id: string }, opts: {
   await db.insert(ledgerEntries).values({
     id: uid(), schoolId: school.id, studentId: inv.studentId, kind: "payment",
     creditPesewas: opts.amountPesewas, refId: paymentId,
-    memo: `Receipt ${receiptNo} · ${opts.method}`, createdBy: opts.byUserId,
+    memo: `Receipt ${receiptNo} · ${opts.method}`, createdBy: opts.byUserId ?? null,
   });
-  return { paymentId, receiptNo };
+  return { paymentId, receiptNo, studentId: inv.studentId, balanceAfter: inv.totalPesewas - paid };
+}
+
+/** The guardian the office texts about money: the primary one, else the first with a phone. */
+export async function payingGuardian(studentId: string) {
+  const rows = await db.select({ name: guardians.name, phone: guardians.phone, isPrimary: studentGuardians.isPrimary })
+    .from(studentGuardians)
+    .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
+    .where(eq(studentGuardians.studentId, studentId));
+  const g = rows.find((r) => r.isPrimary && r.phone) ?? rows.find((r) => r.phone);
+  return g ? { name: g.name, phone: g.phone } : null;
+}
+
+/** Text the parent a receipt right after a payment saves. Returns the name
+ *  texted, or null when nobody has a phone on file. Logged as kind "receipt". */
+export async function sendReceiptSms(school: { id: string; name: string; branding: { smsSenderId?: string } }, p: {
+  studentId: string; amountPesewas: number; receiptNo: string; balanceAfter: number;
+}) {
+  const [s] = await db.select({ firstName: students.firstName, lastName: students.lastName })
+    .from(students).where(eq(students.id, p.studentId));
+  const g = await payingGuardian(p.studentId);
+  if (!g || !s) return null;
+  const { sendSms } = await import("@/lib/notify");
+  await sendSms({
+    schoolId: school.id, to: g.phone, kind: "receipt", senderId: school.branding.smsSenderId,
+    body: `${school.name}: GHS ${(p.amountPesewas / 100).toFixed(2)} received for ${s.firstName} ${s.lastName}. Receipt ${p.receiptNo}. Balance GHS ${(Math.max(0, p.balanceAfter) / 100).toFixed(2)}. Thank you.`,
+  });
+  return g.name;
 }
 
 /** Void = the record stays, an offsetting ledger row corrects the money. */
