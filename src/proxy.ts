@@ -25,6 +25,12 @@ const marketing = () => (process.env.NEXT_PUBLIC_MARKETING_DOMAIN ?? "").toLower
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
 const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline"];
+/** The doors: served as themselves on EVERY host. Sign out on
+ *  stmarys.schoolspec.com lands on /sign-in there; the school layout's
+ *  redirect("/sign-in") stays on the subdomain; /go then routes the person
+ *  to their own school. Rewriting these into the tenant was the 404. */
+const DOORS = ["/sign-in", "/signup", "/go", "/sign/"];
+const isDoor = (p: string) => DOORS.some((d) => p === d || p.startsWith(d.endsWith("/") ? d : d + "/") || p.startsWith(d + "?"));
 const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.png"]);
 
 export function proxy(req: NextRequest) {
@@ -87,7 +93,7 @@ export function proxy(req: NextRequest) {
   }
 
   if (host === `admin.${ROOT}`) {
-    if (pathname.startsWith("/platform")) return NextResponse.next(pass);
+    if (pathname.startsWith("/platform") || isDoor(pathname)) return NextResponse.next(pass);
     const url = req.nextUrl.clone();
     url.pathname = `/platform${pathname === "/" ? "" : pathname}`;
     return NextResponse.rewrite(url, pass);
@@ -95,8 +101,8 @@ export function proxy(req: NextRequest) {
 
   if (host.endsWith(`.${ROOT}`)) {
     const sub = host.slice(0, -(ROOT.length + 1));
-    // /sign/<token> (phone signing) is a global page — never a school route
-    if (!sub.includes(".") && !pathname.startsWith("/sign/")) {
+    // the doors and /sign/<token> (phone signing) are global pages — never school routes
+    if (!sub.includes(".") && !isDoor(pathname)) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${sub}${pathname === "/" ? "" : pathname}`;
       return NextResponse.rewrite(url, pass);

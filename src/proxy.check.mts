@@ -39,6 +39,18 @@ assert.equal(go("admin.schoolspec.com", "/"), "rewrite /platform");
 assert.equal(go("a.b.schoolspec.com", "/"), "pass");
 assert.equal(go("stmarys.schoolspec.com", "/sign/tok123"), "pass");
 
+// the doors are served as themselves on every host: sign out / switch account
+// on a school's subdomain lands on ITS sign-in, and /go routes from there
+// (rewriting these into /s/<slug>/sign-in was a 404)
+assert.equal(go("stmarys.schoolspec.com", "/sign-in"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/sign-in?switch=1"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/go"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/signup"), "pass");
+assert.equal(go("admin.schoolspec.com", "/sign-in"), "pass");
+assert.equal(go("admin.schoolspec.com", "/go"), "pass");
+// …but a school page that merely starts with a door's letters is still the school's
+assert.equal(go("stmarys.schoolspec.com", "/signals"), "rewrite /s/stmarys/signals");
+
 // the installable-app files stay global on every host
 assert.equal(go("schoolspec.com", "/sw.js"), "pass");
 assert.equal(go("stmarys.schoolspec.com", "/manifest.webmanifest"), "pass");

@@ -78,14 +78,25 @@ const isActive = (pathname: string, href: string) => {
   return isRoot ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 };
 
-function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () => void }) {
-  const pathname = usePathname();
+/** The nav in its captioned groups — shared with the walkthrough's drawing
+ *  of the menu, so the picture shows exactly this person's menu. */
+export function groupNav(items: NavEntry[]): [string, NavEntry[]][] {
   const grouped = new Set(NAV_GROUPS.flatMap(([, ls]) => ls));
-  const groups: [string, NavEntry[]][] = ([
+  return ([
     ["", items.filter((n) => !grouped.has(n.label))] as [string, NavEntry[]],
     ...NAV_GROUPS.map(([g, ls]) =>
       [g, items.filter((n) => ls.includes(n.label))] as [string, NavEntry[]]),
   ]).filter(([, ls]) => ls.length > 0);
+}
+/** Phone tabs this person actually gets (see TABS). */
+export function tabsFor(role: string, items: NavEntry[]) {
+  const hrefs = new Set(items.map((n) => `/${n.href.replace(/^\//, "")}`));
+  return (TABS[role] ?? []).filter((t) => hrefs.has(t.href)).map((t) => t.label);
+}
+
+function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const groups = groupNav(items);
   const captions = groups.filter(([g]) => g).length > 1; // one lonely group needs no caption
 
   return (
@@ -368,7 +379,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
         </div>
       </div>
       <BottomTabs role={props.role} items={props.items} openMenu={() => setOpen(true)} />
-      <ProductTour role={props.role} schoolName={props.schoolName} setDrawerOpen={setOpen} />
+      <ProductTour role={props.role} schoolName={props.schoolName} items={props.items} />
     </>
   );
 }

@@ -268,3 +268,29 @@ Demo school `stmarys`, every login `password123`:
 Then the test from `SIMPLE_STEPS.md` §7: hand the phone to someone over fifty and
 say one sentence. "Ama is absent today." "Mr Mensah is paying 100 cedis for Ama."
 "Send the report cards." If they ask a question, write it down; that is the next fix.
+
+---
+
+## 8 · Follow-up, 28 Sept: the walkthrough and the doors on subdomains
+
+**The walkthrough is now one big card, not a spotlight that follows the page.**
+Everything dims; the card shows a drawing of the screen on the left and a note on
+the right, one stop at a time. The drawing is this person's real menu (a module
+that is off, or a tab not granted, is simply not drawn) with the stop's item lit,
+and the page control the note talks about, labelled "here". On phones the drawing
+is a phone: the bottom tab lights when the stop is a tab, otherwise the Menu tab
+lights and the drawer is drawn open. Scripts were rewritten around what the app does
+today, per role, and each stop says where to go in words ("Menu → Fees → type the
+child's name"). Help at the bottom of the menu reopens it; Esc and the arrow keys
+work. Verified by driving headless Chrome through it as admin (desktop) and teacher
+(phone).
+
+**Switch account, Sign out and Sign in on a school's subdomain showed a 404.** The
+host proxy rewrote every path on `stmarys.schoolspec.com` into the school, so
+`/sign-in`, `/go` and `/signup` became `/s/stmarys/sign-in` and so on, which do not
+exist. The same rewrite turned the school layout's own redirect to sign-in into a
+404 for any signed-out visitor. It never showed on localhost, which has no
+subdomains, which is why the smoke test passed. The doors are now served as
+themselves on every host, and `/go` sends a person to their own school's subdomain
+even when they signed in on another school's door. The routing check
+(`pnpm run check:proxy`) has cases for all of it.

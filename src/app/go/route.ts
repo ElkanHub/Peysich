@@ -41,9 +41,12 @@ export async function GET(req: NextRequest) {
         });
         return res;
       }
-      if (onRoot) // subdomain mode, signed in on the root → hop to their subdomain
-        return go(`${req.nextUrl.protocol}//${school.slug}.${rootWithPort}/`);
-      return go(new URL("/", req.url)); // already on their subdomain
+      // subdomain mode: their school lives at <slug>.<root>. Signed in on the
+      // root, or on ANOTHER school's subdomain (a parent who signed in on the
+      // door of the wrong school) → hop to their own. Already there → home.
+      const mine = `${school.slug}.${rootWithPort}`;
+      if (host !== mine) return go(`${req.nextUrl.protocol}//${mine}/`);
+      return go(new URL("/", req.url));
     }
   }
   return go(new URL("/", req.url));
