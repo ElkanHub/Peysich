@@ -28,7 +28,11 @@ function putWithProgress(url: string, file: Blob, contentType: string, onPct: (p
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onPct(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300)
       ? resolve() : reject(new Error(`Storage rejected the file (HTTP ${xhr.status})`));
-    xhr.onerror = () => reject(new Error("Network error during upload — check your connection"));
+    // a browser-side "error" on the direct PUT with the app online is the
+    // bucket refusing the preflight (no CORS policy) — not the connection
+    xhr.onerror = () => reject(new Error(navigator.onLine
+      ? "The file store is refusing uploads from this address. It needs a one-time setup step (the bucket's CORS policy) — see docs/CONNECTIONS.md §6, or ask SchoolSpec."
+      : "You're offline — the upload needs a connection. Try again when you have one."));
     xhr.ontimeout = () => reject(new Error("Upload timed out — try again"));
     xhr.send(file);
   });

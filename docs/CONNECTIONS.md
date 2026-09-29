@@ -243,22 +243,41 @@ Account page explains this to the person on the spot.
 ---
 
 ## 6. File storage — Cloudflare R2 (photos, logos, signatures, stamps)
-1. Cloudflare → **R2 → Create bucket** → name `schoolspec`.
-2. **Manage R2 API Tokens → Create** (Object Read & Write) → copy the Access Key ID and
-   Secret; the Account ID is on the R2 overview page.
-3. Bucket → **Settings → CORS policy** → add:
-   ```json
-   [{
-     "AllowedOrigins": ["https://schoolspec.com", "https://*.schoolspec.com"],
-     "AllowedMethods": ["GET", "PUT"],
-     "AllowedHeaders": ["*"],
-     "MaxAgeSeconds": 3600
-   }]
-   ```
-4. Vercel variables: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
-   `R2_BUCKET=schoolspec`. Redeploy.
+The live bucket is **`peysich-object-db`** (set as `R2_BUCKET` on Vercel).
 
-**Check:** My Account → change your photo; Settings → upload the school logo.
+1. Cloudflare → **R2 → Create bucket** (done: `peysich-object-db`).
+2. **Manage R2 API Tokens → Create** (Object Read & Write) → copy the Access Key ID and
+   Secret; the Account ID is on the R2 overview page (done).
+3. Bucket → **Settings → CORS policy → Add CORS policy** → paste exactly:
+   ```json
+   [
+     {
+       "AllowedOrigins": ["*"],
+       "AllowedMethods": ["GET", "PUT"],
+       "AllowedHeaders": ["*"],
+       "ExposeHeaders": ["ETag"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+   **Why `*` and not the domain:** every school lives on its own subdomain, so the
+   list of origins is unbounded, and R2 does not honour `https://*.schoolspec.com`.
+   The security is the signed URL (10 minutes, one key, one content type), not the
+   origin, so `*` gives nothing away.
+
+   **Without this policy every browser upload fails.** The app gets its signed URL
+   fine, then the browser's preflight to the bucket returns 403 with no CORS
+   headers, and the browser reports it as a network error ("check your
+   connection"). 28 Sept 2026: this was exactly the state of the live bucket.
+4. Vercel variables: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+   `R2_BUCKET=peysich-object-db` (done). Redeploy is not needed for a CORS change.
+
+**Check, from any terminal** (replace the URL with one from a real presign; or just
+try the app): the preflight must answer `200` with `access-control-allow-origin`:
+```
+curl -s -o /dev/null -D - -X OPTIONS "https://peysich-object-db.<account>.r2.cloudflarestorage.com/anything"   -H "Origin: https://stmarys.schoolspec.com" -H "Access-Control-Request-Method: PUT"   -H "Access-Control-Request-Headers: content-type" | grep -i "HTTP\|access-control"
+```
+Then in the app: My Account → change your photo; School settings → upload the crest.
 
 ---
 
