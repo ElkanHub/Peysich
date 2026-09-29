@@ -63,7 +63,7 @@ const SCRIPTS: Record<string, Step[]> = {
       body: "Add a teacher with a name, a phone and what they do; their login goes by SMS. “Who teaches which class” is where a class gets its class teacher, whose name and signature go on that class's papers.",
       callout: { label: "Add staff · Who teaches which class", kind: "rows" } },
     { footer: true, title: "Help, switching, signing out", path: "Menu → bottom",
-      body: "Help opens this walk again. Switch account is for a person with two logins on one phone. Sign out clears the pages saved for offline on this device.",
+      body: "Stuck on any page? The Show me how button at the top lists that page's steps; How to do things in the menu has every step. Help opens this walk again. Switch account is for a person with two logins on one phone.",
       callout: { label: "Help · Switch account · Sign out", kind: "banner" } },
   ],
   teacher: [
@@ -83,7 +83,7 @@ const SCRIPTS: Record<string, Step[]> = {
       body: "Write a notice; it goes to the parents of your class and shows a red number until they read it.",
       callout: { label: "Write a notice", kind: "form" } },
     { footer: true, title: "Your signature, and Help", path: "Menu → My account",
-      body: "Draw your signature once under My account and it goes on every report card you sign. Help at the bottom of the menu opens this walk again; Switch account is for a teacher who is also a parent.",
+      body: "Draw your signature once under My account and it goes on every report card you sign. Stuck on any page? Show me how at the top lists that page's steps. Switch account is for a teacher who is also a parent.",
       callout: { label: "Help · Switch account · Sign out", kind: "banner" } },
   ],
   parent: [
@@ -100,7 +100,7 @@ const SCRIPTS: Record<string, Step[]> = {
       body: "A red number means something is unread. Tap Seen at the bottom once you have read it. Report cards and test results appear on your child's page the moment the school sends them.",
       callout: { label: "Seen", kind: "list" } },
     { footer: true, title: "Help, and two accounts on one phone", path: "Menu → bottom",
-      body: "Help opens this walk again. If you are also a teacher here, Switch account moves between the two without typing your name again.",
+      body: "Stuck? Show me how at the top of any page lists its steps. Help opens this walk again. If you are also a teacher here, Switch account moves between the two without typing your name again.",
       callout: { label: "Help · Switch account · Sign out", kind: "banner" } },
   ],
   student: [

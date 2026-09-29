@@ -1,0 +1,480 @@
+/* ── How to do things: the steps, inside the app ─────────────────────────
+   One entry per thing a person does, written the way SIMPLE_STEPS.md reads:
+   short lines, the exact words on the buttons in **bold**, and one line of
+   why. `pages` says which screens an entry belongs to, so the "Show me how"
+   button on a page lists only that page's entries; /help lists them all.
+
+   Route patterns are relative to the school root: "/" is exact, "/fees" is
+   the Fees page and everything under it, "/students/[id]" is one child's
+   page (any id) but not /students/new or /students/import.              */
+
+export type Role = "admin" | "teacher" | "parent" | "student";
+
+export type HowTo = {
+  id: string;
+  title: string;
+  /** one line: what this gets you */
+  why: string;
+  who: Role[];
+  /** where to start, in words */
+  where: string;
+  steps: string[];
+  /** what the screen shows when it worked */
+  then?: string;
+  /** a gotcha, in plain words */
+  note?: string;
+};
+
+export type Section = { key: string; title: string; pages: string[]; items: HowTo[] };
+
+const A: Role[] = ["admin"], T: Role[] = ["teacher"], P: Role[] = ["parent"], S: Role[] = ["student"];
+const AT: Role[] = ["admin", "teacher"], ALL: Role[] = ["admin", "teacher", "parent", "student"];
+
+export const SECTIONS: Section[] = [
+  {
+    key: "home", title: "Home", pages: ["/"],
+    items: [
+      { id: "home-admin", title: "Read the morning in 90 seconds", why: "So you know what needs you before the first bell.", who: A,
+        where: "Home",
+        steps: ["Look at the four tiles: children in school, present today, collected this term, still owed.",
+          "**Attendance today** lists each class. A grey bar means the register is not marked yet — tap the class to remind the teacher or mark it yourself.",
+          "**Scores still missing** lists sheets not yet entered, each with **Remind the teacher**."],
+        then: "Every number is a link into the list behind it." },
+      { id: "home-setup", title: "Set up the school for the first time", why: "Six cards, in order. Each turns green as you do it.", who: A,
+        where: "Home, the “Get your school ready” card",
+        steps: ["**Set your term dates** — the app makes the three terms.",
+          "**Tick the classes you have** — Creche to JHS 3; classes and subjects are created for you.",
+          "**Bring in your students** — from a sheet, or one by one.",
+          "**Enter this term's fees** — one amount per class per fee.",
+          "**Add your teachers** — name and phone; logins go out by SMS.",
+          "**Pick your school colour and upload your crest**."],
+        note: "You can hide the card with the ✕ once you are done. It comes back if something is undone." },
+      { id: "home-teacher", title: "See what needs you today", why: "Only your classes, only today.", who: T,
+        where: "Home",
+        steps: ["**My register** shows each class you are class teacher of: **Mark register →** or **Register saved ✓**.",
+          "A yellow banner is a reminder from the office; it disappears when the thing is done.",
+          "**Today's lessons**, **Homework to mark** and **Announcements** sit below."] },
+      { id: "home-parent", title: "Was my child in school, and what do I owe?", why: "Each child has one card that answers both.", who: P,
+        where: "My children",
+        steps: ["Read the card: **✓ In school today**, **Absent today** or **Not marked yet**; then **Owing GHS …** or **Fees cleared ✓**.",
+          "Tap **How to pay** to see the school's MoMo number and office hours.",
+          "Tap **Report card** for the latest one, or **See everything about …** for the child's whole page."] },
+      { id: "home-student", title: "What do I do today?", why: "Lessons, then homework, then notices — in the order your day needs them.", who: S,
+        where: "Today",
+        steps: ["**Do today** lists homework due; overdue ones are red at the top.",
+          "**Today's lessons** shows the next lesson and the one after.",
+          "**My results this term →** opens your marks, subject by subject."] },
+    ],
+  },
+  {
+    key: "attendance", title: "Attendance", pages: ["/attendance", "/attendance/[id]", "/attendance/register"],
+    items: [
+      { id: "att-mark", title: "Mark today's register", why: "Thirty seconds, and the parents of absent children are told.", who: AT,
+        where: "Register tab, or Home → Mark register",
+        steps: ["Every child is already **Present**. Tap **Absent** or **Late** only on the children who are not here.",
+          "Tap **Save register**. The button says how many parents will get an SMS."],
+        then: "The screen goes green: “Saved at 07:42. 3 parents told.” Tap **Edit** to correct a child.",
+        note: "No signal? It says “Saved on this phone” and sends itself when the signal returns." },
+      { id: "att-wall", title: "See who has marked the register", why: "Unmarked classes sit at the top with the teacher's name.", who: A,
+        where: "Attendance",
+        steps: ["Read the top line: “11 of 14 registers marked”.",
+          "On an unmarked class, tap **Remind {teacher}**. The teacher gets an SMS, a notification and a banner on their Home.",
+          "If the class has no teacher, tap **Choose a teacher**."] },
+      { id: "att-self", title: "Mark a register for a teacher who is away", why: "The day still gets recorded.", who: A,
+        where: "Attendance → the class → Mark it myself",
+        steps: ["Tap the unmarked class, then **Mark it myself**.",
+          "Same register as the teacher's. Tap **Save register**."] },
+      { id: "att-correct", title: "Correct a past day", why: "Mistakes happen; past days can be fixed without texting anyone again.", who: A,
+        where: "Attendance → Record book",
+        steps: ["Pick the class.", "Under **Correct a past day**, choose the date and tap **Open**.",
+          "Change the children who were wrong. Tap **Save register**."],
+        note: "Only today's newly absent children ever trigger an SMS. Corrections never do." },
+      { id: "att-book", title: "Read or print the record book", why: "The term's attendance in the book format the GES expects.", who: AT,
+        where: "Attendance → Record book",
+        steps: ["Pick the class. The weeks run down the page.", "Use your browser's Print for a paper copy."] },
+      { id: "att-child", title: "See my child's attendance", why: "Day by day, this term.", who: P,
+        where: "Attendance",
+        steps: ["Pick the child if you have more than one.", "Read the days: ✓ present, absent, late.",
+          "If a child was marked absent you already have the SMS."] },
+      { id: "att-own", title: "See my own attendance", why: "Your days this term.", who: S,
+        where: "Attendance", steps: ["Read the days: ✓ present, absent, late."] },
+    ],
+  },
+  {
+    key: "scores", title: "Scores", pages: ["/assessment", "/assessment/[id]", "/assessment/[id]/[id]", "/assessment/skills/[id]", "/assessment/matrix"],
+    items: [
+      { id: "sc-enter", title: "Enter marks for a test", why: "Totals, grades and positions work themselves out.", who: T,
+        where: "Scores → the class and subject",
+        steps: ["Tap the **{Class} · {Subject}** card.",
+          "For a new test: type what it was **marked out of** and tap **Start**.",
+          "Type each pupil's mark. Press **Enter** to move down to the next pupil. Every mark saves itself — a tick shows beside the row.",
+          "A pupil who did not write: type **a**, or tap **did not write** under the box."],
+        then: "A mark above the maximum turns red and says “Above 30” until you fix it.",
+        note: "There is no Save button because nothing is left unsaved." },
+      { id: "sc-lock", title: "Lock a test when it is complete", why: "So it can go to parents, and nobody changes it by accident.", who: T,
+        where: "Scores → the sheet → Lock this test",
+        steps: ["Check every pupil has a mark or a dash.", "Tap **Lock**. A box asks you to confirm."],
+        note: "Only the head can unlock it. Ask the office." },
+      { id: "sc-skills", title: "Rate preschool skills", why: "Words instead of numbers, one tap per skill.", who: T,
+        where: "Scores → the preschool class",
+        steps: ["Tap a child's box under a skill to choose the level. Tap again to move to the next level.",
+          "Every tap saves itself."] },
+      { id: "sc-missing", title: "See which scores are still missing", why: "Chase sheets, not teachers.", who: A,
+        where: "Home → Scores still missing, or Scores → Which scores are still missing",
+        steps: ["Each missing sheet is named: class and subject.",
+          "Tap **Remind the teacher** beside it, or tap the sheet to open it."] },
+      { id: "sc-unlock", title: "Unlock a locked test", why: "A teacher needs to fix a mark after locking.", who: A,
+        where: "Scores → the sheet → Unlock a locked test",
+        steps: ["Open the sheet.", "Under **Unlock a locked test**, choose the test and tap **Unlock**."],
+        note: "After report cards have gone out, unlock from **Report cards → Unlock scores** instead; it asks why." },
+    ],
+  },
+  {
+    key: "reports", title: "Report cards", pages: ["/reports", "/students/[id]/report/[id]"],
+    items: [
+      { id: "rc-send", title: "Send report cards to parents", why: "The most important two taps of the term.", who: A,
+        where: "Report cards",
+        steps: ["Read the line: “12 of 14 classes ready” and which classes are not.",
+          "Tap **Send report cards to parents**. A box says how many classes, which are not fully marked, and that scores will lock. Tap **Send**, or **Wait**."],
+        then: "“Report cards sent to 612 parents. Scores are locked.”" },
+      { id: "rc-test", title: "Send one test's results early", why: "Parents see a test before the term ends.", who: A,
+        where: "Report cards → the test's row",
+        steps: ["The button is grey with “waiting on …” until every class has locked the test.",
+          "Tap **Send to parents**, then **Send** in the box."] },
+      { id: "rc-unlock", title: "Unlock scores after sending", why: "A mark must change after the report cards went out.", who: A,
+        where: "Report cards → Unlock scores",
+        steps: ["Choose the class. Type why.", "Tap **Unlock scores**. Send the report cards again when the change is done."],
+        note: "Unlocking reopens the whole term; the reason is recorded." },
+      { id: "rc-design", title: "Choose what a report card shows", why: "Attendance line, position, next-term dates — on or off.", who: A,
+        where: "Report cards → Report design",
+        steps: ["Tick or untick the parts.", "Tap **Save design**."] },
+      { id: "rc-get", title: "Get a report card", why: "A PDF you can keep or share.", who: ["admin", "teacher", "parent", "student"],
+        where: "My children → Report card, or the child's page",
+        steps: ["Open the report card.", "Tap **Download report card**."] },
+    ],
+  },
+  {
+    key: "students", title: "Students", pages: ["/students"],
+    items: [
+      { id: "st-add", title: "Add one child", why: "Five things now; everything else when you have time.", who: A,
+        where: "Students → Add a student",
+        steps: ["Fill in **First name**, **Last name**, **Boy or girl**, **Class**, and the parent's **name and phone**.",
+          "Tap **Save student**."],
+        then: "You land on the child's page. The term's bill is created and the parent gets an SMS with their login." },
+      { id: "st-import", title: "Bring in the whole school from a sheet", why: "Hundreds of children in one go.", who: A,
+        where: "Students → Import from a sheet",
+        steps: ["Tap **Download the sheet** and fill it in Excel. Four columns matter: first name, last name, boy/girl, class. The rest can wait.",
+          "Tap **Upload the filled sheet**. It shows how many were found and which rows have a problem, in words.",
+          "Tap **Import … students**."],
+        then: "You land on the students list: “312 students imported. 3 rows need a look →”." },
+      { id: "st-find", title: "Find a child", why: "By name, admission number or class.", who: AT,
+        where: "Students",
+        steps: ["Type in the search box at the top.", "Or pick a class in the filter."] },
+    ],
+  },
+  {
+    key: "student-file", title: "A child's page", pages: ["/students/[id]", "/students/[id]/edit", "/students/[id]/enroll", "/students/[id]/exit", "/students/[id]/leaving-certificate", "/students/[id]/performance/[id]"],
+    items: [
+      { id: "sf-more", title: "Add more details to a child", why: "Date of birth, health, photo, documents, a second parent — when you have them.", who: A,
+        where: "The child's page → Add more details",
+        steps: ["Open the group you want: **Date of birth & ID**, **Health**, **Previous school**, **Photo**, **Documents**, **Second parent / emergency contact**, **Fee arrangement**.",
+          "Fill it in. Tap **Save** in that group."] },
+      { id: "sf-parent", title: "Add or change a parent", why: "The primary parent is who gets the SMS.", who: A,
+        where: "The child's page → Add more details → Second parent",
+        steps: ["Type the parent's name and phone, tap **Add guardian**.",
+          "To make someone the main contact, tap **Make primary** beside their name."] },
+      { id: "sf-move", title: "Move a child to another class", why: "Mid-year moves keep the history.", who: A,
+        where: "The child's page → Enrolment → Enrol",
+        steps: ["Choose the new class.", "Tap **Save**."] },
+      { id: "sf-leave", title: "Record that a child has left", why: "The file becomes a past student; nothing is deleted.", who: A,
+        where: "The child's page → Exit",
+        steps: ["Choose the reason and date.", "Tap **Save**. A **Leaving certificate** can be printed from the page."],
+        note: "Recorded by mistake? **Undo exit** is on the page." },
+      { id: "sf-login", title: "Give a JHS student a login, or reset it", why: "A username and password to hand over.", who: A,
+        where: "The child's page → Login",
+        steps: ["Tap **Create login** (or **Reset password**).", "Write the username and password down for the student; they are shown once."] },
+      { id: "sf-fees", title: "Note a fee arrangement for one child", why: "Instalments, a scholarship, anything the office should know.", who: A,
+        where: "The child's page → Add more details → Fee arrangement",
+        steps: ["Type the note, or choose a scholarship.", "Tap **Save arrangement**."] },
+      { id: "sf-child", title: "See everything about my child", why: "Attendance, homework, results, fees and receipts on one page.", who: P,
+        where: "My children → See everything about …",
+        steps: ["Scroll: attendance this term, report cards, results, then fees and receipts."] },
+    ],
+  },
+  {
+    key: "parents", title: "Parents", pages: ["/guardians", "/guardians/[id]"],
+    items: [
+      { id: "pa-find", title: "Find a parent", why: "By name or phone.", who: A, where: "Parents",
+        steps: ["Type in the search box.", "Tap the parent to open their page."] },
+      { id: "pa-contact", title: "Change a parent's phone or how they are reached", why: "SMS, a call, or the app.", who: A,
+        where: "The parent's page → Contact & preferences",
+        steps: ["Change the phone or the preference.", "Tap **Save contact details**."] },
+      { id: "pa-link", title: "Put a second child under the same parent", why: "Siblings under one family, one login.", who: A,
+        where: "The parent's page → Children",
+        steps: ["Search the child's name. Tap **Link**.", "Tap **Make primary** if this parent should get the SMS for that child."] },
+      { id: "pa-login", title: "Give a parent a login, or reset it", why: "So they can open the app.", who: A,
+        where: "The parent's page → Portal access",
+        steps: ["Tap **Create login** (or **Reset password**). The details are shown once; they also go by SMS when a phone is on file."] },
+    ],
+  },
+  {
+    key: "staff", title: "Staff", pages: ["/staff", "/staff/[id]", "/staff/new", "/staff/allocations"],
+    items: [
+      { id: "sta-add", title: "Add a teacher or office staff", why: "Three things; their login goes by SMS.", who: A,
+        where: "Staff → Add staff",
+        steps: ["**Full name**, **Phone**, and **What do they do?** (Teacher / Office / Support).",
+          "Leave **Send them a login by SMS** ticked. Tap **Save**."],
+        then: "On their page, **Add more details** holds employment, qualifications, bank & SSNIT, photo and signature." },
+      { id: "sta-teach", title: "Set who teaches what", why: "Registers, score sheets and report cards follow from this grid.", who: A,
+        where: "Staff → Who teaches which class",
+        steps: ["Rows are subjects, columns are classes. Drag a teacher into a box, or tap the box and pick.",
+          "For a class teacher, use the **Class teacher** row at the top of the class's column.",
+          "**Fill class** gives one teacher every subject of a class at once."] },
+      { id: "sta-left", title: "Record that a staff member has left", why: "Their classes are freed to reassign.", who: A,
+        where: "The staff page → Leaving",
+        steps: ["Tap **Mark as left**. An Undo appears in the green bar for a moment if it was a mistake."] },
+      { id: "sta-access", title: "Change what a staff member can open", why: "Teacher, Fees only, everything, or nothing.", who: A,
+        where: "The staff page → Login",
+        steps: ["Choose under **What they can open**.", "Tap **Create login** if they have none yet, or **Reset password**."] },
+    ],
+  },
+  {
+    key: "fees", title: "Fees", pages: ["/fees", "/fees/invoice/[id]", "/fees/receipt/[id]", "/fees/setup"],
+    items: [
+      { id: "fe-record", title: "Record a payment", why: "Parents pay the school directly; you record it here. A receipt prints and the parent gets an SMS.", who: A,
+        where: "Fees → the search box",
+        steps: ["Type the child's name in **Who is paying?** and tap the child.",
+          "The amount is already filled in with what they owe. Change it if they are paying part.",
+          "Tap **Cash**, **MoMo** or **Bank**. For MoMo or bank, type the reference.",
+          "Tap **Save payment**."],
+        then: "The receipt appears with **Print**. “Receipt SMS sent to …” shows when the parent has a phone on file." },
+      { id: "fe-bills", title: "Create this term's bills", why: "One bill per child from the fee amounts, once a term.", who: A,
+        where: "Fees → Today's money",
+        steps: ["Tap **Create bills**. A box says how many children and the total, and that parents get an SMS.",
+          "Tap **Create bills** again to confirm."],
+        note: "Children admitted later get their bill on their own." },
+      { id: "fe-remind", title: "Remind parents who owe", why: "One tap texts every parent past the due date, oldest first.", who: A,
+        where: "Fees → Owing past the due date",
+        steps: ["Tap **Text … parents**. The box shows the message, the count and the cost.", "Tap **Send**."],
+        note: "It rests until tomorrow after sending, so nobody is texted twice in a day." },
+      { id: "fe-owes", title: "See who owes what", why: "By class, with the balance on each child.", who: A,
+        where: "Fees → Who owes what",
+        steps: ["Pick the class.", "Tick **Only owing** to hide the paid-up.", "Tap **Record payment** on a row to take money."] },
+      { id: "fe-void", title: "Cancel a payment recorded in error", why: "Nothing is deleted; the receipt is marked void and the balance corrects itself.", who: A,
+        where: "Fees → the receipt → Void",
+        steps: ["Open the receipt.", "Tap **Void** and confirm."] },
+      { id: "fe-amounts", title: "Enter this term's fee amounts", why: "Tuition, PTA, feeding — per class, once a term.", who: A,
+        where: "Fees → Fee amounts & settings",
+        steps: ["Under **Fee types**, add any fee the school charges.",
+          "Under **Amounts for this term**, type each amount per class. Tap **Save**.",
+          "Next term, use **Copy from last term** and change only what changed."] },
+      { id: "fe-scholar", title: "Set up a scholarship or discount", why: "Then apply it on a child's page.", who: A,
+        where: "Fees → Fee amounts & settings → Scholarships & discounts",
+        steps: ["Tap **Add scholarship**: a name, what it applies to, the amount or percentage.", "Apply it from the child's page under **Fee arrangement**."] },
+      { id: "fe-howtopay", title: "Set what parents see under “How to pay”", why: "Your MoMo number, the name to confirm, and office hours.", who: A,
+        where: "Fees → Fee amounts & settings → Money settings",
+        steps: ["Fill in the payment channels and the confirmation phone.", "Tap **Save money settings**."] },
+      { id: "fe-pay", title: "Pay the school", why: "You pay the school itself. No money passes through the app.", who: P,
+        where: "Fees, or How to pay on the child's card",
+        steps: ["Read **How to pay**: the school's MoMo number, and the name to confirm before you send.",
+          "Pay by MoMo to that number, or cash at the office.",
+          "When the office records it, the card updates and a receipt SMS arrives. Receipts stay under **Fees** with **Download**."] },
+    ],
+  },
+  {
+    key: "timetable", title: "Timetable", pages: ["/timetable"],
+    items: [
+      { id: "tt-fill", title: "Fill a class's week", why: "Tap, tap, tap; clashes are caught as you go.", who: A,
+        where: "Timetable → the class",
+        steps: ["Tap an empty box that says **Add**. A panel lists the subjects with each one's teacher.",
+          "Tap a subject. The panel moves to the next empty box on its own.",
+          "A red box says “{teacher} is in {class} then” — pick another subject or another teacher."] },
+      { id: "tt-teacher", title: "Change the teacher on one lesson", why: "A stand-in for one period.", who: A,
+        where: "Timetable → the lesson",
+        steps: ["Tap the lesson. Choose the teacher (or **Usual teacher**).", "Tap **Set**."] },
+      { id: "tt-read", title: "Read the timetable", why: "By class, by teacher, by room, or just today.", who: ALL,
+        where: "Timetable",
+        steps: ["Pick the view at the top.", "Today's lesson is highlighted."] },
+    ],
+  },
+  {
+    key: "homework", title: "Homework", pages: ["/homework", "/homework/[id]"],
+    items: [
+      { id: "hw-set", title: "Give homework", why: "Every parent in the class sees it with the due date.", who: T,
+        where: "Homework → Set homework",
+        steps: ["Type what to do. The class is the one you used last time and it is due tomorrow — change either if you need to.",
+          "Tap **Give homework**."] },
+      { id: "hw-mark", title: "Mark homework", why: "The child and the parent see the mark and your comment.", who: T,
+        where: "Homework → the homework",
+        steps: ["Each child shows **Handed in** or **Not yet**.", "Tap a child. Type the mark. Tap **Save mark**."] },
+      { id: "hw-handin", title: "Hand in homework", why: "From your phone, with a photo of your work.", who: S,
+        where: "Homework → the homework",
+        steps: ["Tap **Take a photo of your work** or **Choose a file**. Wait for **Photo attached ✓**.",
+          "Tap **Hand in**."],
+        then: "“Handed in at 19:20 ✓” in green.", note: "Hand in stays grey until a photo is attached or you have typed an answer." },
+      { id: "hw-see", title: "See my child's homework", why: "What is due and what has been handed in.", who: P,
+        where: "Homework", steps: ["Pick the child. Each item shows the due date and **Handed in** or **Not yet**."] },
+      { id: "hw-config", title: "Choose what the school records about homework", why: "Hand-ins only, or marks too.", who: A,
+        where: "Homework", steps: ["Tick the boxes.", "Tap **Save**."] },
+    ],
+  },
+  {
+    key: "notices", title: "Announcements", pages: ["/comms", "/calendar"],
+    items: [
+      { id: "no-post", title: "Send a notice", why: "It shows a red number on the Notices tab until each person reads it.", who: AT,
+        where: "Announcements → Write a notice",
+        steps: ["Type the **Notice**.", "Choose who: **School-wide** or one class.", "Tap **Send**."] },
+      { id: "no-sms", title: "Text every parent", why: "An SMS to the phone they already carry. It costs money, so it asks first.", who: A,
+        where: "Announcements → Text all parents",
+        steps: ["Type the **Text message**. Under the box: “92 characters · 1 SMS each”.",
+          "Tap **Send**. The box shows the count and the cost. Tap **Send** again."] },
+      { id: "no-event", title: "Add an event to the calendar", why: "Everyone sees it on the Calendar; a class event shows only to that class.", who: A,
+        where: "Announcements → Add an event, or Calendar → Add to calendar",
+        steps: ["Type the title and when.", "Tap **Add**."] },
+      { id: "no-holiday", title: "Mark a holiday", why: "The register refuses that day, so nobody marks a holiday by mistake.", who: A,
+        where: "Calendar → Mark holiday",
+        steps: ["Choose the dates and a name.", "Tap **Mark holiday**."] },
+      { id: "no-read", title: "Read a notice and mark it seen", why: "So the school knows you saw it.", who: ["teacher", "parent", "student"],
+        where: "Notices (Announcements)",
+        steps: ["Open the notice with the red number.", "Tap **Seen** at the bottom."] },
+    ],
+  },
+  {
+    key: "admissions", title: "Admissions", pages: ["/admissions", "/admissions/[id]", "/admissions/new", "/admissions/setup"],
+    items: [
+      { id: "ad-new", title: "Add an applicant", why: "A child who wants a place, before they are a student.", who: A,
+        where: "Admissions → New application",
+        steps: ["The child's name, the level, the parent's name and phone.", "Tap **Save**."] },
+      { id: "ad-move", title: "Move an applicant along", why: "Enquiry → screening → offer → admitted.", who: A,
+        where: "Admissions → the applicant",
+        steps: ["Record screening results and tick documents received on their page.",
+          "Tap **Make an offer**, then **Send offer** — it goes by SMS or email, and can be printed.",
+          "When they accept, tap **Admit**. The child becomes a student with their parent linked."] },
+      { id: "ad-setup", title: "Set what an application needs", why: "Documents to collect and screening items.", who: A,
+        where: "Admissions → Intake settings",
+        steps: ["Add each document and screening item.", "Tap **Save intake settings**."] },
+    ],
+  },
+  {
+    key: "extras", title: "Library, transport, inventory, leave", pages: ["/library", "/transport", "/inventory", "/hr", "/analytics"],
+    items: [
+      { id: "ex-library", title: "Loan a book and take it back", why: "Who has what, and since when.", who: A, where: "Library",
+        steps: ["Tap **Add book** for a new title.", "Tap **Loan**, pick the child.", "Tap **Return** when it comes back."] },
+      { id: "ex-transport", title: "Put a child on a bus route", why: "Links the child to the transport fee.", who: A, where: "Transport",
+        steps: ["Tap **Add route** if the route is new.", "Tap **Assign**, pick the child and the route."] },
+      { id: "ex-inventory", title: "Track school items", why: "Chairs, kits, textbooks, and how many are left.", who: A, where: "Inventory",
+        steps: ["Tap **Add item**.", "Use the **+** and **−** on a row to change the count."] },
+      { id: "ex-leave", title: "Record and approve staff leave", why: "Who is away and when.", who: A, where: "Leave",
+        steps: ["Tap **Record leave**: the person, the dates, the reason.", "Tap **Approve** or **Decline** on a request."] },
+      { id: "ex-analytics", title: "Read the numbers", why: "Attendance, learning, money, people, operations — one tab each.", who: A, where: "Analytics",
+        steps: ["Pick a tab.", "**Refresh** brings the numbers up to date; **Export CSV** gives a spreadsheet."] },
+    ],
+  },
+  {
+    key: "settings", title: "School settings", pages: ["/settings", "/settings/timetable", "/settings/assessment", "/settings/promotion"],
+    items: [
+      { id: "se-terms", title: "Set the academic year and terms", why: "Registers, fees and report cards all follow the current term.", who: A,
+        where: "School settings → Academics → Academic calendar",
+        steps: ["Tap **Create year**. Three terms are made; fix the start and end dates.",
+          "The current term follows today's date on its own."] },
+      { id: "se-classes", title: "Set the classes you have", why: "Classes and subjects are created for you from the GES ladder.", who: A,
+        where: "School settings → Academics → Classes",
+        steps: ["Tick the levels you run, Creche to JHS 3.",
+          "Add a second stream (“Basic 1 B”) with **Add**; rename with the pencil.",
+          "Set each class's class teacher and room here or under Staff."] },
+      { id: "se-day", title: "Set the school day", why: "Periods and breaks; the timetable is built from these.", who: A,
+        where: "School settings → Academics → The school day",
+        steps: ["Pick the section (Preschool / Primary / JHS).", "Add each period and break with **Add slot**. Tap **Save**.",
+          "Choose whether the section is taught by a class teacher or by subject teachers. Tap **Save mode**."] },
+      { id: "se-grades", title: "Set how marks become grades", why: "Test weights, and the A1–F9 bands printed on report cards.", who: A,
+        where: "School settings → Academics → How marks become grades",
+        steps: ["Tap **Edit tests & weights**: name the tests and give weights that add to 100. Tap **Save scheme**.",
+          "Below, set the grade bands. Tap **Save**."] },
+      { id: "se-brand", title: "Pick the colour, crest and signatures", why: "Every paper and every SMS carries the school's name.", who: A,
+        where: "School settings → School & identity",
+        steps: ["**Branding**: motto, colour, address, phone, and **the name parents see on SMS**. Upload the crest.",
+          "**Signatures & stamp**: choose the head teacher, then draw, upload, or **Sign on phone** by scanning the code."] },
+      { id: "se-hours", title: "Set opening and closing time", why: "Home shows “closes 14:30 · 10 min left”.", who: A,
+        where: "School settings → School & identity → School hours",
+        steps: ["Type the two times.", "Tap **Save**."] },
+      { id: "se-team", title: "Add someone who helps run the school", why: "A cashier, bursar or registrar — with only the pages they need.", who: A,
+        where: "School settings → People → Add a person",
+        steps: ["Name and phone.", "Tap **Cashier**, **Bursar**, **Registrar** or **Full access**.", "Tap **Add**. The login goes by SMS."],
+        note: "**Customise** under the presets opens the full list of checkboxes for the rare case." },
+      { id: "se-year", title: "End the year: move everyone up", why: "JHS 3 leavers become past students; everyone else moves one class up.", who: A,
+        where: "School settings → End of year",
+        steps: ["Each class shows where it moves to. Tick any child who is repeating.",
+          "Tap **Move everyone up**. A box says how many children and how many leavers. Tap **Go**."] },
+    ],
+  },
+  {
+    key: "plan", title: "Your SchoolSpec plan", pages: ["/billing"],
+    items: [
+      { id: "pl-see", title: "See your plan and renewal", why: "What you are on, what it costs, and when it renews.", who: A, where: "Your SchoolSpec plan",
+        steps: ["The top card shows the plan, the renewal date and how many students you can have."] },
+      { id: "pl-change", title: "Change plan", why: "Monthly or yearly; each card lists what it adds and leaves out.", who: A, where: "Your SchoolSpec plan",
+        steps: ["Tap **Switch to this plan** on the card you want. Payment is by card or MoMo through Paystack.",
+          "None fit? **Build your own** and we call to agree the price."] },
+      { id: "pl-cancel", title: "Cancel", why: "In plain sight, and nothing changes until we call.", who: A, where: "Your SchoolSpec plan → I want to cancel",
+        steps: ["Tap **I want to cancel** and say why.", "We call within one working day. Nothing is deleted."] },
+    ],
+  },
+  {
+    key: "account", title: "My account", pages: ["/account"],
+    items: [
+      { id: "ac-install", title: "Put the app on your phone", why: "Opens like an app, works offline, gets notifications.", who: ALL,
+        where: "My account → Install",
+        steps: ["Tap **Install SchoolSpec**, then **Add**.", "On an iPhone: Safari → Share → **Add to Home Screen**."] },
+      { id: "ac-notify", title: "Get told when something happens", why: "Notices and report cards reach your phone even when the app is closed.", who: ALL,
+        where: "My account → Notifications",
+        steps: ["Tap **Turn on**, then **Allow**.", "Tap **Send a test**. Your phone buzzes. Done."] },
+      { id: "ac-password", title: "Change your password", why: "Signs out other devices too.", who: ALL,
+        where: "My account → Change password",
+        steps: ["Type the old one, then the new one twice.", "Tap **Change**."] },
+      { id: "ac-signature", title: "Put your signature on report cards", why: "It goes on every report card you sign; no admin needed.", who: T,
+        where: "My account → My signature",
+        steps: ["Draw it with your finger, or tap **Sign on phone** and scan the code.", "Tap **Keep this signature**."] },
+      { id: "ac-switch", title: "Two accounts on one phone", why: "A teacher who is also a parent.", who: ALL,
+        where: "Menu → Switch account",
+        steps: ["Tap **Switch account**. Tap the other name. Type its password."] },
+      { id: "ac-signout", title: "Sign out", why: "Also clears the pages saved for offline on this device.", who: ALL,
+        where: "Menu → Sign out", steps: ["Tap **Sign out**."] },
+    ],
+  },
+];
+
+/** Entries for one role. */
+export function forRole(role: string): Section[] {
+  return SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => i.who.includes(role as Role)) }))
+    .filter((s) => s.items.length > 0);
+}
+
+/** Does a route pattern match this path? "[id]" matches one segment. */
+function matches(pattern: string, path: string) {
+  if (pattern === "/") return path === "/" || path === "";
+  const ps = pattern.split("/").filter(Boolean), xs = path.split("/").filter(Boolean);
+  if (ps.length > xs.length) return false;
+  // a literal pattern must not swallow a more specific literal route
+  // ("/students" must not claim "/students/new" when that has its own section)
+  return ps.every((seg, i) => seg === "[id]" ? true : seg === xs[i]);
+}
+
+/** The sections that belong to a page, most specific first. */
+export function forPage(role: string, path: string): Section[] {
+  const p = path.replace(/^\/s\/[^/]+/, "") || "/";
+  const scored = forRole(role)
+    .map((s) => {
+      const best = Math.max(-1, ...s.pages.filter((pt) => matches(pt, p)).map((pt) => {
+        const segs = pt.split("/").filter(Boolean);
+        // exact literal beats [id]; longer beats shorter
+        return segs.length * 10 + (segs.every((x) => x !== "[id]") ? 1 : 0) + (segs.length === p.split("/").filter(Boolean).length ? 5 : 0);
+      }));
+      return { s, best };
+    })
+    .filter((x) => x.best >= 0)
+    .sort((a, b) => b.best - a.best);
+  if (scored.length === 0) return [];
+  // keep only the best-scoring group of sections (ties included)
+  const top = scored[0].best;
+  return scored.filter((x) => x.best === top).map((x) => x.s);
+}

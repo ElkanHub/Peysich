@@ -18,7 +18,7 @@ export type Ctx = {
 };
 
 /** Tabs that never need a grant: the dashboard, own account, block page. */
-const OPEN_TABS = new Set(["", "account", "no-access", "go"]);
+const OPEN_TABS = new Set(["", "account", "no-access", "go", "help"]);
 
 /** Which tab this request is for — first segment after any /s/{slug}. */
 async function requestTab(slug: string) {

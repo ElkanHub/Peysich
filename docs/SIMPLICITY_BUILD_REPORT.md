@@ -294,3 +294,25 @@ subdomains, which is why the smoke test passed. The doors are now served as
 themselves on every host, and `/go` sends a person to their own school's subdomain
 even when they signed in on another school's door. The routing check
 (`pnpm run check:proxy`) has cases for all of it.
+
+---
+
+## 9 · Follow-up, 29 Sept: the steps inside the app
+
+Every page now has one button in the same place, in the school's colour: **Show me
+how**. It drops down only the steps that belong to the page the person is on (a
+child's page, the Fees desk, the register, and so on), each with why, where to
+start, the exact words on the buttons in bold, and what the screen shows when it
+worked. At the bottom: **See every step, top to bottom →**, which opens **How to do
+things** (`/help`), the whole list for that role with a search box and section
+chips; and a way back into the walkthrough. **How to do things** also sits in the
+menu above Sign out. Limited members (a cashier) can open it too.
+
+The steps are data (`src/help/steps.ts`): 17 sections, ~85 entries, each tagged
+with the roles it applies to and the routes it belongs to, so the button never
+shows a parent a head teacher's steps. Verified live as admin on desktop (Fees, the
+help page) and as teacher and parent on a phone.
+
+One diversion worth recording: the headless captures kept landing on Home. The app
+was fine; Git Bash was rewriting the `/fees` argument into a Windows path before
+Node saw it. `MSYS_NO_PATHCONV=1` fixed the capture.

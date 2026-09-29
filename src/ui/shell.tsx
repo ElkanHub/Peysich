@@ -2,6 +2,7 @@ import { registry } from "@/modules/registry";
 import type { Role } from "@/modules/types";
 import { AppNav, type NavEntry } from "./nav";
 import { Breadcrumbs } from "./breadcrumbs";
+import { HowToButton } from "@/help/how-to-button";
 import { RouteProgress } from "./route-progress";
 
 const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
@@ -41,11 +42,14 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
         <header className="sticky top-0 z-30 mt-[calc(3.25rem+var(--sat))] flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:mt-0 lg:px-8">
           <RouteProgress />
           <Breadcrumbs root={schoolName} />
-          {logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="" title={schoolName}
-              className="h-8 w-8 shrink-0 rounded-md object-contain" />
-          )}
+          <div className="flex shrink-0 items-center gap-3">
+            <HowToButton role={role} />
+            {logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="" title={schoolName}
+                className="hidden h-8 w-8 shrink-0 rounded-md object-contain sm:block" />
+            )}
+          </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6 pb-[calc(5rem+var(--sab))] print:max-w-none print:p-0 lg:px-8 lg:py-8">{children}</main>
       </div>

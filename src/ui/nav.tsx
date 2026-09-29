@@ -9,8 +9,7 @@ import {
   CalendarRange,
   School, ListChecks, Inbox, Radio, ScrollText, Banknote,
   ArrowLeftRight, Sun, Moon,
-  type LucideIcon,
-} from "lucide-react";
+  type LucideIcon, BookOpenCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 import { SignOutButton } from "./signout";
@@ -164,6 +163,10 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
             <span className="block truncate text-[14px] font-medium text-ink-text-strong">{userName}</span>
             <span className="block text-[12px] capitalize text-ink-text/60">{role.replace("_", " ")}</span>
           </span>
+        </Link>
+        <Link href="/help" onClick={onNavigate}
+          className="mt-1 flex h-9 items-center gap-2 rounded-md px-2 text-[13px] font-medium text-ink-text hover:bg-ink-2 hover:text-ink-text-strong">
+          <BookOpenCheck size={14} /> How to do things
         </Link>
         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pt-1">
           <SignOutButton />

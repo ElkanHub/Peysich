@@ -1,5 +1,10 @@
 # SchoolSpec — the simple steps
 
+> **In the app (29 Sept 2026):** these steps now live inside SchoolSpec. Every page
+> has a **Show me how** button at the top that drops down only that page's steps,
+> and **How to do things** in the menu (`/help`) lists every step for the person's
+> role, with search. The source of truth is `src/help/steps.ts`; keep the two in step.
+
 This is how every everyday process should read **after** the cuts in
 `SIMPLICITY_AUDIT.md`. Each one is written the way it will be printed on the **Help**
 card of its page, so it is written for the person, not for us: short lines, the exact

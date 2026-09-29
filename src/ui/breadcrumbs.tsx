@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 
 const LABELS: Record<string, string> = {
   students: "Students", new: "New", import: "Import", guardians: "Parents",
-  staff: "Staff", settings: "School settings", billing: "Your SchoolSpec plan", account: "My Account",
+  staff: "Staff", settings: "School settings", billing: "Your SchoolSpec plan", account: "My Account", help: "How to do things",
   attendance: "Attendance", assessment: "Scores", matrix: "Term closing",
   skills: "Skills", timetable: "Timetable", homework: "Homework", comms: "Announcements",
   fees: "Fees", admissions: "Admissions", library: "Library", transport: "Transport",
