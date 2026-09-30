@@ -13,6 +13,9 @@ const SLOT_LABEL: Record<string, string> = {
 
 /** The phone half of "sign on your phone": opened by scanning the QR code
  *  in Settings. The token is the whole credential — no sign-in needed. */
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Sign on your phone", robots: { index: false, follow: false } };
+
 export default async function SignOnPhone({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const t = /^[A-Za-z0-9_-]{20,64}$/.test(token)

@@ -27,7 +27,10 @@ assert.equal(go("schoolspec.com", "/"), "pass");
 assert.equal(go("schoolspec.com", "/", SESSION), "pass");
 assert.equal(go("schoolspec.com", "/sign-in"), "pass");
 assert.equal(go("schoolspec.com", "/signup?plan=pro"), "pass");
-assert.equal(go("www.schoolspec.com", "/sign-in"), "pass");
+assert.equal(go("www.schoolspec.com", "/sign-in"), "308 https://schoolspec.com/sign-in");
+assert.equal(go("www.schoolspec.com", "/"), "308 https://schoolspec.com/");
+assert.equal(go("schoolspec.com", "/robots.txt"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/sitemap.xml"), "pass");
 
 // every school on its own subdomain; the console on admin.
 assert.equal(go("stmarys.schoolspec.com", "/attendance"), "rewrite /s/stmarys/attendance");

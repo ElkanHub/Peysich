@@ -11,7 +11,7 @@
  *   public/icons/badge-72.png             — monochrome notification badge
  *   public/icons/apple-touch-icon.png     — iOS home screen (180)
  *   public/splash/*.png                   — iOS startup images, portrait + landscape
- *   public/og.png                         — link preview card (1200×630)
+ *   public/og.jpg                         — link preview card (1200×630, JPEG < 300 KB for WhatsApp)
  *   src/app/favicon.ico                   — 16/32/48 multi-size ICO
  *   src/app/icon.svg                      — the tile as an SVG favicon
  */
@@ -147,8 +147,17 @@ for (const [w, h, r] of devices) {
 }
 writeFileSync(out("src/app/splash-manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 
-// link preview card
-await pngFromHtml(splashHtml(1200, 630, { tagline: "The whole school, finally in one place." }), 1200, 630, "public/og.png");
+// link preview card — the marketing page's own look (scripts/og-card.html), as a
+// JPEG under 300 KB because WhatsApp, where school owners share links, drops
+// previews above that
+{
+  const card = readFileSync(out("scripts/og-card.html"), "utf8")
+    .replace("__REGISTER_IMG__", "data:image/webp;base64," + readFileSync(out("public/marketing/feat-register.webp")).toString("base64"));
+  await page.setViewportSize({ width: 1200, height: 630 });
+  await page.setContent(card);
+  await page.waitForTimeout(800); // web fonts
+  writeFileSync(out("public/og.jpg"), await page.screenshot({ type: "jpeg", quality: 82, clip: { x: 0, y: 0, width: 1200, height: 630 } }));
+}
 
 await browser.close();
 console.log("brand assets regenerated:", sizes.length + 2 + 1 + 1 + 3 + devices.length * 2 + 2, "files");

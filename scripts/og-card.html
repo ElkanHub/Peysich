@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;width:1200px;height:630px;overflow:hidden}
+  body{font-family:Inter,Arial,sans-serif;color:#221a22;background:#E8DFD0;
+    background-image:linear-gradient(rgba(70,40,40,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(70,40,40,.11) 1px,transparent 1px);background-size:22px 22px;position:relative}
+  .hand{font-family:"Architects Daughter",cursive;letter-spacing:.06em;text-transform:uppercase;color:#5f5359;font-size:17px;white-space:nowrap}
+  .wrap{position:absolute;inset:0;padding:44px 60px 96px;display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+  h1{font-size:70px;line-height:.98;letter-spacing:-.035em;font-weight:500;margin:12px 0 20px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{border:1.5px solid #221a22;background:#fff;padding:9px 16px;font-size:20px;font-weight:600;box-shadow:3px 3px 0 #221a22}
+  .chip i{display:inline-block;width:14px;height:14px;background:#E58A2E;margin-right:10px;vertical-align:-1px}
+  .brand{position:absolute;left:60px;bottom:48px;display:flex;align-items:center;gap:12px;font-weight:600;font-size:24px}
+  .url{position:absolute;right:60px;bottom:50px;font-family:ui-monospace,Menlo,monospace;font-size:20px;color:#5E1D3E;font-weight:600}
+  .frame{position:relative;transform:rotate(-1.2deg);border:1.5px solid #221a22;background:#fff;padding:10px;box-shadow:8px 8px 0 #221a22}
+  .frame img{display:block;width:100%;height:400px;object-fit:cover;border:1px solid #d6cfd4}
+  .tape{position:absolute;width:96px;height:26px;background:rgba(229,138,46,.6);z-index:2}
+  .tape.l{left:-14px;top:14px;transform:rotate(-38deg)} .tape.r{right:-14px;top:14px;transform:rotate(38deg)}
+  .note{position:absolute;right:20px;bottom:-40px;font-family:'Architects Daughter',cursive;font-size:20px;color:#5f5359;transform:rotate(1.5deg)}
+</style></head><body>
+<div class="wrap">
+  <div>
+    <div class="hand">Built for basic schools in Ghana · Creche to JHS 3</div>
+    <h1>Run the school at the speed of the morning</h1>
+    <div class="chips">
+      <span class="chip"><i></i>30-second register</span>
+      <span class="chip"><i></i>Report cards in one click</span>
+      <span class="chip"><i></i>Fees, receipted by SMS</span>
+      <span class="chip"><i></i>Parents in the loop</span>
+    </div>
+  </div>
+  <div class="frame">
+    <span class="tape l"></span><span class="tape r"></span>
+    <img src="__REGISTER_IMG__">
+    <div class="note">↖ the whole school, in one calm place</div>
+  </div>
+</div>
+<div class="brand"><svg width="30" height="30" viewBox="0 0 64 64"><path d="M12 8h26v22H24v10h26v16H24V44H12z" fill="#221a22"/><path d="M38 8l14 12H38zM24 44l-12 12h12z" fill="#5E1D3E"/></svg> SchoolSpec</div>
+<div class="url">schoolspec.com</div>
+</body></html>

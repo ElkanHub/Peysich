@@ -31,7 +31,7 @@ const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "
  *  to their own school. Rewriting these into the tenant was the 404. */
 const DOORS = ["/sign-in", "/signup", "/go", "/sign/"];
 const isDoor = (p: string) => DOORS.some((d) => p === d || p.startsWith(d.endsWith("/") ? d : d + "/") || p.startsWith(d + "?"));
-const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.png"]);
+const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.jpg", "/robots.txt", "/sitemap.xml"]);
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
@@ -60,7 +60,11 @@ export function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(pathname + req.nextUrl.search, `https://${ROOT}`), 308);
   }
 
-  if (host === ROOT || host === `www.${ROOT}`) {
+  // one address for the marketing page: www is a permanent redirect, not a copy
+  if (host === `www.${ROOT}`)
+    return NextResponse.redirect(new URL(pathname + req.nextUrl.search, `https://${ROOT}`), 308);
+
+  if (host === ROOT) {
     // /t/<slug> — enter a school (preview mode); /t/exit — back to marketing
     if (pathname.startsWith("/t/")) {
       const slug = pathname.slice(3).split("/")[0].toLowerCase();
@@ -92,11 +96,15 @@ export function proxy(req: NextRequest) {
     return NextResponse.next(pass);
   }
 
+  // every other host is private (a school, the console): tell crawlers so on
+  // the response itself, whatever the page renders
+  const noindex = (res: NextResponse) => { res.headers.set("X-Robots-Tag", "noindex, nofollow"); return res; };
+
   if (host === `admin.${ROOT}`) {
-    if (pathname.startsWith("/platform") || isDoor(pathname)) return NextResponse.next(pass);
+    if (pathname.startsWith("/platform") || isDoor(pathname)) return noindex(NextResponse.next(pass));
     const url = req.nextUrl.clone();
     url.pathname = `/platform${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url, pass);
+    return noindex(NextResponse.rewrite(url, pass));
   }
 
   if (host.endsWith(`.${ROOT}`)) {
@@ -105,8 +113,9 @@ export function proxy(req: NextRequest) {
     if (!sub.includes(".") && !isDoor(pathname)) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${sub}${pathname === "/" ? "" : pathname}`;
-      return NextResponse.rewrite(url, pass);
+      return noindex(NextResponse.rewrite(url, pass));
     }
+    return noindex(NextResponse.next(pass));
   }
   return NextResponse.next(pass);
 }

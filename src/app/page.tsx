@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Architects_Daughter } from "next/font/google";
@@ -16,6 +17,17 @@ import {
  * globals.css. Generated art lives in public/marketing/ under the filenames in
  * docs/MARKETING_IMAGES.md; until a file lands, its frame shows the filename. */
 const hand = Architects_Daughter({ weight: "400", subsets: ["latin"], variable: "--font-hand" });
+
+import { BASE, pageMeta } from "@/lib/seo";
+
+/** The one page search engines and link previews are for. The root layout
+ *  carries the defaults; this pins the canonical and the exact title. */
+export const metadata: Metadata = pageMeta({
+  absoluteTitle: "SchoolSpec — school management software for basic schools in Ghana",
+  title: "SchoolSpec",
+  description: "Mark the register in 30 seconds, print report cards under your crest in one click, record fees with an SMS receipt to the parent, and keep parents in the loop. For basic schools in Ghana, Creche to JHS 3, on any phone.",
+  path: "/",
+});
 
 const TRIAL_DAYS = 14;
 
@@ -87,9 +99,35 @@ const H2 = "text-[clamp(40px,5.6vw,78px)] font-medium leading-[.98] tracking-[-.
 export default async function Home() {
   const plans = (await getPublicPlans()).filter((p) => p.pricePerMonthPesewas > 0);
   const year = new Date().getFullYear();
+  const cheapest = Math.min(...plans.map((p) => p.pricePerMonthPesewas)) / 100;
+  const dearest = Math.max(...plans.map((p) => p.pricePerMonthPesewas)) / 100;
+  // structured data: what Google shows as a rich result and what assistants
+  // read; kept in step with the visible page (same FAQ array, live prices)
+  const jsonLd = [
+    { "@context": "https://schema.org", "@type": "Organization", "@id": `${BASE}/#org`,
+      name: "SchoolSpec", url: BASE, logo: `${BASE}/icons/icon-512.png`, email: "hello@schoolspec.com",
+      areaServed: { "@type": "Country", name: "Ghana" },
+      description: "School management software for basic schools in Ghana: attendance, report cards, fees and parent SMS." },
+    { "@context": "https://schema.org", "@type": "WebSite", "@id": `${BASE}/#site`, url: BASE, name: "SchoolSpec",
+      publisher: { "@id": `${BASE}/#org` }, inLanguage: "en-GH" },
+    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "SchoolSpec",
+      applicationCategory: "EducationalApplication", operatingSystem: "Web, Android, iOS",
+      url: BASE, image: `${BASE}/og.jpg`, publisher: { "@id": `${BASE}/#org` },
+      description: "Mark the register in 30 seconds, print report cards under your crest in one click, record fees with an SMS receipt to the parent, and keep parents in the loop. Creche to JHS 3.",
+      featureList: ["30-second attendance register with absence SMS to parents", "Report cards on the GES structure, signed and stamped",
+        "Fees recorded and receipted by SMS", "Announcements and SMS to every parent", "Timetable that catches clashes", "Works offline on any phone"],
+      offers: plans.length ? { "@type": "AggregateOffer", priceCurrency: "GHS", lowPrice: cheapest, highPrice: dearest,
+        offerCount: plans.length, url: `${BASE}/#pricing`,
+        offers: plans.map((p) => ({ "@type": "Offer", name: p.name, price: p.pricePerMonthPesewas / 100, priceCurrency: "GHS",
+          priceSpecification: { "@type": "UnitPriceSpecification", price: p.pricePerMonthPesewas / 100, priceCurrency: "GHS",
+            unitText: "MONTH", billingIncrement: 1 } })) } : undefined },
+    { "@context": "https://schema.org", "@type": "FAQPage",
+      mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
+  ];
 
   return (
     <main className={`light-scope mk-paper min-h-dvh text-[#221a22] ${hand.variable}`}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── floating nav card ── */}
       <div className="sticky top-3.5 z-30 flex justify-center px-4">
         <nav className="flex items-center gap-5 border border-[#221a22] bg-white py-2 pl-3.5 pr-3 shadow-[0_1px_0_#221a22] sm:gap-7" aria-label="Main">

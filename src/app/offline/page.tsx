@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { OfflineClient } from "./client";
 
-export const metadata: Metadata = { title: "Offline" };
+export const metadata: Metadata = { title: "Offline", robots: { index: false, follow: false } };
 
 /** Served by the service worker when a page can't be reached. It is
  *  precached with its own scripts, so the live "waiting for a connection"

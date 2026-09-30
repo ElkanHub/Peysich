@@ -6,6 +6,11 @@ import { Flash } from "@/ui/feedback";
 import { LiveSync } from "@/ui/live-sync";
 import { AnnouncementGate } from "@/ui/announcement-gate";
 import { Shell } from "@/ui/shell";
+import type { Metadata } from "next";
+
+/** A school's pages are private. Belt and braces with the proxy's
+ *  X-Robots-Tag on every subdomain response. */
+export const metadata: Metadata = { robots: { index: false, follow: false, nocache: true } };
 
 /** A suspended Neon compute can take ~10s to wake; the platform's default
  *  function window kills the first request after a quiet spell mid-flight
