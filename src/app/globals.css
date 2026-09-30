@@ -210,6 +210,21 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 .mk-btn-solid { background: #5E1D3E; color: #fff; border-color: #3d1128; box-shadow: 3px 3px 0 #3d1128; }
 .mk-btn-solid:hover { box-shadow: 4px 4px 0 #3d1128; }
 .mk-btn-solid i { border-color: #3d1128; }
+/* blog posts: rendered Markdown on the paper */
+.prose-paper { font-size: 17.5px; line-height: 1.6; color: #221a22; }
+.prose-paper h2 { font-size: 26px; font-weight: 500; letter-spacing: -.02em; line-height: 1.15; margin: 2em 0 .5em; text-wrap: balance; }
+.prose-paper h3 { font-size: 20px; font-weight: 600; margin: 1.6em 0 .4em; }
+.prose-paper p { margin: 0 0 1.1em; }
+.prose-paper ul { list-style: disc; margin: 0 0 1.2em; padding-left: 1.4em; }
+.prose-paper ol { list-style: decimal; margin: 0 0 1.2em; padding-left: 1.4em; }
+.prose-paper li { margin: .35em 0; }
+.prose-paper blockquote { margin: 1.2em 0; border-left: 4px solid #E58A2E; background: rgba(255,255,255,.65); padding: .8em 1.1em; font-size: 16.5px; }
+.prose-paper blockquote p { margin: 0; }
+.prose-paper strong { font-weight: 600; }
+.prose-paper em { font-style: italic; }
+.prose-paper a { color: #5E1D3E; text-decoration: underline; text-underline-offset: 4px; }
+.prose-paper hr { border: 0; border-top: 1px dashed #221a22; margin: 2em 0; }
+.prose-paper img { max-width: 100%; border: 1px solid #221a22; box-shadow: 6px 6px 0 #221a22; }
 /* the riso frame's paper-grain veil (placeholder and art alike) */
 .riso::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .35;
   background-image: radial-gradient(rgba(232,223,208,.28) .7px, transparent .8px); background-size: 4px 4px; }

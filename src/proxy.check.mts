@@ -53,6 +53,8 @@ assert.equal(go("admin.schoolspec.com", "/sign-in"), "pass");
 assert.equal(go("admin.schoolspec.com", "/go"), "pass");
 assert.equal(go("stmarys.schoolspec.com", "/legal/privacy"), "pass");
 assert.equal(go("schoolspec.com", "/legal/terms"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/blog/some-post"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/textbooks"), "pass");
 // …but a school page that merely starts with a door's letters is still the school's
 assert.equal(go("stmarys.schoolspec.com", "/signals"), "rewrite /s/stmarys/signals");
 

@@ -138,6 +138,8 @@ export default async function Home() {
             <a href="#features" className="hover:underline underline-offset-4">Features</a>
             <a href="#pricing" className="hover:underline underline-offset-4">Pricing</a>
             <a href="#faq" className="hover:underline underline-offset-4">FAQs</a>
+            <Link href="/textbooks" className="hover:underline underline-offset-4">Textbooks</Link>
+            <Link href="/blog" className="hover:underline underline-offset-4">Blog</Link>
             <Link href="/sign-in" className="hover:underline underline-offset-4">Sign in</Link>
           </div>
           <Btn href="/signup" solid>Start free</Btn>
@@ -331,6 +333,8 @@ export default async function Home() {
                 <a href="#features" className="block py-[3px] text-[14px]">Features</a>
                 <a href="#pricing" className="block py-[3px] text-[14px]">Pricing</a>
                 <a href="#faq" className="block py-[3px] text-[14px]">FAQs</a>
+                <Link href="/textbooks" className="block py-[3px] text-[14px]">Textbooks</Link>
+                <Link href="/blog" className="block py-[3px] text-[14px]">Blog</Link>
                 <Link href="/sign-in" className="block py-[3px] text-[14px]">Sign in</Link>
                 <Link href="/signup" className="block py-[3px] text-[14px]">Start free</Link>
               </div>
