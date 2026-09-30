@@ -10,3 +10,6 @@ next-env.d.ts
 
 # PWA — generated at build by scripts/stamp-sw.mjs
 public/sw.js
+
+# pnpm is the package manager (Vercel installs from pnpm-lock.yaml); an npm lockfile only drifts
+package-lock.json
