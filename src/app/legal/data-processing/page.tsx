@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import { A, CO, H2, Note, P, Summary, Table, Ul } from "../prose";
+import { A, CO, H2, P, Summary, Table, Ul } from "../prose";
 
 export const metadata: Metadata = pageMeta({
   title: "Data processing agreement", path: "/legal/data-processing",
@@ -20,7 +20,7 @@ export default function DPA() {
       <P>This agreement is part of the <A href="/legal/terms">terms of service</A> and applies from the moment a school creates its account. Words in it have the meanings given in the Data Protection Act, 2012 (Act 843).</P>
 
       <H2>1. The parties and their roles</H2>
-      <P>The school (the <b>controller</b>) and {CO.legalName} (the <b>processor</b>, “SchoolSpec”). The school decides what personal data is entered and why; SchoolSpec processes it only to provide the service described in the terms and as the school instructs through the app.</P>
+      <P>The school (the <b>controller</b>) and the operator of SchoolSpec (the <b>processor</b>, “SchoolSpec”). The school decides what personal data is entered and why; SchoolSpec processes it only to provide the service described in the terms and as the school instructs through the app.</P>
 
       <H2>2. What is processed</H2>
       <Table head={["Item", "Detail"]} rows={[
@@ -45,7 +45,7 @@ export default function DPA() {
         "Passwords hashed; uploads by short-lived signed links; sessions expire.",
         "Continuous database backups kept for 30 days; restore tested.",
         "Providers chosen for their certified security programmes (see section 7) and bound by contract.",
-        "A written record of processing activities, kept for the Data Protection Commission.",
+        "A written record of processing activities.",
       ]} />
 
       <H2>6. Breaches</H2>
@@ -74,7 +74,6 @@ export default function DPA() {
       <P>Liability under this agreement is subject to the limits in the terms of service. This agreement lasts as long as SchoolSpec holds any of the school’s data.</P>
 
       <P className="mt-8">Contact for anything under this agreement: {CO.privacyEmail}.</P>
-      <Note>Bracketed items are placeholders for the company’s registered details. Have a lawyer admitted in Ghana review before publication.</Note>
     </>
   );
 }

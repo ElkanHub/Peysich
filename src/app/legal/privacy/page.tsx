@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import { A, CO, H2, H3, Note, P, Summary, Table, Ul } from "../prose";
+import { A, CO, H2, H3, P, Summary, Table, Ul } from "../prose";
 
 export const metadata: Metadata = pageMeta({
   title: "Privacy policy", path: "/legal/privacy",
@@ -21,7 +21,7 @@ export default function Privacy() {
       ]} />
 
       <H2 id="who">1. Who we are, and the two hats we wear</H2>
-      <P>SchoolSpec is run by {CO.legalName}, {CO.address}, registered with Ghana’s Data Protection Commission under number {CO.dpcNo}. Write to {CO.privacyEmail} about anything in this policy.</P>
+      <P>SchoolSpec is operated from {CO.address}. Write to {CO.privacyEmail} about anything in this policy.</P>
       <P>Under the Data Protection Act, 2012 (Act 843) we wear two hats:</P>
       <Ul items={[
         <><b>Processor</b> for everything a school enters about its pupils, parents, staff and money. The school decides why and how that information is used; we act on its instructions under a <A href="/legal/data-processing">data processing agreement</A>. If you are a parent, pupil or teacher, the school is the controller of your record, and it is the first place to ask about it.</>,
@@ -101,9 +101,7 @@ export default function Privacy() {
       <P>When this policy changes in a way that matters, we tell schools’ administrators by email and show a notice in the app. The date at the side of this page is the date of the current version.</P>
 
       <H2 id="contact">11. Contact</H2>
-      <P>{CO.legalName}, {CO.address}. Data protection: {CO.privacyEmail}. General: {CO.email}. Data Protection Commission registration: {CO.dpcNo}.</P>
-
-      <Note>Bracketed items are placeholders for the company’s registered details. Have a lawyer admitted in Ghana review before publication.</Note>
+      <P>SchoolSpec, {CO.address}. Data protection: {CO.privacyEmail}. General: {CO.email}.</P>
     </>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import { A, CO, H2, H3, Note, P, Summary, Ul } from "../prose";
+import { A, CO, H2, H3, P, Summary, Ul } from "../prose";
 
 export const metadata: Metadata = pageMeta({
   title: "Terms of service", path: "/legal/terms",
@@ -21,7 +21,7 @@ export default function Terms() {
       ]} />
 
       <H2 id="who">1. Who this is between</H2>
-      <P>These terms are between the school that creates an account (“the school”, “you”) and {CO.legalName}, a company registered in Ghana under number {CO.regNo}, with its office at {CO.address} (“SchoolSpec”, “we”). They apply to the website at {CO.site}, every school’s address under it (for example <i>stmarys.{CO.site}</i>), the installable app, and everything sent from them.</P>
+      <P>These terms are between the school that creates an account (“the school”, “you”) and the operator of SchoolSpec, working from {CO.address} (“SchoolSpec”, “we”). They apply to the website at {CO.site}, every school’s address under it (for example <i>stmarys.{CO.site}</i>), the installable app, and everything sent from them.</P>
       <P>The person who creates the school account confirms that they are the proprietor, head, or an officer with authority to bind the school. Teachers, office staff, parents and students who are given a login use the service on the school’s behalf; the school is responsible for them, and the <A href="/legal/privacy">privacy policy</A> tells them how their information is handled.</P>
 
       <H2 id="service">2. What the service is</H2>
@@ -44,7 +44,7 @@ export default function Terms() {
         "the accuracy of what it enters, and correcting it when asked;",
         "the content of every announcement, SMS and email sent from the school’s account, and having the recipients’ agreement to be contacted;",
         "who it gives logins to, and removing logins when people leave;",
-        "its own registration with the Data Protection Commission, where required.",
+        "its own obligations under the Data Protection Act, including any registration the Act requires of it.",
       ]} />
       <P>We will never sell the school’s data, use it for advertising, or show one school’s data to another. We look at it only to run the service, support the school when asked, and as the data processing agreement allows.</P>
 
@@ -108,9 +108,7 @@ export default function Terms() {
       <P>These terms are governed by the laws of the Republic of Ghana. If there is a disagreement, we talk first; either side may then ask for mediation before any court. The courts of Ghana have jurisdiction.</P>
 
       <H2 id="contact">13. Contact</H2>
-      <P>{CO.legalName}, {CO.address}. Email {CO.email}. Data protection questions: {CO.privacyEmail}. Data Protection Commission registration: {CO.dpcNo}.</P>
-
-      <Note>Bracketed items are placeholders for the company’s registered details. These documents were prepared in plain English for a Ghanaian school SaaS and should be reviewed by a lawyer admitted in Ghana before publication.</Note>
+      <P>SchoolSpec, {CO.address}. Email {CO.email}. Data protection questions: {CO.privacyEmail}.</P>
     </>
   );
 }

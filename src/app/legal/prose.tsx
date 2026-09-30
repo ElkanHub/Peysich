@@ -5,13 +5,12 @@ import Link from "next/link";
 
 export const UPDATED = "30 September 2026";
 
-/** Fill these once and every document updates. Until then they read as
- *  bracketed placeholders — do not publish with them in place. */
+/** Who "we" is in every document. Kept deliberately simple: the operator's
+ *  name, where it works from, and how to reach it. When a company is
+ *  incorporated, change legalName here and every page follows. */
 export const CO = {
-  legalName: "[SchoolSpec legal entity name, e.g. Russolution Consult Ltd]",
-  regNo: "[Registrar-General company number]",
-  address: "[Registered office address, Accra, Ghana]",
-  dpcNo: "[Data Protection Commission registration number]",
+  legalName: "SchoolSpec",
+  address: "Accra, Ghana",
   email: "hello@schoolspec.com",
   privacyEmail: "privacy@schoolspec.com",
   site: "schoolspec.com",
