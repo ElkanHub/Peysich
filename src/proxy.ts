@@ -24,12 +24,12 @@ const root = () => (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").spl
 const marketing = () => (process.env.NEXT_PUBLIC_MARKETING_DOMAIN ?? "").toLowerCase().split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
-const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline"];
+const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline", "/legal"];
 /** The doors: served as themselves on EVERY host. Sign out on
  *  stmarys.schoolspec.com lands on /sign-in there; the school layout's
  *  redirect("/sign-in") stays on the subdomain; /go then routes the person
  *  to their own school. Rewriting these into the tenant was the 404. */
-const DOORS = ["/sign-in", "/signup", "/go", "/sign/"];
+const DOORS = ["/sign-in", "/signup", "/go", "/sign/", "/legal"];
 const isDoor = (p: string) => DOORS.some((d) => p === d || p.startsWith(d.endsWith("/") ? d : d + "/") || p.startsWith(d + "?"));
 const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.jpg", "/robots.txt", "/sitemap.xml"]);
 

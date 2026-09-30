@@ -30,6 +30,10 @@ export function LeadForm() {
       <button disabled={pending} className={btnCls + " mt-4 w-full"}>
         {pending ? "Sending…" : "Request a walkthrough"}
       </button>
+      <p className="mt-3 text-[13px] text-muted-foreground">
+        We use this only to call you back, and delete it after a year.{" "}
+        <a href="/legal/privacy" className="underline underline-offset-4">Privacy policy</a>.
+      </p>
     </form>
   );
 }

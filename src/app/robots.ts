@@ -10,7 +10,7 @@ const BASE = ROOT.includes("localhost") ? `http://${ROOT}` : `https://${ROOT}`;
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: "*", allow: ["/", "/signup", "/sign-in"],
+      { userAgent: "*", allow: ["/", "/signup", "/sign-in", "/legal"],
         disallow: ["/s/", "/platform", "/api/", "/t/", "/go", "/sign/", "/offline", "/_next/"] },
     ],
     sitemap: `${BASE}/sitemap.xml`,

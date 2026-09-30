@@ -168,6 +168,9 @@ function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle 
           className="mt-1 flex h-9 items-center gap-2 rounded-md px-2 text-[13px] font-medium text-ink-text hover:bg-ink-2 hover:text-ink-text-strong">
           <BookOpenCheck size={14} /> How to do things
         </Link>
+        <p className="px-2 pb-1 text-[11px] text-ink-text/50">
+          <a href="/legal/privacy" className="hover:text-ink-text">Privacy</a> · <a href="/legal/terms" className="hover:text-ink-text">Terms</a>
+        </p>
         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pt-1">
           <SignOutButton />
           <button type="button" onClick={switchAccount} className={footerBtn}>

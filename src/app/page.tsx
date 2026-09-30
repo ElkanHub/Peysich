@@ -338,6 +338,11 @@ export default async function Home() {
                 <h5 className="mb-2.5 font-mono text-[12px] tracking-[.06em] text-[#E58A2E]">Connect</h5>
                 <a href="mailto:hello@schoolspec.com" className="block py-[3px] text-[14px]">hello@schoolspec.com</a>
                 <a href="#contact" className="block py-[3px] text-[14px]">Request a walkthrough</a>
+                <h5 className="mb-2.5 mt-6 font-mono text-[12px] tracking-[.06em] text-[#E58A2E]">Legal</h5>
+                <Link href="/legal/privacy" className="block py-[3px] text-[14px]">Privacy policy</Link>
+                <Link href="/legal/terms" className="block py-[3px] text-[14px]">Terms of service</Link>
+                <Link href="/legal/refunds" className="block py-[3px] text-[14px]">Refunds & cancellation</Link>
+                <Link href="/legal/cookies" className="block py-[3px] text-[14px]">Cookies</Link>
               </div>
             </div>
             <div className="relative mt-10 flex flex-wrap gap-[18px] text-[12.5px] text-[#dbb7cb]">

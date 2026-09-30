@@ -129,6 +129,12 @@ export default function Signup() {
             </p>
           )}
           <button disabled={pending || !link} className={btn}>{pending ? "Setting up…" : <>Create my school <ArrowRight size={16} /></>}</button>
+          <p className="text-[14px] text-muted-foreground">
+            By creating a school you agree to the{" "}
+            <a href="/legal/terms" className="underline underline-offset-4" target="_blank" rel="noopener">terms of service</a>,{" "}
+            the <a href="/legal/data-processing" className="underline underline-offset-4" target="_blank" rel="noopener">data processing agreement</a>{" "}
+            and the <a href="/legal/privacy" className="underline underline-offset-4" target="_blank" rel="noopener">privacy policy</a>.
+          </p>
         </form>
       )}
     </Door>
