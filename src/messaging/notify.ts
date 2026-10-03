@@ -74,7 +74,8 @@ export function route(o: Pick<NotifyOpts, "school" | "kind" | "vars" | "link" | 
   // no smartphone: the whole text by SMS, no link to tap
   const full = !!o.fullText && r.phoneOnly;
   const text = full ? render("blast", { text: o.fullText, school: o.school.name }) : render(o.kind, vars);
-  const senderId = o.senderId ?? o.school.branding?.smsSenderId;
+  // the school's registered sender name; blank falls through to SchoolSpec in the provider
+  const senderId = o.senderId || o.school.branding?.smsSenderId || undefined;
   const out: Planned[] = [];
   if (r.userId && r.hasPush)
     out.push({ channel: "push", to: r.userId, body: text.slice(0, 140), parts: 1, price: 0, meta: { title: o.school.name, url: o.url ?? "/" } });

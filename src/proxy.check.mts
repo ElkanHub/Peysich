@@ -37,6 +37,9 @@ assert.equal(go("stmarys.schoolspec.com", "/attendance"), "rewrite /s/stmarys/at
 assert.equal(go("stmarys.schoolspec.com", "/"), "rewrite /s/stmarys");
 assert.equal(go("admin.schoolspec.com", "/schools"), "rewrite /platform/schools");
 assert.equal(go("admin.schoolspec.com", "/"), "rewrite /platform");
+// the console is never a page of a school: a stray /platform on a school's host hops to admin.
+assert.equal(go("stmarys.schoolspec.com", "/platform"), "307 https://admin.schoolspec.com/");
+assert.equal(go("stmarys.schoolspec.com", "/platform/schools"), "307 https://admin.schoolspec.com/schools");
 // a message's one-tap link is itself on every host, tenant cookie or not
 assert.equal(go("schoolspec.com", "/n/abcDEF123456", "pv_tenant=stmarys"), "pass");
 assert.equal(go("stmarys.schoolspec.com", "/n/abcDEF123456"), "pass");

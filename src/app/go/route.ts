@@ -22,17 +22,23 @@ export async function GET(req: NextRequest) {
   if (!session) return go(new URL("/sign-in", req.url));
   const u = session.user as { role: string; schoolId?: string | null };
 
-  if (u.role === "platform_admin")
-    return go(new URL("/platform", req.url));
+  const rootWithPort = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
+  const host = (req.headers.get("host") ?? "").toLowerCase();
+  const wildcardless = rootWithPort.endsWith("vercel.app") || rootWithPort.includes("localhost");
+
+  // The console lives on admin.<root>. A platform admin who signed in on a
+  // school's door (or came back from Google onto one) must hop there: on a
+  // school's host, /platform is read as a page of that school and 404s.
+  if (u.role === "platform_admin") {
+    if (wildcardless) return go(new URL("/platform", req.url));
+    return host === `admin.${rootWithPort}` ? go(new URL("/", req.url)) : go(`${req.nextUrl.protocol}//admin.${rootWithPort}/`);
+  }
 
   if (u.schoolId) {
     const [school] = await db.select({ slug: schools.slug }).from(schools)
       .where(eq(schools.id, u.schoolId));
     if (school) {
-      const rootWithPort = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
-      const host = (req.headers.get("host") ?? "").toLowerCase();
       const onRoot = host === rootWithPort || host === `www.${rootWithPort}`;
-      const wildcardless = rootWithPort.endsWith("vercel.app") || rootWithPort.includes("localhost");
       if (onRoot && wildcardless) {
         // preview mode: enter the school via tenant cookie
         const res = go(new URL("/", req.url));

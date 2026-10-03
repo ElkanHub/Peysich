@@ -24,6 +24,8 @@ let p = route(absence, { ...none, phone: "0241234567" }, env);
 assert.equal(channels(p), "sms");
 assert.equal(p[0].price, 6);
 assert.equal(p[0].meta.senderId, "StMarys");
+// a blank sender name saved in settings must not reach the provider as ""
+assert.equal(route({ ...absence, school: { ...school, branding: { smsSenderId: "" } } }, { ...none, phone: "024" }, env)[0].meta.senderId, undefined);
 
 // number + consent + approved template: WhatsApp instead of SMS, with the SMS kept as the fallback
 p = route(absence, { ...none, phone: "0241234567", whatsapp: "233241234567" }, env);

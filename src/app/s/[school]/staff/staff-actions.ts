@@ -58,7 +58,7 @@ async function smsLogin(school: { id: string; slug: string; name: string }, s: S
   const r = await makeStaffLogin(school, s);
   if ("error" in r) return ` No login: ${r.error.toLowerCase()}.`;
   const { status } = await notify({
-    school, to: { kind: "staff", id: s.id }, kind: "staff_login", senderId: school.name,
+    school, to: { kind: "staff", id: s.id }, kind: "staff_login",
     vars: { login: r.loginAs, password: r.password },
   });
   return status === "sent"

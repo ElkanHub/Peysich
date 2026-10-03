@@ -7,7 +7,7 @@ export async function sendArkesel(opts: { to: string; body: string; senderId?: s
     method: "POST",
     headers: { "api-key": process.env.SMS_API_KEY!, "Content-Type": "application/json" },
     body: JSON.stringify({
-      sender: (opts.senderId ?? "SchoolSpec").slice(0, 11),
+      sender: (opts.senderId?.trim() || "SchoolSpec").slice(0, 11),
       message: opts.body, recipients: [opts.to],
     }),
   });

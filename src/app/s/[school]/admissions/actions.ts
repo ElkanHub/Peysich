@@ -114,7 +114,7 @@ async function sendOfferEverywhere(
   const emails = [...new Set(gs.map((g) => g.email).filter((e): e is string => Boolean(e)))];
   const { notifyMany } = await import("@/messaging/notify");
   await notifyMany(school, phones.map((phone) => ({
-    to: { kind: "phone" as const, phone }, kind: "admission_offer" as const, vars: { text: message }, senderId: school.name,
+    to: { kind: "phone" as const, phone }, kind: "admission_offer" as const, vars: { text: message },
   })));
   for (const to of emails) {
     await sendEmail(to, `Admission offer — ${school.name}`,

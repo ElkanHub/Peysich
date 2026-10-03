@@ -109,6 +109,10 @@ export function proxy(req: NextRequest) {
 
   if (host.endsWith(`.${ROOT}`)) {
     const sub = host.slice(0, -(ROOT.length + 1));
+    // the console is not a page of any school: an old link or bookmark to
+    // <school>.<root>/platform goes to admin.<root> instead of a 404
+    if (pathname === "/platform" || pathname.startsWith("/platform/"))
+      return NextResponse.redirect(new URL((pathname.slice(9) || "/") + req.nextUrl.search, `https://admin.${ROOT}`), 307);
     // the doors, /sign/<token> (phone signing) and /n/<token> (a message's one-tap link) are global pages — never school routes
     if (!sub.includes(".") && !isDoor(pathname)) {
       const url = req.nextUrl.clone();

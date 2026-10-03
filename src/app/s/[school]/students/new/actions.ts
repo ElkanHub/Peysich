@@ -115,7 +115,7 @@ export async function admitStudent(slug: string, draftId: string | null, f: Form
     if (!("error" in r)) {
       await db.update(guardians).set({ userId: r.userId }).where(eq(guardians.id, g.id));
       const { status } = await notify({
-        school, to: { kind: "guardian", id: g.id }, kind: "parent_login", senderId: school.name,
+        school, to: { kind: "guardian", id: g.id }, kind: "parent_login",
         vars: { login: r.loginAs, password: r.password },
       });
       loginNote = status === "sent"
