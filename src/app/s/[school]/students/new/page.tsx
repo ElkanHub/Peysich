@@ -59,6 +59,10 @@ export default async function AddStudent({ params, searchParams }: {
               </select>
             </Field>
           </div>
+          <label className="flex items-start gap-2 text-[15px] sm:col-span-2">
+            <input type="checkbox" name="whatsappConsent" className="mt-1" />
+            <span>The parent agrees to receive school messages on WhatsApp, on this phone number.</span>
+          </label>
           <p className="text-[13.5px] text-muted-foreground sm:col-span-2">
             All five are required. A phone already on file means a sibling’s parent — they are reused, not duplicated.
             This term’s bill is created from the class fee plan and the parent gets their login by SMS.

@@ -1,13 +1,15 @@
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { Megaphone, CalendarDays, MessageSquareText, Mail, CheckCircle2 } from "lucide-react";
 import { db } from "@/db";
-import { announcements, announcementAcks, events, classes, smsLog, guardians } from "@/db/schema";
+import { announcements, announcementAcks, events, classes, outbox, guardians, messages } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
-import { postAnnouncement, createEvent, sendBlast, acknowledgeOne } from "./actions";
+import { postAnnouncement, createEvent, sendBlast, acknowledgeOne, remindRest } from "./actions";
 import { Card, Field, PageHeader, Empty, inputCls, btnCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { BlastForm } from "./blast-form";
+import { parentReach, readers } from "@/messaging/messages";
+import { ConfirmButton } from "@/ui/confirm";
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
@@ -25,12 +27,12 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
     db.select().from(classes).where(eq(classes.schoolId, school.id)),
     ["admin", "platform_admin"].includes(user.role)
       ? db.select({
-          body: smsLog.body, kind: smsLog.kind, n: sql<number>`count(*)`,
+          body: outbox.body, kind: outbox.kind, n: sql<number>`count(*)`,
           at: sql<Date>`max(created_at)`,
-        }).from(smsLog)
-          .where(and(eq(smsLog.schoolId, school.id),
-            inArray(smsLog.kind, ["blast", "email-blast"])))
-          .groupBy(smsLog.body, smsLog.kind)
+        }).from(outbox)
+          .where(and(eq(outbox.schoolId, school.id),
+            inArray(outbox.kind, ["blast", "email-blast"])))
+          .groupBy(outbox.body, outbox.kind)
           .orderBy(desc(sql`max(created_at)`)).limit(6)
       : [],
     db.select({ annId: announcementAcks.announcementId }).from(announcementAcks)
@@ -52,8 +54,15 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
     ? await db.select({ phone: guardians.phone, email: guardians.email }).from(guardians)
         .where(eq(guardians.schoolId, school.id))
     : [];
-  const phones = new Set(reach.map((g) => g.phone).filter(Boolean)).size;
   const emails = new Set(reach.map((g) => g.email).filter(Boolean)).size;
+  // who gets a message how, the prices and the balance: the confirm box says the split, the cost and what is left
+  const pingReach = isAdmin ? await parentReach(school) : null;
+  // what was sent to parents, with who has opened it
+  const sentMsgs = isAdmin
+    ? await db.select().from(messages).where(and(eq(messages.schoolId, school.id), eq(messages.kind, "announcement")))
+        .orderBy(desc(messages.createdAt)).limit(6)
+    : [];
+  const readBy = await readers(sentMsgs.map((m) => m.id));
   const audienceChips = (
     <div className="flex flex-wrap gap-2">
       {[["", "School-wide"], ...cls.map((c) => [c.id, c.name])].map(([v, label]) => (
@@ -69,10 +78,12 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
   type FeedItem =
     | { type: "ann"; at: Date; a: typeof seeAnns[number] }
     | { type: "evt"; at: Date; e: typeof seeEvts[number] }
+    | { type: "msg"; at: Date; m: typeof sentMsgs[number] }
     | { type: "blast"; at: Date; b: typeof blasts[number] };
   const feed: FeedItem[] = [
     ...seeAnns.map((a) => ({ type: "ann" as const, at: a.createdAt, a })),
     ...seeEvts.map((e) => ({ type: "evt" as const, at: e.startsAt, e })),
+    ...sentMsgs.map((m) => ({ type: "msg" as const, at: m.createdAt, m })),
     ...blasts.map((b) => ({ type: "blast" as const, at: new Date(b.at), b })),
   ].sort((x, y) => +y.at - +x.at);
 
@@ -138,6 +149,42 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
                 </div>
               );
             }
+            if (item.type === "msg") {
+              const m = item.m;
+              const rb = readBy.get(m.id) ?? { read: [], unread: [] };
+              const all = rb.read.length + rb.unread.length;
+              return (
+                <div key={`m${m.id}`} className="rounded-lg border border-dashed border-border bg-muted/30 p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <MessageSquareText size={14} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Message to parents
+                        <span className="ml-2 font-normal normal-case" data-nums="">{m.createdAt.toISOString().slice(0, 10)}</span>
+                      </p>
+                      <p className="mt-0.5 whitespace-pre-wrap text-sm text-muted-foreground">{m.body}</p>
+                      <details className="mt-2 text-[14px]">
+                        <summary className="cursor-pointer font-semibold" data-nums="">Read by {rb.read.length} of {all}</summary>
+                        {rb.unread.length > 0 && <p className="mt-1.5"><b>Not yet:</b> {rb.unread.join(", ")}</p>}
+                        {rb.read.length > 0 && <p className="mt-1.5 text-muted-foreground"><b>Read:</b> {rb.read.join(", ")}</p>}
+                      </details>
+                      {rb.unread.length > 0 && pingReach && (
+                        <form action={remindRest.bind(null, slug, m.id)} className="mt-2">
+                          <ConfirmButton className={btnCls}
+                            title={`Remind ${rb.unread.length} parent${rb.unread.length === 1 ? "" : "s"}?`}
+                            body={`The ping goes again to everyone who has not opened it. It costs up to GHS ${((rb.unread.length * Math.max(pingReach.smsPrice, pingReach.whatsappPrice)) / 100).toFixed(2)}; your balance is GHS ${(pingReach.balance / 100).toFixed(2)}.`}
+                            confirmLabel="Remind them">
+                            Remind the rest
+                          </ConfirmButton>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
             const b = item.b;
             const isEmail = b.kind === "email-blast";
             return (
@@ -189,8 +236,8 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
                 </form>
               </Card>
               <Card>
-                <h2 className="flex items-center gap-2 font-semibold"><MessageSquareText size={15} className="text-muted-foreground" /> Text all parents</h2>
-                <BlastForm action={sendBlast.bind(null, slug)} schoolName={school.name} phones={phones} emails={emails} />
+                <h2 className="flex items-center gap-2 font-semibold"><MessageSquareText size={15} className="text-muted-foreground" /> Message all parents</h2>
+                <BlastForm action={sendBlast.bind(null, slug)} schoolName={school.name} reach={pingReach!} emails={emails} />
                 <p className="mt-2 text-[13px] text-muted-foreground">
                   Goes only to {school.name}&apos;s parents, signed with the school&apos;s name.
                 </p>

@@ -570,6 +570,7 @@ export default async function Settings({ params, searchParams }: {
           <Field label="Phone"><input name="phone" defaultValue={b.phone} className={inputCls} /></Field>
           <Field label="Email"><input name="email" defaultValue={b.email} className={inputCls} /></Field>
           <Field label="The name parents see on SMS (11 letters max)"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
+          <Field label="Head's WhatsApp number (SchoolSpec writes here about the plan)"><input name="ownerPhone" type="tel" defaultValue={school.ownerPhone ?? ""} className={inputCls} /></Field>
           <SubmitButton className={btnCls + " col-span-2"} pendingText="Saving…">Save branding</SubmitButton>
         </form>
         <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>

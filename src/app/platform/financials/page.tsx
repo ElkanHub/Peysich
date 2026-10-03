@@ -1,6 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { subscriptions, schools, plans, feePayments, smsLog } from "@/db/schema";
+import { subscriptions, schools, plans, feePayments, outbox } from "@/db/schema";
 import { Card, DataTable, PageHeader, Stat, Tr, Td } from "@/ui/kit";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString()}`;
@@ -17,7 +17,7 @@ export default async function Financials() {
     db.select().from(plans),
     db.select().from(schools),
     db.select({ n: sql<number>`coalesce(sum(amount_pesewas),0)` }).from(feePayments),
-    db.select({ n: sql<number>`coalesce(sum(cost_pesewas),0)` }).from(smsLog),
+    db.select({ n: sql<number>`coalesce(sum(price_pesewas),0)` }).from(outbox),
   ]);
   const price = new Map(allPlans.map((p) => [p.key, p.pricePerMonthPesewas]));
   const active = allSchools.filter((s) => s.status === "active");
@@ -44,7 +44,7 @@ export default async function Financials() {
         <Stat label="MRR" value={ghs(mrr)} tone="success" />
         <Stat label="Collected all-time" value={ghs(collected)} />
         <Stat label="School fees processed" value={ghs(Number(gmv.n))} />
-        <Stat label="SMS cost (re-billable)" value={ghs(Number(smsCost.n))} />
+        <Stat label="Messaging charged to schools" value={ghs(Number(smsCost.n))} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

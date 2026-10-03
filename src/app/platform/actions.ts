@@ -9,6 +9,7 @@ import { getSession } from "@/core/session";
 import { invalidateModules } from "@/core/entitlements";
 import { isValidSlug, invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
+import { grantStartingCredit } from "@/messaging/wallet";
 
 async function requirePlatformAdmin() {
   const session = await getSession();
@@ -38,6 +39,7 @@ export async function createSchool(_: unknown, formData: FormData) {
   if (dup) return { error: "Slug already taken" };
   const id = uid();
   await db.insert(schools).values({ id, name, slug, planKey, status: "active" });
+  await grantStartingCredit(id);
   await audit(u.id, "school.create", id, { name, slug, planKey });
   invalidateSchool(slug);
   redirect(`/platform/schools/${id}`);

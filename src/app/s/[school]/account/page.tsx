@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { staff } from "@/db/schema";
+import { guardians, staff } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Card, PageHeader } from "@/ui/kit";
@@ -9,6 +9,7 @@ import { DocImageUploader } from "../settings/doc-sign";
 import { clearDocImage } from "../settings/docsign-actions";
 import { AccountCards } from "./account-client";
 import { NotificationsCard, InstallCard } from "./pwa-cards";
+import { ChannelsCard } from "@/messaging/channels-card";
 
 /** My Account (every role): profile + password — and, for staff, THEIR OWN
  *  signature, submitted right here so nobody queues at the admin's desk. */
@@ -17,6 +18,8 @@ export default async function Account({ params }: { params: Promise<{ school: st
   const { school, user } = await requireSchool(slug);
   const [me] = await db.select({ id: staff.id, signatureKey: staff.signatureKey }).from(staff)
     .where(and(eq(staff.schoolId, school.id), eq(staff.userId, user.id)));
+  const [asParent] = me ? [] : await db.select({ id: guardians.id }).from(guardians)
+    .where(and(eq(guardians.schoolId, school.id), eq(guardians.userId, user.id)));
   const sigUrl = me?.signatureKey && r2Enabled
     ? await presignDownload(me.signatureKey).catch(() => null) : null;
 
@@ -24,6 +27,9 @@ export default async function Account({ params }: { params: Promise<{ school: st
     <div className="max-w-md space-y-5">
       <PageHeader title="My Account" />
       <NotificationsCard />
+      {(me || asParent) && (
+        <ChannelsCard slug={slug} ownerKind={me ? "staff" : "guardian"} ownerId={(me ?? asParent).id} back="/account" mine />
+      )}
       <InstallCard />
       <AccountCards />
       {me && (

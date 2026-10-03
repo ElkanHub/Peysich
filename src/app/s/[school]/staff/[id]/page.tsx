@@ -10,6 +10,7 @@ import { Card, Field, Badge, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { ResetPasswordButton } from "@/ui/issue-login";
 import { StaffLoginButton } from "../login-button";
 import { SubmitButton } from "@/ui/feedback";
+import { ChannelsCard } from "@/messaging/channels-card";
 import { StaffPhotoUploader } from "../photo";
 import { DocImageUploader } from "../../settings/doc-sign";
 import { clearDocImage } from "../../settings/docsign-actions";
@@ -142,6 +143,7 @@ export default async function StaffFile({ params }: {
               </form>
             )}
           </Card>
+          <ChannelsCard slug={slug} ownerKind="staff" ownerId={s.id} back={`/staff/${s.id}`} />
 
           {teaching && (
             <Card>

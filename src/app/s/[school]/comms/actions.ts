@@ -7,7 +7,6 @@ import { announcements, events, guardians } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { uid } from "@/lib/utils";
 import { withFlash } from "@/lib/flash";
-import { withSignature } from "./sms";
 
 export async function postAnnouncement(slug: string, f: FormData) {
   const { school, user } = await requireModule(slug, "comms", ["admin", "teacher"]);
@@ -38,32 +37,28 @@ export async function createEvent(slug: string, f: FormData) {
   redirect(withFlash(`/comms`, "Event added to the calendar."));
 }
 
-/** Blast to all of THIS school's guardians — SMS and/or email, chosen per
- *  send. Recipients come strictly from this school's guardian list, so a
- *  parent never hears from a school that isn't theirs. Gateways are behind
- *  sendSms()/sendEmail(); without keys, messages log as "queued". */
+/** Message to all of THIS school's guardians — a ping and/or email, chosen
+ *  per send. Recipients come strictly from this school's guardian list, so a
+ *  parent never hears from a school that isn't theirs. The ping goes through
+ *  notify(); without provider keys it waits in the outbox as "queued". */
 export async function sendBlast(slug: string, f: FormData) {
-  const { school } = await requireModule(slug, "comms", ["admin"]);
+  const { school, user } = await requireModule(slug, "comms", ["admin"]);
   const body = String(f.get("body"));
   const viaSms = f.get("viaSms") === "on";
   const viaEmail = f.get("viaEmail") === "on";
   if (!viaSms && !viaEmail) redirect(withFlash(`/comms`, "Tick SMS or Email first — nothing was sent.", { error: true }));
   const gs = await db.select().from(guardians).where(eq(guardians.schoolId, school.id));
-  const { sendSmsBatch, sendEmailBlast } = await import("@/lib/notify");
-  let sent = 0;
+  const { sendEmailBlast } = await import("@/lib/notify");
+  const { sentSentence } = await import("@/messaging/notify");
+  let sent = 0, smsNote = "";
   if (viaSms) {
-    const seen = new Set<string>();
-    const rows = gs.filter((g) => g.phone && !seen.has(g.phone) && seen.add(g.phone)).map((g) => ({
-      schoolId: school.id, to: g.phone, body: withSignature(body, school.name),
-      kind: "blast", senderId: school.branding.smsSenderId,
-    }));
-    await sendSmsBatch(rows);
-    sent = rows.length;
-  }
-  {
-    const { pushToUsers, schoolAudience } = await import("@/lib/push");
-    await pushToUsers(await schoolAudience(school.id, { roles: ["parent"] }),
-      { title: school.name, body: body.slice(0, 140), url: "/comms", tag: "blast" });
+    // the text lives in the app; each parent gets a ping with their own link —
+    // the app and Telegram free, then WhatsApp or SMS. A phone-only parent
+    // gets the whole text by SMS, signed as withSignature() previews.
+    const { sendToParents } = await import("@/messaging/messages");
+    const r = await sendToParents(school, { body, createdBy: user.id });
+    sent = r.sent + r.free;
+    smsNote = sentSentence(r);
   }
   if (viaEmail) {
     const seenE = new Set<string>();
@@ -78,7 +73,17 @@ export async function sendBlast(slug: string, f: FormData) {
   }
   revalidatePath(`/comms`);
   const at = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Accra" });
-  redirect(withFlash(`/comms`, `Sent to ${sent} parents at ${at}.`));
+  redirect(withFlash(`/comms`, `Sent to ${sent} parents at ${at}. ${smsNote}`.trim()));
+}
+
+/** "Remind the rest": the ping goes again to every parent who has not opened it. */
+export async function remindRest(slug: string, messageId: string) {
+  const { school } = await requireModule(slug, "comms", ["admin"]);
+  const { remindUnread } = await import("@/messaging/messages");
+  const { sentSentence } = await import("@/messaging/notify");
+  const r = await remindUnread(school, messageId);
+  revalidatePath(`/comms`);
+  redirect(withFlash(`/comms`, r ? sentSentence(r) || "Everyone has already read it." : "That message could not be found.", { error: !r }));
 }
 
 /** Mark announcements as seen by this user — closes the on-open notice and

@@ -28,6 +28,8 @@ export async function applySubscription(
     updatedAt: now,
   }).where(eq(schools.id, schoolId));
   invalidateModules(schoolId);
+  const { onPlanPaid } = await import("@/messaging/platform");
+  await onPlanPaid(schoolId, plan.name, cycle === "yearly" ? plan.pricePerYearPesewas : plan.pricePerMonthPesewas, end);
 }
 
 /** Dunning sweep (Vercel Cron in prod): trial/period expiry → suspend. */
@@ -43,7 +45,8 @@ export async function dunningSweep() {
     const subs = await db.select().from(subscriptions).where(eq(subscriptions.schoolId, s.id));
     const latest = subs.sort((a, b) => +b.periodEnd - +a.periodEnd)[0];
     if (!latest) continue;
-    const grace = new Date(latest.periodEnd); grace.setDate(grace.getDate() + 7);
+    // 14 days: what the payment_failed message tells the head (MESSAGING_SETUP.md §7)
+    const grace = new Date(latest.periodEnd); grace.setDate(grace.getDate() + 14);
     if (now > grace) await db.update(schools).set({ status: "suspended" }).where(eq(schools.id, s.id));
     else if (now > latest.periodEnd) await db.update(schools).set({ status: "past_due" }).where(eq(schools.id, s.id));
   }

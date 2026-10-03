@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:proxy": "tsx src/proxy.check.mts",
+    "check:messaging": "tsx src/messaging/route.check.mts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",

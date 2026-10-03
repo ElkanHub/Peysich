@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validWebhookSignature } from "@/lib/paystack";
 import { applySubscription, applyFeePayment } from "@/core/billing";
+import { creditTopUp } from "@/messaging/wallet";
 
 /** Paystack webhook: charge.success with metadata {schoolId, planKey}.
  *  Idempotent (reference-keyed); reconciliation cron re-verifies daily. */
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest) {
   if (evt.event === "charge.success") {
     const m = evt.data?.metadata ?? {};
     if (m.kind === "fee") await applyFeePayment(evt.data.reference);
+    else if (m.kind === "wallet" && m.schoolId)
+      await creditTopUp(m.schoolId, Number(evt.data.amount), evt.data.reference); // idempotent by reference
     else if (m.schoolId && m.planKey)
       await applySubscription(m.schoolId, m.planKey, evt.data.reference,
         m.cycle === "yearly" ? "yearly" : "monthly");

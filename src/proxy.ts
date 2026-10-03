@@ -24,12 +24,12 @@ const root = () => (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000").spl
 const marketing = () => (process.env.NEXT_PUBLIC_MARKETING_DOMAIN ?? "").toLowerCase().split(":")[0];
 const TENANT_COOKIE = "pv_tenant";
 /** Root-host paths that must never be rewritten into a school. */
-const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/t/", "/s/", "/go", "/offline", "/legal", "/blog", "/textbooks"];
+const RESERVED = ["/api", "/platform", "/sign-in", "/signup", "/sign/", "/n/", "/t/", "/s/", "/go", "/offline", "/legal", "/blog", "/textbooks"];
 /** The doors: served as themselves on EVERY host. Sign out on
  *  stmarys.schoolspec.com lands on /sign-in there; the school layout's
  *  redirect("/sign-in") stays on the subdomain; /go then routes the person
  *  to their own school. Rewriting these into the tenant was the 404. */
-const DOORS = ["/sign-in", "/signup", "/go", "/sign/", "/legal", "/blog", "/textbooks"];
+const DOORS = ["/sign-in", "/signup", "/go", "/sign/", "/n/", "/legal", "/blog", "/textbooks"];
 const isDoor = (p: string) => DOORS.some((d) => p === d || p.startsWith(d.endsWith("/") ? d : d + "/") || p.startsWith(d + "?"));
 const GLOBAL = new Set(["/manifest.webmanifest", "/sw.js", "/offline", "/og.jpg", "/robots.txt", "/sitemap.xml"]);
 
@@ -109,7 +109,7 @@ export function proxy(req: NextRequest) {
 
   if (host.endsWith(`.${ROOT}`)) {
     const sub = host.slice(0, -(ROOT.length + 1));
-    // the doors and /sign/<token> (phone signing) are global pages — never school routes
+    // the doors, /sign/<token> (phone signing) and /n/<token> (a message's one-tap link) are global pages — never school routes
     if (!sub.includes(".") && !isDoor(pathname)) {
       const url = req.nextUrl.clone();
       url.pathname = `/s/${sub}${pathname === "/" ? "" : pathname}`;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { feePayments, smsLog } from "@/db/schema";
+import { feePayments, outbox } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { assertParentOf } from "@/core/portal";
 import { canFeeAction } from "@/core/access";
@@ -36,9 +36,9 @@ export default async function InvoicePage({ params }: {
   const [pays, emailed, gEmails] = await Promise.all([
     db.select().from(feePayments).where(eq(feePayments.invoiceId, d.invoice.id))
       .orderBy(desc(feePayments.createdAt)),
-    db.select().from(smsLog).where(and(
-      eq(smsLog.schoolId, school.id), eq(smsLog.kind, "invoice-email")))
-      .orderBy(desc(smsLog.createdAt)).limit(50),
+    db.select().from(outbox).where(and(
+      eq(outbox.schoolId, school.id), eq(outbox.kind, "invoice-email")))
+      .orderBy(desc(outbox.createdAt)).limit(50),
     isAdmin ? guardianEmailsFor(school.id, d.student.id) : Promise.resolve([]),
   ]);
   const lastEmailed = emailed.find((e) => e.body.includes(d.invoice.invoiceNo ?? "∅"));

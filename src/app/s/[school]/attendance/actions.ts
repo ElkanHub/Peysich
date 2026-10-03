@@ -65,19 +65,18 @@ export async function saveRegister(slug: string, classId: string, f: FormData) {
   let told = 0;
   if (absent.length) {
     const { guardians, studentGuardians } = await import("@/db/schema");
-    const gs = await db.select({ phone: guardians.phone, sid: studentGuardians.studentId })
+    const gs = await db.select({ id: guardians.id, sid: studentGuardians.studentId })
       .from(studentGuardians)
       .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
       .where(inArray(studentGuardians.studentId, absent));
     const names = new Map((await db.select().from(students)
       .where(inArray(students.id, absent))).map((s) => [s.id, s.firstName]));
-    const { sendSmsBatch } = await import("@/lib/notify");
-    await sendSmsBatch(gs.map((g) => ({
-      schoolId: school.id, to: g.phone, kind: "absence",
-      senderId: school.branding.smsSenderId,
-      body: `${names.get(g.sid)} was marked absent today at ${school.name}. Contact the office if unexpected.`,
+    const { notifyMany } = await import("@/messaging/notify");
+    const r = await notifyMany(school, gs.map((g) => ({
+      to: { kind: "guardian", id: g.id }, kind: "absence", url: "/attendance",
+      vars: { child: names.get(g.sid), office: school.branding.phone },
     })));
-    told = gs.length;
+    told = r.sent + r.free;
   }
   revalidatePath(`/attendance`);
   revalidatePath(`/attendance/register`);
@@ -103,23 +102,19 @@ export async function remindClassTeacher(slug: string, classId: string, f?: Form
   if (!t) redirect(noTeacher);
   const first = t.name.split(" ")[0];
 
-  const message = `Good day ${first} —the ${cls.name} register for today hasn't been marked yet. Please mark it in SchoolSpec. — ${school.name}`;
+  const { notify } = await import("@/messaging/notify");
+  const { render } = await import("@/messaging/render");
+  const { schoolUrl } = await import("@/messaging/render");
+  const vars = { school: school.name, first, class: cls.name };
   await db.insert(staffNudges).values({
     id: uid(), schoolId: school.id, staffId: t.id,
-    kind: "attendance", refId: classId, message, sentBy: user.name,
+    kind: "attendance", refId: classId, message: render("staff_nudge_register", vars), sentBy: user.name,
   });
-  const { sendSmsBatch } = await import("@/lib/notify");
-  if (t.phone) await sendSmsBatch([{
-    schoolId: school.id, to: t.phone, kind: "staff-nudge",
-    senderId: school.branding.smsSenderId, body: message,
-  }]);
-  if (t.userId) {
-    const { pushToUsers } = await import("@/lib/push");
-    await pushToUsers([t.userId], {
-      title: `${cls.name} register`, body: "Today's register isn't marked yet — one minute and it's done.",
-      url: `/attendance/${classId}`, tag: `nudge-${classId}`,
-    });
-  }
+  // the app and Telegram free, then WhatsApp or SMS — one door
+  await notify({
+    school, to: { kind: "staff", id: t.id }, kind: "staff_nudge_register", vars,
+    url: `/attendance/${classId}`, link: schoolUrl(slug, `/attendance/${classId}`),
+  });
   revalidatePath(`/attendance/${classId}`);
   revalidatePath(`/attendance`);
   redirect(withFlash(back, `Reminder sent to ${first}.`));

@@ -10,7 +10,7 @@ import {
 import { requireModule } from "@/core/school-context";
 import { invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
-import { sendSms, sendEmail } from "@/lib/notify";
+import { sendEmail } from "@/lib/notify";
 import { getIntakeConfig, parseDocs, type IntakeDoc } from "@/modules/admissions/config";
 
 const touch = (extra?: string) => {
@@ -112,9 +112,10 @@ async function sendOfferEverywhere(
     .where(eq(applicantGuardians.applicantId, applicantId));
   const phones = [...new Set(gs.map((g) => g.phone).filter(Boolean))];
   const emails = [...new Set(gs.map((g) => g.email).filter((e): e is string => Boolean(e)))];
-  for (const to of phones) {
-    await sendSms({ schoolId: school.id, to, kind: "admission-offer", body: message, senderId: school.name });
-  }
+  const { notifyMany } = await import("@/messaging/notify");
+  await notifyMany(school, phones.map((phone) => ({
+    to: { kind: "phone" as const, phone }, kind: "admission_offer" as const, vars: { text: message }, senderId: school.name,
+  })));
   for (const to of emails) {
     await sendEmail(to, `Admission offer — ${school.name}`,
       `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">

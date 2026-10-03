@@ -1,13 +1,16 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { plans, schoolModules, schools, subscriptions } from "@/db/schema";
+import { plans, platformTimeline, schoolModules, schools, subscriptions } from "@/db/schema";
 import { MODULE_CATALOG } from "@/modules/catalog";
 import { getEnabledModules } from "@/core/entitlements";
 import { setModuleMode, setSchoolStatus, setCustomPlan, extendTrial, setSchoolPlan } from "../../actions";
 import { getOnboardingStages, getSchoolUsers } from "@/core/onboarding";
 import { Badge } from "@/ui/kit";
 import { cn } from "@/lib/utils";
+import { addSchoolCredit, logContact, setAutoMessagesPaused } from "@/messaging/actions";
+import { STAGE_WORDS, nextDue } from "@/messaging/platform";
+import { getBalance, ghs } from "@/messaging/wallet";
 
 export default async function SchoolDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,10 +22,14 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
       .map((o) => [o.moduleKey, o.mode]),
   );
   const effective = await getEnabledModules(id);
-  const [stages, people, subs] = await Promise.all([
+  const [stages, people, subs, balance, timeline] = await Promise.all([
     getOnboardingStages(id), getSchoolUsers(id),
     db.select().from(subscriptions).where(eq(subscriptions.schoolId, id)),
+    getBalance(id),
+    db.select().from(platformTimeline).where(eq(platformTimeline.schoolId, id))
+      .orderBy(desc(platformTimeline.createdAt)).limit(60),
   ]);
+  const next = nextDue(school, [...subs].sort((a, b) => +b.periodEnd - +a.periodEnd)[0]);
 
   const MODES = ["default", "on", "off"] as const;
   return (
@@ -31,7 +38,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
         <div>
           <h1 className="text-2xl font-semibold">{school.name}</h1>
           <p className="text-sm text-muted-foreground">
-            {school.slug} · plan: {plan?.name ?? school.planKey} · status: {school.status}
+            {school.slug} · plan: {plan?.name ?? school.planKey} · status: {school.status} · stage: {STAGE_WORDS[school.stage] ?? school.stage}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -90,7 +97,51 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             </div>
           )}
         </div>
+        <div className="rounded-lg bg-card p-4 shadow-[var(--shadow-md)]">
+          <h2 className="font-semibold">Messaging wallet</h2>
+          <p className="mt-1 text-2xl font-semibold" data-nums="">{ghs(balance)}</p>
+          <form action={addSchoolCredit.bind(null, id)} className="mt-3 flex flex-wrap items-end gap-2 text-sm">
+            <label>Add credit, GHS<br />
+              <input name="amountGhs" type="number" step="0.01" min="0.01" required
+                className="mt-1 w-28 rounded-md border border-border px-2 py-1" /></label>
+            <label className="min-w-0 flex-1">Note<br />
+              <input name="note" placeholder="Cash top-up, goodwill…"
+                className="mt-1 w-full rounded-md border border-border px-2 py-1" /></label>
+            <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">Add credit</button>
+          </form>
+        </div>
       </div>
+
+      <h2 className="mt-8 text-lg font-semibold">Timeline</h2>
+      <p className="text-sm text-muted-foreground">
+        Everything between SchoolSpec and this school, newest first.
+        {school.autoMessagesPaused ? " Automatic messages are paused." : next ? ` Next automatic message: ${next.label}, ${next.due.toISOString().slice(0, 10)}.` : " No automatic message is due."}
+        {school.ownerPhone ? ` Head's WhatsApp: ${school.ownerPhone}.` : " No WhatsApp number for the head yet."}
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {(["call", "visit"] as const).map((kind) => (
+          <form key={kind} action={logContact.bind(null, id, kind)} className="flex gap-2 text-sm">
+            <input name="note" placeholder={kind === "call" ? "What was said on the call" : "What happened on the visit"}
+              className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5" />
+            <button className="shrink-0 rounded-md border border-border px-3 py-1.5 font-medium hover:bg-muted">Log a {kind}</button>
+          </form>
+        ))}
+      </div>
+      <form action={setAutoMessagesPaused.bind(null, id, !school.autoMessagesPaused)} className="mt-3">
+        <button className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">
+          {school.autoMessagesPaused ? "Resume automatic messages" : "Pause automatic messages"}
+        </button>
+      </form>
+      <ul className="mt-3 divide-y divide-border rounded-lg bg-card px-4 text-sm shadow-[var(--shadow-md)]">
+        {timeline.map((t) => (
+          <li key={t.id} className="flex items-start justify-between gap-3 py-2">
+            <span><Badge tone={t.event === "skipped" ? "danger" : t.event === "sent" ? "success" : "default"}>{t.event}</Badge>
+              <span className="ml-2">{t.detail || "—"}</span>{t.by && <span className="text-muted-foreground"> · {t.by}</span>}</span>
+            <span className="shrink-0 text-[13px] text-muted-foreground" data-nums="">{t.createdAt.toISOString().slice(0, 16).replace("T", " ")}</span>
+          </li>
+        ))}
+        {timeline.length === 0 && <li className="py-3 text-muted-foreground">Nothing yet.</li>}
+      </ul>
 
       <h2 className="mt-8 text-lg font-semibold">Module switchboard</h2>
       <p className="text-sm text-muted-foreground">

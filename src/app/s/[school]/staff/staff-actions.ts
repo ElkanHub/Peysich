@@ -7,7 +7,7 @@ import { staff, classes, subjects, teachingAssignments, staffTeaching, adminAcce
 import { requireSchool } from "@/core/school-context";
 import { createSchoolLogin } from "@/core/accounts";
 import { ACCESS_PRESETS } from "@/core/access-const";
-import { sendSms } from "@/lib/notify";
+import { notify } from "@/messaging/notify";
 import { withFlash } from "@/lib/flash";
 import { uid } from "@/lib/utils";
 
@@ -57,13 +57,15 @@ async function smsLogin(school: { id: string; slug: string; name: string }, s: S
   if (!s.phone) return ` Add a phone to send ${who} a login, or create one on this page.`;
   const r = await makeStaffLogin(school, s);
   if ("error" in r) return ` No login: ${r.error.toLowerCase()}.`;
-  const status = await sendSms({
-    schoolId: school.id, to: s.phone, kind: "login", senderId: school.name,
-    body: `${school.name}: your SchoolSpec login is ${r.loginAs}, password ${r.password}. Please change it after signing in.`,
+  const { status } = await notify({
+    school, to: { kind: "staff", id: s.id }, kind: "staff_login", senderId: school.name,
+    vars: { login: r.loginAs, password: r.password },
   });
   return status === "sent"
-    ? ` Login sent by SMS to ${s.phone}.`
-    : ` Login created — SMS is not set up, so reset the password on this page to hand it over.`;
+    ? ` Login sent to ${s.phone}.`
+    : status === "held"
+      ? ` Login created — not enough messaging balance to text it. Top up under Billing, or reset the password on this page to hand it over.`
+      : ` Login created — SMS is not set up, so reset the password on this page to hand it over.`;
 }
 
 /** ONE screen: name, phone, what they do, and whether to text them a login.

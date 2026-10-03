@@ -8,7 +8,10 @@ import {
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { getParentChildren } from "@/core/portal";
 import { canFeeAction } from "@/core/access";
-import { getFeesConfig, getRemindersSent, reminderBody, ghs, SMS_COST_PESEWAS } from "@/modules/fees/config";
+import { getFeesConfig, getRemindersSent, reminderBody, confirmTail, ghs } from "@/modules/fees/config";
+import { render } from "@/messaging/render";
+import { smsParts } from "@/messaging/sms-parts";
+import { costSentence, quoteSms } from "@/messaging/wallet";
 import { generateInvoicesForTerm } from "@/modules/fees/engine";
 import { HowToPay } from "@/modules/fees/how-to-pay";
 import { generateInvoices, sendFeeReminders } from "./actions";
@@ -280,11 +283,18 @@ export default async function Fees({ params, searchParams }: {
     : [];
   const nParents = reminderPhones.length;
   const sampleOwing = overdueRows[0] ? overdueRows[0].i.total - overdueRows[0].i.paid : 0;
+  const reminderText = reminderBody(school.name, cfg, sampleOwing);
+  // what the SMS will take from the messaging balance — in the confirm, before the tap
+  const reminderQuote = nParents ? await quoteSms(school.id, nParents, smsParts(reminderText)) : null;
+  const billQuote = preview && preview.created > 0
+    ? await quoteSms(school.id, preview.created, smsParts(render("bill", {
+        school: school.name, term: term.name, amount: ghs(preview.totalPesewas), due: today, confirm: confirmTail(cfg) })))
+    : null;
   const generateBox = preview && preview.created > 0 && (
     <form action={generateInvoices.bind(null, slug)}>
       <ConfirmButton className={big}
         title={`Create ${term.name} bills?`}
-        body={`${preview.created} ${preview.created === 1 ? "child" : "children"}, totalling ${ghs(preview.totalPesewas)}. Each parent gets an SMS.`}
+        body={`${preview.created} ${preview.created === 1 ? "child" : "children"}, totalling ${ghs(preview.totalPesewas)}. Each parent gets an SMS. ${billQuote ? costSentence(billQuote) : ""}`}
         confirmLabel="Create bills">
         Create bills{nBills > 0 ? ` for ${preview.created} new ${preview.created === 1 ? "child" : "children"}` : ""}
       </ConfirmButton>
@@ -484,8 +494,8 @@ export default async function Fees({ params, searchParams }: {
             <ConfirmButton className={big + " bg-warning"} disabled={!!sentToday || nParents === 0}
               title={`Text ${nParents} parent${nParents === 1 ? "" : "s"}?`}
               body={<>
-                <p>{nParents} SMS · about {ghs(nParents * SMS_COST_PESEWAS)}. Each parent gets their own child&apos;s amount. It reads:</p>
-                <p className="mt-2 rounded-md bg-muted px-3 py-2 text-[14px] text-foreground">{reminderBody(school.name, cfg, sampleOwing)}</p>
+                <p>{nParents} SMS. {reminderQuote ? costSentence(reminderQuote) : ""} Each parent gets their own child&apos;s amount. It reads:</p>
+                <p className="mt-2 rounded-md bg-muted px-3 py-2 text-[14px] text-foreground">{reminderText}</p>
               </>}
               confirmLabel="Send">
               {sentToday

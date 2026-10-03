@@ -21,7 +21,7 @@ import { SubmitButton } from "@/ui/feedback";
 import { SetupChecklist } from "./setup-checklist";
 
 /** "Remind the teacher" for a score sheet — the register nudge, aimed at a
- *  class·subject sheet: a nudge row, an SMS and a push. No confirm (one
+ *  class·subject sheet: a nudge row and a notify() to the teacher. No confirm (one
  *  person, small), a toast says who was told. */
 async function remindScoreTeacher(slug: string, f: FormData) {
   "use server";
@@ -33,22 +33,18 @@ async function remindScoreTeacher(slug: string, f: FormData) {
   if (!cls || !sub || !t) {
     redirect(withFlash("/", "No teacher is allocated to that sheet yet — allocate one under Staff.", { error: true }));
   }
-  const message = `Good day ${t.name.split(" ")[0]} — the ${cls.name} ${sub.name} scores for this term are still missing. Please enter them in SchoolSpec. — ${school.name}`;
+  const { notify } = await import("@/messaging/notify");
+  const { render } = await import("@/messaging/render");
+  const { schoolUrl } = await import("@/messaging/render");
+  const vars = { school: school.name, first: t.name.split(" ")[0], class: cls.name, subject: sub.name };
   await db.insert(staffNudges).values({
     id: uid(), schoolId: school.id, staffId: t.id, kind: "scores",
-    refId: `${classId}:${subjectId}`, message, sentBy: user.name,
+    refId: `${classId}:${subjectId}`, message: render("staff_nudge_scores", vars), sentBy: user.name,
   });
-  const { sendSmsBatch } = await import("@/lib/notify");
-  if (t.phone) await sendSmsBatch([{
-    schoolId: school.id, to: t.phone, kind: "staff-nudge", senderId: school.branding.smsSenderId, body: message,
-  }]);
-  if (t.userId) {
-    const { pushToUsers } = await import("@/lib/push");
-    await pushToUsers([t.userId], {
-      title: `${cls.name} · ${sub.name} scores`, body: "Still missing for this term — a few minutes and it's done.",
-      url: `/assessment/${classId}/${subjectId}`, tag: `nudge-scores-${classId}-${subjectId}`,
-    });
-  }
+  await notify({
+    school, to: { kind: "staff", id: t.id }, kind: "staff_nudge_scores", vars,
+    url: `/assessment/${classId}/${subjectId}`, link: schoolUrl(slug, `/assessment/${classId}/${subjectId}`),
+  });
   redirect(withFlash("/", `Reminder sent to ${t.name}.`));
 }
 

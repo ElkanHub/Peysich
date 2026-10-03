@@ -82,16 +82,21 @@ export default async function StudentFile({ params, searchParams }: {
             </p>
           </div>
         </div>
-        {isAdmin && (
-          <div className="flex shrink-0 gap-2">
-            {s.status === "active" && (
-              <Link href={`/students/${id}/exit`}
-                className={btnGhostCls + " text-danger hover:bg-danger/10"}>Exit</Link>
-            )}
-            <Link href={`/students/${id}/enroll`} className={btnGhostCls}>Enrol</Link>
-            <Link href={`/students/${id}/edit`} className={btnCls}>Edit profile</Link>
-          </div>
-        )}
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {s.status === "active" && (
+            <Link href={`/students/${id}/emergency`} className={btnCls + " bg-danger hover:bg-danger/90"}>Emergency</Link>
+          )}
+          {isAdmin && (
+            <>
+              {s.status === "active" && (
+                <Link href={`/students/${id}/exit`}
+                  className={btnGhostCls + " text-danger hover:bg-danger/10"}>Exit</Link>
+              )}
+              <Link href={`/students/${id}/enroll`} className={btnGhostCls}>Enrol</Link>
+              <Link href={`/students/${id}/edit`} className={btnCls}>Edit profile</Link>
+            </>
+          )}
+        </div>
       </div>
 
       {/* offboarded file: the exit record, its documents, and the way back */}

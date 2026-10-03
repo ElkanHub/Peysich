@@ -2,6 +2,7 @@
 import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { uid } from "@/lib/utils";
+import { opsAlert } from "@/messaging/outbox";
 
 /** Public lead capture from the marketing page → platform Leads pipeline. */
 export async function submitLead(_: unknown, f: FormData) {
@@ -15,5 +16,6 @@ export async function submitLead(_: unknown, f: FormData) {
     email: String(f.get("email") ?? "").trim() || null,
     message: String(f.get("message") ?? "").trim().slice(0, 1000) || null,
   });
+  await opsAlert(`New lead: ${name} · ${phone}${f.get("schoolName") ? ` · ${String(f.get("schoolName")).trim()}` : ""}`);
   return { ok: true };
 }

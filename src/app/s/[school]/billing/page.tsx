@@ -12,8 +12,13 @@ import {
 import { PlanBuilder } from "@/modules/plans/builder";
 import { Badge, Card, PageHeader } from "@/ui/kit";
 import { cn } from "@/lib/utils";
+import { redirect } from "next/navigation";
+import { withFlash } from "@/lib/flash";
+import { verifyTransaction } from "@/lib/paystack";
+import { creditTopUp, getBalance, ghs as ghsMoney, topUpAmountFromReference } from "@/messaging/wallet";
 import { CancelPlan } from "./cancel";
 import { UpgradeButton } from "./upgrade";
+import { MessagingCard } from "./messaging-card";
 
 /* ── Billing & plan ─────────────────────────────────────────────────────────
    Nothing hidden: every plan lists what it includes AND what it leaves out,
@@ -22,12 +27,22 @@ import { UpgradeButton } from "./upgrade";
 
 export default async function Billing({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ cycle?: string }>;
+  searchParams: Promise<{ cycle?: string; topup?: string }>;
 }) {
   const { school: slug } = await params;
-  const { cycle: cycleRaw } = await searchParams;
+  const { cycle: cycleRaw, topup } = await searchParams;
   const cycle: "monthly" | "yearly" = cycleRaw === "yearly" ? "yearly" : "monthly";
   const { school, user } = await requireSchool(slug, ["admin"]);
+
+  // back from Paystack: credit the wallet (the webhook may already have — idempotent) and say so
+  if (topup?.startsWith("wal_")) {
+    const pesewas = topUpAmountFromReference(topup);
+    if (pesewas > 0 && await verifyTransaction(topup)) {
+      await creditTopUp(school.id, pesewas, topup);
+      redirect(withFlash("/billing", `${ghsMoney(pesewas)} added. Balance ${ghsMoney(await getBalance(school.id))}.`));
+    }
+    redirect(withFlash("/billing", "That payment did not go through. Nothing was added.", { error: true }));
+  }
 
   const [visiblePlans, [latestSub], [{ n: activeStudents }]] = await Promise.all([
     db.select().from(plans)
@@ -96,6 +111,8 @@ export default async function Billing({ params, searchParams }: {
           )}
         </div>
       </Card>
+
+      <MessagingCard slug={slug} schoolId={school.id} />
 
       {/* Cycle toggle */}
       <div className="mb-4 flex items-center gap-3">

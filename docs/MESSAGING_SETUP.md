@@ -164,8 +164,16 @@ Thirty templates. If Meta files any as Marketing, rewrite it to be more plainly 
 | `EMAIL_FROM`, `EMAIL_BILLING_FROM`, `EMAIL_REPLY_TO` | Section 2 |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OPS_TOKEN` | Section 3 |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_VERIFY_TOKEN` | Section 5 |
-| `MESSAGING_LINK_SECRET` | Any long random string; signs the one-tap links |
+| `WHATSAPP_APP_SECRET` | The Meta app's **App secret** (App settings → Basic). Meta signs every webhook with it; without it the WhatsApp webhook refuses everything in production |
+| `MESSAGING_LINK_SECRET` | Any long random string; signs the Telegram link tokens and the Telegram webhook secret |
+| `CRON_SECRET` | Any long random string. Vercel sends it to the daily sweep at 07:00. The outbox worker is called every minute by cron-job.org: GET `https://schoolspec.com/api/cron/outbox` with the header `Authorization: Bearer <CRON_SECRET>` |
 | `OPS_PHONE` | Your number, shown in every platform template |
+
+### In the console, once the variables are set
+
+- **Settings → Connect Telegram bots** points both bots' webhooks at the site. Then send `/start` to the ops bot from your phone; that chat gets the alerts.
+- **Settings → WhatsApp templates → Check with Meta** reads each template's status. A message goes by WhatsApp only once its template shows *approved*; until then it goes by SMS. The daily sweep re-checks.
+- **Settings → Messaging settings** holds the overdraft, the starting credit, the ops phone, the WhatsApp number per plane and the daily cap.
 
 ## 9 · Order, and what each step switches on
 

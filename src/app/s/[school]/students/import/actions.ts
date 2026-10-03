@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { students, classes, guardians, studentGuardians, enrollments, academicYears } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { uid } from "@/lib/utils";
+import { setWhatsApp } from "@/messaging/channels";
 
 export type ImportRow = {
   /** Excel row number (numbered before blank rows are dropped). */
@@ -16,6 +17,8 @@ export type ImportRow = {
   bloodGroup?: string; medicalNotes?: string;
   guardianName?: string; guardianPhone?: string; guardianRelation?: string;
   guardianOccupation?: string; guardianEmail?: string; guardianContactPref?: string;
+  /** given only when the parent agreed to WhatsApp — the column says so */
+  guardianWhatsapp?: string;
   emergencyName?: string; emergencyPhone?: string; paymentNote?: string;
 };
 
@@ -113,6 +116,7 @@ export async function importStudentRows(
               ? (r.guardianContactPref ?? "").trim().toLowerCase() : "phone",
           });
         }
+        if (t(r.guardianWhatsapp)) await setWhatsApp(school.id, "guardian", gid, r.guardianWhatsapp!, true);
         guardianCache.set(gPhone, gid);
       }
       await db.insert(studentGuardians).values({ studentId: id, guardianId: gid, isPrimary: true }).onConflictDoNothing();

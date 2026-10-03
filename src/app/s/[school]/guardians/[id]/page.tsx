@@ -11,6 +11,7 @@ import { IssueLoginButton, ResetPasswordButton } from "@/ui/issue-login";
 import { updateGuardian, linkChild, unlinkChild, setPrimaryGuardian } from "../actions";
 import { cn } from "@/lib/utils";
 import { SubmitButton } from "@/ui/feedback";
+import { ChannelsCard } from "@/messaging/channels-card";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 const PREF = {
@@ -164,6 +165,7 @@ export default async function GuardianProfile({ params, searchParams }: {
                   {totalBal > 0 ? ghs(totalBal) : "Cleared"}</dd></div>
             </dl>
           </Card>
+          <ChannelsCard slug={slug} ownerKind="guardian" ownerId={g.id} back={`/guardians/${g.id}`} />
         </div>
 
         <Card className="md:col-span-2">

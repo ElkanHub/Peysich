@@ -34,6 +34,12 @@ export const schools = pgTable("schools", {
   studentCap: integer("student_cap").notNull().default(50), // trial default
   storageCapMb: integer("storage_cap_mb").notNull().default(2048),
   trialEndsAt: timestamp("trial_ends_at"),
+  // Platform plane (docs/MESSAGING_BUILD_PLAN.md §2): where the school is in
+  // the pipeline, the owner's WhatsApp number, and the automatic-message pause.
+  stage: text("stage").notNull().default("signed_up"), // signed_up|setting_up|live|trial_ending|paying|past_due|suspended|left
+  stageSince: timestamp("stage_since").notNull().defaultNow(),
+  ownerPhone: text("owner_phone"),
+  autoMessagesPaused: boolean("auto_messages_paused").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

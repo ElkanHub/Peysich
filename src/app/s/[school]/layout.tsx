@@ -6,6 +6,8 @@ import { Flash } from "@/ui/feedback";
 import { LiveSync } from "@/ui/live-sync";
 import { AnnouncementGate } from "@/ui/announcement-gate";
 import { Shell } from "@/ui/shell";
+import { cn } from "@/lib/utils";
+import { getBalance, ghs, LOW_BALANCE_PESEWAS } from "@/messaging/wallet";
 import type { Metadata } from "next";
 
 /** A school's pages are private. Belt and braces with the proxy's
@@ -42,10 +44,12 @@ export default async function SchoolLayout({ children, params }: {
 
   const trialDays = school.status === "trial" && school.trialEndsAt
     ? daysUntil(school.trialEndsAt) : null;
-  const [badges, unacked] = await Promise.all([
+  const [badges, unacked, balance] = await Promise.all([
     getNavBadges(school.id, user.role, user.id),
     getUnackedAnnouncements(school.id, user.id, user.role),
+    user.role === "admin" ? getBalance(school.id) : null,
   ]);
+  const walletLow = balance !== null && balance < LOW_BALANCE_PESEWAS;
   if (unacked.length) badges["/comms"] = unacked.length;
 
   // school logo (top bar) + the user's own avatar (sidebar) — both optional
@@ -67,6 +71,27 @@ export default async function SchoolLayout({ children, params }: {
           </span>
           <a href="/billing" className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
             Choose a plan
+          </a>
+        </div>
+      )}
+      {school.status === "past_due" && user.role === "admin" && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-danger/40 bg-danger-soft px-4 py-2.5 text-[14px]">
+          <span><b>The payment for your plan did not go through.</b> The school stays open for 14 days. Your data is safe.</span>
+          <a href="/billing" className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
+            Pay now
+          </a>
+        </div>
+      )}
+      {walletLow && (
+        <div className={cn("mb-5 flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-[14px]",
+          balance <= 0 ? "border-danger/40 bg-danger-soft" : "border-warning/60 bg-warning-soft")}>
+          <span>
+            {balance <= 0
+              ? <><b>Messaging balance is empty.</b> WhatsApp and SMS to parents and teachers have stopped; absence alerts and emergencies still go. Notices still reach the app and Telegram.</>
+              : <><b>Messaging balance is low</b> — {ghs(balance)} left. Top up so WhatsApp and SMS keep going.</>}
+          </span>
+          <a href="/billing" className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
+            Top up
           </a>
         </div>
       )}

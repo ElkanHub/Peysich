@@ -88,6 +88,7 @@ export async function saveBranding(slug: string, f: FormData) {
       primaryColor: String(f.get("primaryColor") ?? ""),
       smsSenderId: String(f.get("smsSenderId") ?? ""),
     },
+    ownerPhone: String(f.get("ownerPhone") ?? "").trim() || null,
     updatedAt: new Date(),
   }).where(eq(schools.id, school.id));
   // the school object is cached per-tenant — without this, the new colour

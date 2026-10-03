@@ -7,6 +7,7 @@ import { requireSchool } from "@/core/school-context";
 import { invalidateSchool } from "@/core/tenant";
 import { estimatePesewas, ADDON_MODULES, SIZE_BANDS } from "@/core/plan-const";
 import { uid } from "@/lib/utils";
+import { opsAlert } from "@/messaging/outbox";
 
 /* Plan requests — return, don't throw: every path hands the button a value
  * it can toast. Estimates are recomputed server-side so the number we call
@@ -33,6 +34,7 @@ export async function submitCustomRequest(slug: string, payload: {
     moduleKeys, sizeBand, estimatePesewas: estimatePesewas(moduleKeys, sizeBand),
     source: "app",
   });
+  await opsAlert(`Plan request: ${school.name} · ${phone}`);
   return { ok: true };
 }
 
@@ -55,6 +57,7 @@ export async function submitPublicPlanRequest(payload: {
     moduleKeys, sizeBand, estimatePesewas: estimatePesewas(moduleKeys, sizeBand),
     source: "website",
   });
+  await opsAlert(`Plan request from the website: ${schoolName} · ${name} · ${phone}`);
   return { ok: true };
 }
 
@@ -82,5 +85,15 @@ export async function requestCancellation(slug: string, payload: {
   await db.update(schools).set({ settings, updatedAt: new Date() }).where(eq(schools.id, school.id));
   invalidateSchool(slug);
   revalidatePath(`/billing`);
+  await opsAlert(`Cancellation request: ${school.name} — ${reason}. ${message.slice(0, 300)}`);
+  const { notifyPlatform, logTimeline } = await import("@/messaging/platform");
+  await logTimeline(school.id, "stage", `Asked to cancel: ${reason}`);
+  await notifyPlatform(school, {
+    label: "Cancellation request received",
+    email: {
+      subject: "We have your request to cancel {{name}}'s plan",
+      text: "Hello {{first}},\nWe have your request to cancel {{name}}'s SchoolSpec plan. A person reads every one, and we will call you. Nothing changes and nothing is deleted until we have spoken.",
+    },
+  });
   return { ok: true };
 }

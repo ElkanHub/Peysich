@@ -109,6 +109,10 @@ export default function Signup() {
           <div><label className={label} htmlFor="school">School name</label>
             <input id="school" name="name" required value={school} onChange={(e) => setSchool(e.target.value)}
               className={input} placeholder="St. Mary's Basic School" /></div>
+          <div><label className={label} htmlFor="ownerPhone">Your WhatsApp number</label>
+            <input id="ownerPhone" name="ownerPhone" required type="tel" inputMode="tel" autoComplete="tel"
+              className={input} placeholder="024 000 0000" />
+            <p className="mt-1.5 text-[14px] text-muted-foreground">Only for what you must see the same day: a failed payment, a trial ending.</p></div>
           {editing ? (
             <div>
               <label className={label} htmlFor="slug">Your school&apos;s link</label>

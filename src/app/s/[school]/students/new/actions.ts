@@ -9,7 +9,8 @@ import {
 } from "@/db/schema";
 import { requireSchool, getCurrentTerm } from "@/core/school-context";
 import { createSchoolLogin } from "@/core/accounts";
-import { sendSms } from "@/lib/notify";
+import { notify } from "@/messaging/notify";
+import { setWhatsApp } from "@/messaging/channels";
 import { withFlash } from "@/lib/flash";
 import { uid } from "@/lib/utils";
 
@@ -78,6 +79,7 @@ export async function admitStudent(slug: string, draftId: string | null, f: Form
     });
     [g] = await db.select().from(guardians).where(eq(guardians.id, gid));
   }
+  if (f.get("whatsappConsent") === "on") await setWhatsApp(school.id, "guardian", g.id, parentPhone, true);
   const [hasPrimary] = await db.select({ id: studentGuardians.guardianId }).from(studentGuardians)
     .where(and(eq(studentGuardians.studentId, id), eq(studentGuardians.isPrimary, true)));
   await db.insert(studentGuardians)
@@ -112,13 +114,15 @@ export async function admitStudent(slug: string, draftId: string | null, f: Form
     });
     if (!("error" in r)) {
       await db.update(guardians).set({ userId: r.userId }).where(eq(guardians.id, g.id));
-      const status = await sendSms({
-        schoolId: school.id, to: g.phone, kind: "login", senderId: school.name,
-        body: `${school.name}: your parent login for SchoolSpec is ${r.loginAs}, password ${r.password}. Please change it after signing in.`,
+      const { status } = await notify({
+        school, to: { kind: "guardian", id: g.id }, kind: "parent_login", senderId: school.name,
+        vars: { login: r.loginAs, password: r.password },
       });
       loginNote = status === "sent"
-        ? ` ${g.name} will get an SMS with the login.`
-        : ` ${g.name}'s login is ready — SMS is not set up, so reset the password from the parent's page to hand it over.`;
+        ? ` ${g.name} will get a message with the login.`
+        : status === "held"
+          ? ` ${g.name}'s login is ready — not enough messaging balance to text it. Top up under Billing, or reset the password from the parent's page.`
+          : ` ${g.name}'s login is ready — SMS is not set up, so reset the password from the parent's page to hand it over.`;
     }
   }
 

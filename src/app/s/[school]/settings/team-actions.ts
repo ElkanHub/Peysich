@@ -53,11 +53,11 @@ export async function addTeamMember(slug: string, f: FormData): Promise<AddMembe
   });
   let smsSent = false;
   if (phone) {
-    const { sendSms } = await import("@/lib/notify");
-    smsSent = (await sendSms({
-      schoolId: school.id, to: phone, kind: "staff-login", senderId: school.branding.smsSenderId,
-      body: `${school.name}: your SchoolSpec login is ${r.loginAs}, one-time password ${r.password}. Sign in and change it under My Account.`,
-    })) === "sent";
+    const { notify } = await import("@/messaging/notify");
+    smsSent = (await notify({
+      school, to: { kind: "phone", phone }, kind: "team_login",
+      vars: { login: r.loginAs, password: r.password },
+    })).status === "sent";
   }
   revalidatePath(`/settings`);
   return { loginAs: r.loginAs, password: r.password, smsSent };

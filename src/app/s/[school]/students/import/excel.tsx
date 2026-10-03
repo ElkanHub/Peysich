@@ -33,6 +33,7 @@ const COLUMNS: [string, keyof ImportRow, string][] = [
   ["Guardian Occupation", "guardianOccupation", ""],
   ["Guardian Email", "guardianEmail", ""],
   ["Guardian Prefers (phone/sms/portal)", "guardianContactPref", "How the school reaches them. Blank = phone call."],
+  ["Parent WhatsApp", "guardianWhatsapp", "Their WhatsApp number, only if they agreed to get school messages on WhatsApp. Blank = SMS."],
   ["Emergency Name", "emergencyName", "Backup contact + relation."],
   ["Emergency Phone", "emergencyPhone", ""],
   ["Payment Note", "paymentNote", "How/where this family pays fees."],
@@ -44,7 +45,7 @@ function buildTemplate(schoolName: string, classNames: string[]) {
     COLUMNS.map(([h]) => h),
     ["Ama", "Mensah", "", "female", "2016-03-24", classNames[0] ?? "Basic 4 A", "", "", "no",
       "GHA-000000000-0", "Kumasi", "Ghanaian", "Ejisu", "", "House 12, Ahodwo", "Sunrise Academy — B3",
-      "O+", "No groundnuts", "Akosua Mensah", "0241234567", "mother", "Trader", "", "phone",
+      "O+", "No groundnuts", "Akosua Mensah", "0241234567", "mother", "Trader", "", "phone", "0241234567",
       "Uncle — Kofi Mensah", "0209876543", "Pays via MoMo, week 2 of term"],
   ]);
   students["!cols"] = COLUMNS.map(([h]) => ({ wch: Math.max(14, h.length + 2) }));

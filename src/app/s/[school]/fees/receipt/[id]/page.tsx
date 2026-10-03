@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq, like } from "drizzle-orm";
+import { and, eq, like, notInArray } from "drizzle-orm";
 import { db } from "@/db";
-import { smsLog } from "@/db/schema";
+import { outbox } from "@/db/schema";
 import { requireModule } from "@/core/school-context";
 import { assertParentOf } from "@/core/portal";
 import { canFeeAction } from "@/core/access";
@@ -35,9 +35,9 @@ export default async function ReceiptPage({ params }: {
   const p = d.payment;
   // was the parent texted this receipt? (logged as kind "receipt", body carries the number)
   const [sms, guardian] = isAdmin ? await Promise.all([
-    db.select({ status: smsLog.status }).from(smsLog).where(and(
-      eq(smsLog.schoolId, school.id), eq(smsLog.kind, "receipt"),
-      like(smsLog.body, `%Receipt ${p.receiptNo ?? "∅"}.%`))).limit(1),
+    db.select({ status: outbox.status }).from(outbox).where(and(
+      eq(outbox.schoolId, school.id), eq(outbox.kind, "receipt"), notInArray(outbox.status, ["held", "failed"]),
+      like(outbox.body, `%Receipt ${p.receiptNo ?? "∅"}.%`))).limit(1),
     payingGuardian(d.student.id),
   ]) : [[], null];
   const texted = sms.length > 0;

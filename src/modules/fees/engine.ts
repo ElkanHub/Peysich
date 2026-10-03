@@ -206,16 +206,17 @@ export async function recordPaymentFor(school: { id: string }, opts: {
 
 /** The guardian the office texts about money: the primary one, else the first with a phone. */
 export async function payingGuardian(studentId: string) {
-  const rows = await db.select({ name: guardians.name, phone: guardians.phone, isPrimary: studentGuardians.isPrimary })
+  const rows = await db.select({ id: guardians.id, name: guardians.name, phone: guardians.phone, isPrimary: studentGuardians.isPrimary })
     .from(studentGuardians)
     .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
     .where(eq(studentGuardians.studentId, studentId));
   const g = rows.find((r) => r.isPrimary && r.phone) ?? rows.find((r) => r.phone);
-  return g ? { name: g.name, phone: g.phone } : null;
+  return g ? { id: g.id, name: g.name, phone: g.phone } : null;
 }
 
-/** Text the parent a receipt right after a payment saves. Returns the name
- *  texted, or null when nobody has a phone on file. Logged as kind "receipt". */
+/** Text the parent a receipt right after a payment saves. Returns who was
+ *  texted (and whether the wallet held it), or null when nobody has a phone
+ *  on file. Logged as kind "receipt". */
 export async function sendReceiptSms(school: { id: string; name: string; branding: { smsSenderId?: string } }, p: {
   studentId: string; amountPesewas: number; receiptNo: string; balanceAfter: number;
 }) {
@@ -223,12 +224,15 @@ export async function sendReceiptSms(school: { id: string; name: string; brandin
     .from(students).where(eq(students.id, p.studentId));
   const g = await payingGuardian(p.studentId);
   if (!g || !s) return null;
-  const { sendSms } = await import("@/lib/notify");
-  await sendSms({
-    schoolId: school.id, to: g.phone, kind: "receipt", senderId: school.branding.smsSenderId,
-    body: `${school.name}: GHS ${(p.amountPesewas / 100).toFixed(2)} received for ${s.firstName} ${s.lastName}. Receipt ${p.receiptNo}. Balance GHS ${(Math.max(0, p.balanceAfter) / 100).toFixed(2)}. Thank you.`,
+  const { notify } = await import("@/messaging/notify");
+  const r = await notify({
+    school, to: { kind: "guardian", id: g.id }, kind: "receipt", url: "/fees",
+    vars: {
+      amount: (p.amountPesewas / 100).toFixed(2), child: `${s.firstName} ${s.lastName}`,
+      receiptNo: p.receiptNo, balance: (Math.max(0, p.balanceAfter) / 100).toFixed(2),
+    },
   });
-  return g.name;
+  return { name: g.name, held: r.held > 0 };
 }
 
 /** Void = the record stays, an offsetting ledger row corrects the money. */

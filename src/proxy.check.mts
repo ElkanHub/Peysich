@@ -37,6 +37,9 @@ assert.equal(go("stmarys.schoolspec.com", "/attendance"), "rewrite /s/stmarys/at
 assert.equal(go("stmarys.schoolspec.com", "/"), "rewrite /s/stmarys");
 assert.equal(go("admin.schoolspec.com", "/schools"), "rewrite /platform/schools");
 assert.equal(go("admin.schoolspec.com", "/"), "rewrite /platform");
+// a message's one-tap link is itself on every host, tenant cookie or not
+assert.equal(go("schoolspec.com", "/n/abcDEF123456", "pv_tenant=stmarys"), "pass");
+assert.equal(go("stmarys.schoolspec.com", "/n/abcDEF123456"), "pass");
 
 // nested hosts are not schools; phone-signing links are global
 assert.equal(go("a.b.schoolspec.com", "/"), "pass");
