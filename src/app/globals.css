@@ -18,16 +18,19 @@
   --on-brand-container: #2b0a1c; /* paired on-colour: cannot fail contrast */
   --brand-soft: #f7edf3;         /* primary quiet — the faintest wash */
 
-  /* canvas — warm, wine-biased neutrals */
-  --background: #fbfafb;
+  /* canvas — warm, wine-biased neutrals. The page sits a clear step darker
+     than the cards on it, so white surfaces lift off the ground instead of
+     blending into it; muted fills and borders are a step darker again so
+     they still read on both. */
+  --background: #eeeaed;
   --foreground: #191419;
   --card: #ffffff;
   --card-foreground: #191419;
-  --muted: #f0edef;
-  --muted-foreground: #6e6870;
-  --faint: #9c939b;
-  --border: #e9e4e8;
-  --border-strong: #d6cfd4;
+  --muted: #e6e1e5;
+  --muted-foreground: #645e66;
+  --faint: #938a92;
+  --border: #dbd4d9;
+  --border-strong: #c6bdc4;
 
   /* ink chrome (sidebar / topbars) — SchoolSpec's fixed mark, never reseeds */
   --ink: #1a1218;
