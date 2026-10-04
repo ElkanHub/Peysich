@@ -63,8 +63,10 @@ export function Card({ children, className }: { children: React.ReactNode; class
 /** Stat tile for dashboards. Toned tiles are FILLED containers (Assembly):
  *  hero = the school's colour, danger/warning/success = the fixed status
  *  containers with their paired text — never a coloured number on white. */
-export function Stat({ label, value, tone }: {
+export function Stat({ label, value, tone, icon, hint }: {
   label: string; value: React.ReactNode; tone?: "hero" | "success" | "danger" | "warning" | "default";
+  /** a small mark beside the label, and one line saying what to make of the number */
+  icon?: React.ReactNode; hint?: string;
 }) {
   const tones = {
     hero: "border-transparent bg-brand-container text-on-brand-container",
@@ -76,10 +78,14 @@ export function Stat({ label, value, tone }: {
   return (
     <Card className={cn("hover:shadow-[var(--shadow-md)]", tones[tone ?? "default"])}>
       <p className={cn("font-mono text-[10.5px] font-medium uppercase tracking-[0.08em]",
-        tone && tone !== "default" ? "opacity-80" : "text-muted-foreground")}>{label}</p>
-      <p data-nums="" className="mt-1.5 text-[26px] font-bold leading-none tracking-[-0.03em]">
+        "flex items-center gap-2", tone && tone !== "default" ? "opacity-80" : "text-muted-foreground")}>
+        {icon && <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-card/70 shadow-[var(--shadow-sm)]">{icon}</span>}
+        {label}
+      </p>
+      <p data-nums="" className="mt-2 text-[26px] font-bold leading-none tracking-[-0.03em]">
         {value}
       </p>
+      {hint && <p className={cn("mt-1.5 text-[13px]", tone && tone !== "default" ? "opacity-80" : "text-muted-foreground")}>{hint}</p>}
     </Card>
   );
 }

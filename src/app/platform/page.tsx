@@ -2,7 +2,9 @@ import Link from "next/link";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { schools, plans, subscriptions, leads, students, feePayments } from "@/db/schema";
-import { Card, PageHeader, Stat, Badge, DataTable, Tr, Td } from "@/ui/kit";
+import { Card, Stat, Badge, DataTable, Tr, Td } from "@/ui/kit";
+import { WelcomeHero } from "@/ui/welcome-hero";
+import { getSession } from "@/core/session";
 
 const ghs = (p: number) => `GHS ${(p / 100).toLocaleString()}`;
 
@@ -26,9 +28,11 @@ export default async function Overview() {
   const tone = (st: string) =>
     st === "active" ? "success" : st === "trial" ? "brand" : "danger";
 
+  const me = await getSession();
   return (
     <div>
-      <PageHeader title="Overview" sub="The business at a glance" />
+      <WelcomeHero role="platform" name={me?.user.name ?? "there"} title="SchoolSpec at a glance"
+        line="Schools, money and what needs attention today." />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Active schools" value={active.length} />
         <Stat label="MRR" value={ghs(mrr)} tone="success" />
