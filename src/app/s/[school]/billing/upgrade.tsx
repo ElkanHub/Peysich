@@ -1,12 +1,13 @@
 "use client";
 import { useTransition } from "react";
 import { startUpgrade } from "@/app/signup/actions";
+import type { Cycle } from "@/core/plan-const";
 import { btnCls } from "@/ui/kit";
 import { cn } from "@/lib/utils";
 
-/** One button per card; the page's Monthly/Yearly toggle decides the cycle. */
-export function UpgradeButton({ schoolId, planKey, email, cycle }: {
-  schoolId: string; planKey: string; email: string; cycle: "monthly" | "yearly";
+/** One button per card; the page's term / academic-year toggle decides the cycle. */
+export function UpgradeButton({ schoolId, planKey, email, cycle, label }: {
+  schoolId: string; planKey: string; email: string; cycle: Cycle; label: string;
 }) {
   const [pending, start] = useTransition();
   const go = () => start(async () => {
@@ -15,7 +16,7 @@ export function UpgradeButton({ schoolId, planKey, email, cycle }: {
   });
   return (
     <button disabled={pending} className={cn(btnCls, "w-full")} onClick={go}>
-      {pending ? "Opening checkout…" : `Switch to this plan (${cycle})`}
+      {pending ? "Opening checkout…" : label}
     </button>
   );
 }

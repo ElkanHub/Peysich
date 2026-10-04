@@ -19,6 +19,7 @@ import { uid } from "@/lib/utils";
 import { withFlash } from "@/lib/flash";
 import { SubmitButton } from "@/ui/feedback";
 import { SetupChecklist } from "./setup-checklist";
+import { installing } from "@/core/installation";
 
 /** "Remind the teacher" for a score sheet — the register nudge, aimed at a
  *  class·subject sheet: a nudge row and a notify() to the teacher. No confirm (one
@@ -471,7 +472,8 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     { key: "signature", label: "Collect the head teacher's signature", href: "/settings?tab=school", done: !!(docSign.headSigKey || docSign.adminSigKey) },
     { key: "fees", label: "Enter this term's fees", href: "/fees/setup", done: Number(feeItemCount.n) > 0 },
     { key: "teachers", label: "Invite your teachers", href: "/staff", done: Number(invitedTeachers.n) > 0 },
-  ];
+  // installed and trained by SchoolSpec: we did these, so they are done
+  ].map((i) => ({ ...i, done: i.done || school.installation === "done" }));
   const f = fees[0];
   const rosterN = new Map(rosters.map((r) => [r.classId, Number(r.n)]));
   const attByClass = new Map(attToday.map((a) => [a.classId, a]));
@@ -499,7 +501,8 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
           </p>
         </Card>
       )}
-      <SetupChecklist schoolName={school.name} items={setupItems} />
+      <SetupChecklist schoolName={school.name} items={setupItems}
+        installation={school.installation === "none" ? "offer" : installing(school) ? "arranged" : null} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Active students" value={String(st.n)} />

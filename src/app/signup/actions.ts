@@ -8,6 +8,7 @@ import { isValidSlug, invalidateSchool } from "@/core/tenant";
 import { initCheckout } from "@/lib/paystack";
 import { pendingCheckouts } from "@/db/schema";
 import { uid } from "@/lib/utils";
+import { asCycle, type Cycle } from "@/core/plan-const";
 import { grantStartingCredit } from "@/messaging/wallet";
 
 const schema = z.object({
@@ -42,8 +43,9 @@ export async function createMySchool(_: unknown, f: FormData) {
 
 /** School-plane upgrade (billing page). Caller must be this school's admin. */
 export async function startUpgrade(
-  schoolId: string, planKey: string, email: string, cycle: "monthly" | "yearly" = "monthly",
+  schoolId: string, planKey: string, email: string, cycleRaw: Cycle = "term",
 ) {
+  const cycle = asCycle(cycleRaw);
   const session = await getSession();
   const u = session?.user as { role: string; schoolId?: string | null } | undefined;
   if (!u || (u.schoolId !== schoolId && u.role !== "platform_admin") ||
@@ -51,9 +53,17 @@ export async function startUpgrade(
   const [plan] = await db.select().from(plans).where(eq(plans.key, planKey));
   if (!plan) return { error: "Unknown plan" };
   const ref = `sub_${uid()}`;
+  // the same rules fulfilment uses: a renewal stacks, a plan change is credited
+  const { applySubscription, quotePlan } = await import("@/core/billing");
+  const q = await quotePlan(schoolId, plan, cycle);
+  if (q.chargePesewas < 100) {
+    // the credit from the old plan covers it: nothing to pay, so no checkout
+    await applySubscription(schoolId, planKey, ref, cycle);
+    return { checkoutUrl: "/billing" };
+  }
   await db.insert(pendingCheckouts).values({ reference: ref, schoolId, planKey, cycle });
   const { checkoutUrl } = await initCheckout({
-    email, amountPesewas: cycle === "yearly" ? plan.pricePerYearPesewas : plan.pricePerMonthPesewas,
+    email, amountPesewas: q.chargePesewas,
     reference: ref, callbackUrl: `/billing`, metadata: { schoolId, planKey, cycle },
   });
   return { checkoutUrl };

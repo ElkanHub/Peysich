@@ -35,18 +35,18 @@ export async function savePlan(key: string, f: FormData) {
   const u = await requirePlatformAdmin();
   const [p] = await db.select().from(plans).where(eq(plans.key, key));
   if (!p) redirect("/platform/plans?flash=error");
-  const monthly = Math.max(0, Math.round(Number(f.get("monthly") ?? 0) * 100));
+  const term = Math.max(0, Math.round(Number(f.get("term") ?? 0) * 100));
   const yearly = Math.max(0, Math.round(Number(f.get("yearly") ?? 0) * 100));
   const capRaw = String(f.get("cap") ?? "").trim();
   const moduleKeys = ALL_MODULES.filter((k) => f.get(`m_${k}`) === "on");
   await db.update(plans).set({
     name: String(f.get("name") ?? p.name).trim() || p.name,
-    pricePerMonthPesewas: monthly, pricePerYearPesewas: yearly,
+    pricePerTermPesewas: term, pricePerYearPesewas: yearly,
     studentCap: capRaw ? Math.max(1, Number(capRaw)) : null,
     moduleKeys, isPublic: f.get("isPublic") === "on",
     active: f.get("active") !== "off",
   }).where(eq(plans.key, key));
-  await audit(u.id, "plans.save", p.schoolId ?? null, { key, monthly, yearly, moduleKeys });
+  await audit(u.id, "plans.save", p.schoolId ?? null, { key, term, yearly, moduleKeys });
   await republishPlans();
   redirect("/platform/plans?flash=saved");
 }
@@ -69,7 +69,7 @@ export async function approveCustomRequest(id: string, f: FormData) {
   const u = await requirePlatformAdmin();
   const [r] = await db.select().from(planRequests).where(eq(planRequests.id, id));
   if (!r || r.kind !== "custom" || !r.schoolId) redirect("/platform/requests?flash=error");
-  const monthly = Math.max(0, Math.round(Number(f.get("monthly") ?? 0) * 100));
+  const term = Math.max(0, Math.round(Number(f.get("term") ?? 0) * 100));
   const yearly = Math.max(0, Math.round(Number(f.get("yearly") ?? 0) * 100));
   const capRaw = String(f.get("cap") ?? "").trim();
   const key = `custom-${r.schoolId}`;
@@ -77,7 +77,7 @@ export async function approveCustomRequest(id: string, f: FormData) {
     name: String(f.get("name") ?? "").trim() || `${r.schoolName ?? "Custom"} plan`,
     moduleKeys: ["attendance", "assessment", "comms", ...r.moduleKeys],
     studentCap: capRaw ? Math.max(1, Number(capRaw)) : null,
-    pricePerMonthPesewas: monthly, pricePerYearPesewas: yearly,
+    pricePerTermPesewas: term, pricePerYearPesewas: yearly,
     active: true, isPublic: false, schoolId: r.schoolId,
   };
   const [existing] = await db.select().from(plans).where(eq(plans.key, key));
@@ -87,7 +87,7 @@ export async function approveCustomRequest(id: string, f: FormData) {
   await db.update(planRequests).set({ status: "approved" }).where(eq(planRequests.id, id));
   const [sch] = await db.select({ slug: schools.slug }).from(schools).where(eq(schools.id, r.schoolId));
   if (sch) invalidateSchool(sch.slug);
-  await audit(u.id, "planRequest.approve", r.schoolId, { id, key, monthly, yearly });
+  await audit(u.id, "planRequest.approve", r.schoolId, { id, key, term, yearly });
   await republishPlans();
   redirect("/platform/requests?flash=saved");
 }

@@ -34,6 +34,26 @@ Changing what a plan includes is a platform-console edit, effective immediately 
 - **One-time onboarding fee** (GHS 500–1,500) for schools wanting us to do data migration —
   pure-margin service revenue, optional for self-serve schools.
 
+**What was built (October 2026)** — the rules live in `src/core/billing.ts` and
+`src/core/installation.ts`; `pnpm check:billing` proves the cycle rules.
+
+| | Per term | Per academic year | Installation and training (once) |
+|---|---|---|---|
+| Starter | GHS 500 | GHS 1,250 | GHS 500 |
+| Standard | GHS 1,000 | GHS 2,500 | GHS 1,000 |
+| Premium | GHS 2,000 | GHS 5,000 | GHS 1,500 |
+
+- A **term** payment covers **four months** (the term and the holiday after it); an **academic
+  year** covers **twelve**, priced at two and a half terms. Both count from the day of payment.
+- Renewing the same plan, early or up to 14 days late, starts the new period where the current
+  one ends. Paying after suspension starts it on the day of payment.
+- Changing plan mid-period starts the new plan today and credits the unused days of the old one;
+  credit beyond the price becomes extra days.
+- **Installation and training** is one price, in person. The school asks for it from Billing, or
+  we offer it from the console (which emails the payment link). Once it is paid and we tick
+  *Installed and trained*, the school's setup steps count as done. While it is in hand the school
+  sits in the **Installation** column of the pipeline.
+
 **Custom** = we compose a module set + limits in the platform console, set a price, and send a
 payment link. Same billing engine, hand-set inputs.
 

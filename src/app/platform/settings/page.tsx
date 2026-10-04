@@ -38,20 +38,25 @@ export default async function PlatformSettings() {
           Custom per-school plans are composed on each school&apos;s page.
         </p>
         <div className="mt-3">
-          <DataTable head={["Plan", "GHS/month", "GHS/year", "Student cap", ""]}>
+          <DataTable head={["Plan", "GHS/term", "GHS/academic year", "Installation GHS", "Student cap", ""]}>
             {rows.map((p) => (
               <Tr key={p!.key}>
                 <Td className="font-medium">{p!.name}</Td>
                 <Td>
                   <form id={`plan-${p!.key}`} action={updatePlan.bind(null, p!.key)}>
-                    <input name="priceMonthGhs" type="number" step="0.01"
-                      defaultValue={p!.pricePerMonthPesewas / 100}
+                    <input name="priceTermGhs" type="number" step="0.01"
+                      defaultValue={p!.pricePerTermPesewas / 100}
                       className="w-24 rounded-md border border-border px-2 py-1 text-sm" />
                   </form>
                 </Td>
                 <Td>
                   <input name="priceYearGhs" form={`plan-${p!.key}`} type="number" step="0.01"
                     defaultValue={p!.pricePerYearPesewas / 100}
+                    className="w-24 rounded-md border border-border px-2 py-1 text-sm" />
+                </Td>
+                <Td>
+                  <input name="installFeeGhs" form={`plan-${p!.key}`} type="number" step="0.01"
+                    defaultValue={p!.installFeePesewas / 100}
                     className="w-24 rounded-md border border-border px-2 py-1 text-sm" />
                 </Td>
                 <Td>

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { schools, plans, subscriptions, walletLedger } from "@/db/schema";
 import { STAGES, STAGE_WORDS, nextDue } from "@/messaging/platform";
 import { ghs } from "@/messaging/wallet";
+import { PipelineBoard } from "./pipeline-board";
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
 const preview = ROOT.includes("localhost") || ROOT.endsWith("vercel.app");
@@ -21,9 +22,9 @@ export default async function PlatformHome() {
   const latestSub = new Map<string, typeof subs[number]>();
   for (const s of subs) if (!latestSub.has(s.schoolId)) latestSub.set(s.schoolId, s); // newest first
   const now = new Date();
-  const price = new Map(allPlans.map((p) => [p.key, p.pricePerMonthPesewas]));
+  const price = new Map(allPlans.map((p) => [p.key, p.pricePerTermPesewas]));
   const active = rows.filter((s) => s.status === "active");
-  const mrr = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
+  const mrr = Math.round(active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0) / 4); // a term is four months
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -43,37 +44,19 @@ export default async function PlatformHome() {
           </div>
         ))}
       </div>
-      {/* the pipeline: every school a card under its stage */}
-      <div className="mt-5 flex gap-3 overflow-x-auto pb-2">
-        {STAGES.map((stage) => {
-          const here = rows.filter((s) => s.stage === stage);
-          return (
-            <div key={stage} className="w-56 shrink-0">
-              <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                {STAGE_WORDS[stage]} · {here.length}
-              </p>
-              <div className="mt-2 space-y-2">
-                {here.map((s) => {
-                  const next = nextDue(s, latestSub.get(s.id));
-                  return (
-                    <Link key={s.id} href={`/platform/schools/${s.id}`}
-                      className="block rounded-lg bg-card p-3 text-[13px] shadow-[var(--shadow-md)] hover:bg-muted">
-                      <span className="block text-[14px] font-semibold">{s.name}</span>
-                      <span className="block text-muted-foreground" data-nums="">
-                        {Math.floor((+now - +s.stageSince) / 86400000)} days here · {ghs(balance.get(s.id) ?? 0)}
-                      </span>
-                      <span className="block text-muted-foreground">
-                        {s.autoMessagesPaused ? <b className="text-warning">Messages paused</b>
-                          : next ? `Next: ${next.label}, ${next.due.toISOString().slice(5, 10)}` : "Nothing due"}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* the pipeline: a column per stage, every school a card that can be dragged */}
+      <PipelineBoard stages={STAGES.map((k) => [k, STAGE_WORDS[k]])}
+        cards={rows.map((s) => {
+          const next = nextDue(s, latestSub.get(s.id));
+          return {
+            id: s.id, name: s.name, stage: s.stage, paused: s.autoMessagesPaused, installation: s.installation,
+            days: Math.floor((+now - +s.stageSince) / 86400000), balance: ghs(balance.get(s.id) ?? 0),
+            next: next ? `Next: ${next.label}, ${next.due.toISOString().slice(5, 10)}` : "Nothing due",
+          };
+        })} />
+      <p className="mt-2 text-[13px] text-muted-foreground">
+        Schools move by themselves as things happen. Drag a card to move one by hand; it stays until the school&apos;s own facts change.
+      </p>
       <p className="mt-3 text-sm"><Link href="/platform/audit" className="text-primary underline-offset-2 hover:underline">View audit log →</Link></p>
       <div className="overflow-x-auto"><table className="min-w-[520px] mt-4 w-full text-sm">
         <thead>

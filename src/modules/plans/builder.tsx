@@ -136,10 +136,10 @@ export function PlanBuilder({ mode, coreLabels, addons, bands, basePesewas, defa
         <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Estimated from</p>
         <p className="mt-1 text-3xl font-semibold tracking-tight">
           GHS {(estimate / 100).toLocaleString()}
-          <span className="text-sm font-normal text-muted-foreground">/month</span>
+          <span className="text-sm font-normal text-muted-foreground">/term</span>
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          or GHS {((estimate * 10) / 100).toLocaleString()}/year — 2 months free
+          or GHS {((estimate * 2.5) / 100).toLocaleString()} for the academic year
         </p>
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
           This is a starting point, not a bill. We&apos;ll call, talk it through, and agree the final price together.

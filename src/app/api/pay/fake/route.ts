@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { fakeMode } from "@/lib/paystack";
 import { applySubscription, applyFeePayment } from "@/core/billing";
+import { asCycle } from "@/core/plan-const";
 import { db } from "@/db";
 import { pendingCheckouts } from "@/db/schema";
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (ref.startsWith("fee_")) await applyFeePayment(ref);
   else {
     const [p] = await db.select().from(pendingCheckouts).where(eq(pendingCheckouts.reference, ref));
-    if (p) await applySubscription(p.schoolId, p.planKey, ref, p.cycle === "yearly" ? "yearly" : "monthly");
+    if (p) await applySubscription(p.schoolId, p.planKey, ref, asCycle(p.cycle));
   }
   return NextResponse.redirect(new URL(cb, req.url));
 }

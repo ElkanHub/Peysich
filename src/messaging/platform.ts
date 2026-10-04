@@ -134,11 +134,12 @@ const chosen = (f: Facts) => f.noPlan ? null : "a plan has been chosen";
 /** Every automatic message this school could get, with its due date. */
 export function calendarFor(s: School, sub?: typeof subscriptions.$inferSelect): CalEvent[] {
   const bill = { label: "Choose a plan", url: schoolUrl(s.slug, "/billing") };
+  const arranged = s.installation === "none" ? null : "installation and training is arranged with this school";
   const out: CalEvent[] = [
     { key: "setup_day2", due: addDays(s.createdAt, 2), label: "Day 2: offer to set up", wa: "setup_day2", opsFirst: true,
-      skipIf: (f) => f.students ? "the roll is no longer empty" : null },
+      skipIf: (f) => arranged ?? (f.students ? "the roll is no longer empty" : null) },
     { key: "setup_day5", due: addDays(s.createdAt, 5), label: "Day 5: first register", wa: "setup_day5", opsFirst: true,
-      skipIf: (f) => f.registers ? "a register has been saved" : null },
+      skipIf: (f) => arranged ?? (f.registers ? "a register has been saved" : null) },
     { key: "data_here_21", due: addDays(s.createdAt, 21), label: "Your data is still here", skipIf: chosen,
       email: { subject: "{{name}}'s data is still here", text: "Hello {{first}},\n{{name}}'s trial has ended, and everything you entered is safe. Choose a plan any time and carry on where you stopped.", cta: bill } },
     { key: "data_here_60", due: addDays(s.createdAt, 60), label: "Your data is still here", skipIf: chosen,
@@ -177,17 +178,49 @@ export function nextDue(s: School, sub?: typeof subscriptions.$inferSelect) {
   return calendarFor(s, sub).filter((e) => ymd(e.due) >= today).sort((a, b) => +a.due - +b.due)[0] ?? null;
 }
 
+/** Where the facts put a school. Installation in hand (asked for, offered or
+ *  paid, not yet done) comes before the ordinary trial and paying stages. */
 const stageOf = (s: School, f: Facts, now: Date) =>
   s.status === "suspended" ? "suspended"
     : s.status === "expired" || s.status === "archived" ? "left"
       : s.status === "past_due" ? "past_due"
-        : s.status === "active" ? "paying"
-          : s.trialEndsAt && +s.trialEndsAt - +now <= 3 * DAY ? "trial_ending"
-            : f.registers ? "live" : f.students ? "setting_up" : "signed_up";
+        : ["requested", "offered", "paid"].includes(s.installation) ? "installing"
+          : s.status === "active" ? "paying"
+            : s.trialEndsAt && +s.trialEndsAt - +now <= 3 * DAY ? "trial_ending"
+              : f.registers ? "live" : f.students ? "setting_up" : "signed_up";
 
-export const STAGES = ["signed_up", "setting_up", "live", "trial_ending", "paying", "past_due", "suspended", "left"] as const;
+async function factsFor(s: School): Promise<Facts> {
+  const [[st], [att], subs] = await Promise.all([
+    db.select({ n: sql<number>`count(*)` }).from(students).where(and(eq(students.schoolId, s.id), eq(students.status, "active"))),
+    db.select({ n: sql<number>`count(*)` }).from(attendanceRecords).where(eq(attendanceRecords.schoolId, s.id)),
+    db.select().from(subscriptions).where(eq(subscriptions.schoolId, s.id)).orderBy(desc(subscriptions.periodEnd)).limit(1),
+  ]);
+  return { students: Number(st.n), registers: Number(att.n), noPlan: !subs[0], sub: subs[0] };
+}
+
+/** Move a school to the stage its facts say — but only when that answer has
+ *  changed since last time, so a card moved by hand on the board stays put
+ *  until something real happens to the school. */
+async function applyStage(s: School, f: Facts, now: Date) {
+  const auto = stageOf(s, f, now);
+  if (auto === s.stageAuto) return;
+  const moved = auto !== s.stage;
+  await db.update(schools).set({ stageAuto: auto, ...(moved ? { stage: auto, stageSince: now } : {}) }).where(eq(schools.id, s.id));
+  if (!moved) return;
+  await logTimeline(s.id, "stage", `${STAGE_WORDS[s.stage] ?? s.stage} → ${STAGE_WORDS[auto]}`);
+  if (auto === "past_due") await opsAlert(`Failed payment: ${s.name} is past due.`);
+  if (auto === "suspended") await opsAlert(`Suspended: ${s.name}.`);
+}
+
+/** Re-place one school now, without waiting for the morning sweep. */
+export async function refreshStage(schoolId: string) {
+  const [s] = await db.select().from(schools).where(eq(schools.id, schoolId));
+  if (s) await applyStage(s, await factsFor(s), new Date());
+}
+
+export const STAGES = ["signed_up", "installing", "setting_up", "live", "trial_ending", "paying", "past_due", "suspended", "left"] as const;
 export const STAGE_WORDS: Record<string, string> = {
-  signed_up: "Signed up", setting_up: "Setting up", live: "Live", trial_ending: "Trial ending",
+  signed_up: "Signed up", installing: "Installation", setting_up: "Setting up", live: "Live", trial_ending: "Trial ending",
   paying: "Paying", past_due: "Past due", suspended: "Suspended", left: "Left",
 };
 
@@ -211,24 +244,14 @@ export async function platformSweep() {
 
   for (const s of all) {
     if (s.status === "archived") continue;
-    const [[st], [att], subs, recentTalk] = await Promise.all([
-      db.select({ n: sql<number>`count(*)` }).from(students).where(and(eq(students.schoolId, s.id), eq(students.status, "active"))),
-      db.select({ n: sql<number>`count(*)` }).from(attendanceRecords).where(eq(attendanceRecords.schoolId, s.id)),
-      db.select().from(subscriptions).where(eq(subscriptions.schoolId, s.id)).orderBy(desc(subscriptions.periodEnd)).limit(1),
+    const [f, recentTalk] = await Promise.all([
+      factsFor(s),
       db.select({ at: platformTimeline.createdAt, event: platformTimeline.event }).from(platformTimeline)
         .where(and(eq(platformTimeline.schoolId, s.id), inArray(platformTimeline.event, ["call", "visit"]),
           gte(platformTimeline.createdAt, addDays(now, -7)))).limit(1),
     ]);
-    const sub = subs[0];
-    const f: Facts = { students: Number(st.n), registers: Number(att.n), noPlan: !sub, sub };
-
-    const stage = stageOf(s, f, now);
-    if (stage !== s.stage) {
-      await db.update(schools).set({ stage, stageSince: now }).where(eq(schools.id, s.id));
-      await logTimeline(s.id, "stage", `${STAGE_WORDS[s.stage] ?? s.stage} → ${STAGE_WORDS[stage]}`);
-      if (stage === "past_due") await opsAlert(`Failed payment: ${s.name} is past due.`);
-      if (stage === "suspended") await opsAlert(`Suspended: ${s.name}.`);
-    }
+    const sub = f.sub;
+    await applyStage(s, f, now);
 
     const hush = s.autoMessagesPaused ? "automatic messages are paused for this school"
       : recentTalk[0] ? `you logged a ${recentTalk[0].event} on ${ymd(recentTalk[0].at)}` : null;

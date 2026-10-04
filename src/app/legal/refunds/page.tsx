@@ -14,8 +14,8 @@ export default function Refunds() {
       <h1 className="mt-2 text-[clamp(36px,5vw,56px)] font-medium leading-[.98] tracking-[-.035em]">Cancel any time. Nothing is deleted.</h1>
       <Summary items={[
         "14 days free, no card. Nothing to refund if you stop.",
-        "Monthly plan: cancel any time; you keep access to the end of the month you paid for. No refund for that month.",
-        "Yearly plan: cancel within 30 days of paying and we refund the unused whole months. After that, you keep access to the end of the year.",
+        "Term plan: cancel any time; you keep access to the end of the term you paid for (four months from payment). No refund for that term.",
+        "Academic-year plan: cancel within 30 days of paying and we refund the unused whole months. After that, you keep access to the end of the year.",
         "If the service was broken and we could not fix it, we refund the affected period, whatever the plan.",
         "SMS credits are not refundable. Parents’ fees never pass through us, so we cannot refund those; ask the school.",
       ]} />
@@ -32,9 +32,9 @@ export default function Refunds() {
 
       <H2>What comes back</H2>
       <Ul items={[
-        <><b>Monthly plans.</b> No refund for the current month; you keep using the service until it ends.</>,
-        <><b>Yearly plans, within 30 days of payment.</b> We refund the whole months you have not started. Example: paid for a year on 1 September, cancelled on 20 September — ten of the twelve months are refunded.</>,
-        <><b>Yearly plans, after 30 days.</b> No refund; you keep the service until the year ends.</>,
+        <><b>Term plans.</b> No refund for the current term; you keep using the service until it ends. A term payment covers four months from the day you pay.</>,
+        <><b>Academic-year plans, within 30 days of payment.</b> We refund the whole months you have not started. Example: paid for a year on 1 September, cancelled on 20 September — ten of the twelve months are refunded.</>,
+        <><b>Academic-year plans, after 30 days.</b> No refund; you keep the service until the year ends.</>,
         <><b>If we failed you.</b> If the service was unavailable or materially broken for your school for more than two working days in a month and we could not put it right, we refund that month, or credit it if you stay. Tell us at {CO.email} within 30 days.</>,
         <><b>Charged in error.</b> A duplicate or mistaken charge is refunded in full as soon as we see it.</>,
       ]} />

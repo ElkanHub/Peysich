@@ -9,6 +9,8 @@ import { getOnboardingStages, getSchoolUsers } from "@/core/onboarding";
 import { Badge } from "@/ui/kit";
 import { cn } from "@/lib/utils";
 import { addSchoolCredit, logContact, setAutoMessagesPaused } from "@/messaging/actions";
+import { INSTALLATION_WORDS, installFee } from "@/core/installation";
+import { markInstallationDone, offerInstallation, recordInstallationPaid } from "../../install-actions";
 import { STAGE_WORDS, nextDue } from "@/messaging/platform";
 import { getBalance, ghs } from "@/messaging/wallet";
 
@@ -29,6 +31,7 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
     db.select().from(platformTimeline).where(eq(platformTimeline.schoolId, id))
       .orderBy(desc(platformTimeline.createdAt)).limit(60),
   ]);
+  const fee = await installFee(school);
   const next = nextDue(school, [...subs].sort((a, b) => +b.periodEnd - +a.periodEnd)[0]);
 
   const MODES = ["default", "on", "off"] as const;
@@ -95,6 +98,39 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
             <div className="mt-3 border-t border-border pt-2 text-[13px] text-muted-foreground">
               {subs.length} payment{subs.length > 1 ? "s" : ""} · latest {subs.at(-1)!.planKey} until {subs.at(-1)!.periodEnd.toISOString().slice(0, 10)}
             </div>
+          )}
+        </div>
+        <div className="rounded-lg bg-card p-4 shadow-[var(--shadow-md)]">
+          <h2 className="font-semibold">Installation and training</h2>
+          <p className="mt-1 text-sm">
+            <Badge tone={school.installation === "done" || school.installation === "paid" ? "success" : school.installation === "none" ? "default" : "warning"}>
+              {INSTALLATION_WORDS[school.installation] ?? school.installation}
+            </Badge>
+            <span className="ml-2 text-muted-foreground" data-nums="">Fee {ghs(fee)}</span>
+          </p>
+          {school.installation !== "paid" && school.installation !== "done" && (
+            <>
+              <form action={offerInstallation.bind(null, id)} className="mt-3 flex flex-wrap items-end gap-2 text-sm">
+                <label>Fee, GHS<br />
+                  <input name="feeGhs" type="number" step="0.01" min="1" defaultValue={fee / 100}
+                    className="mt-1 w-28 rounded-md border border-border px-2 py-1" /></label>
+                <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
+                  {school.installation === "none" ? "Offer and send the payment link" : "Send the payment link again"}
+                </button>
+              </form>
+              <form action={recordInstallationPaid.bind(null, id)} className="mt-2">
+                <button className="rounded-md border border-border px-3 py-1.5 text-[13px] font-medium hover:bg-muted">Paid by cash or transfer: record it</button>
+              </form>
+            </>
+          )}
+          {school.installation !== "none" && school.installation !== "done" && (
+            <form action={markInstallationDone.bind(null, id)} className="mt-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                <input type="checkbox" name="done" required /> Installed and trained
+                <button className="rounded-md border border-border px-3 py-1 text-[13px] hover:bg-muted">Mark done</button>
+              </label>
+              <p className="mt-1 text-[13px] text-muted-foreground">Marks the school&apos;s setup steps as done, because we did them.</p>
+            </form>
           )}
         </div>
         <div className="rounded-lg bg-card p-4 shadow-[var(--shadow-md)]">
@@ -193,8 +229,8 @@ export default async function SchoolDetail({ params }: { params: Promise<{ id: s
           ))}
         </div>
         <div className="mt-3 flex items-end gap-3 text-sm">
-          <label>Price GHS/month<br />
-            <input name="priceGhs" type="number" step="0.01" defaultValue={(plan?.pricePerMonthPesewas ?? 0) / 100}
+          <label>Price GHS/term<br />
+            <input name="priceGhs" type="number" step="0.01" defaultValue={(plan?.pricePerTermPesewas ?? 0) / 100}
               className="mt-1 w-32 rounded-md border border-border px-2 py-1" /></label>
           <label>Student cap (blank = unlimited)<br />
             <input name="studentCap" type="number" defaultValue={plan?.studentCap ?? ""}

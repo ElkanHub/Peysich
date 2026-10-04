@@ -19,9 +19,9 @@ export default async function Financials() {
     db.select({ n: sql<number>`coalesce(sum(amount_pesewas),0)` }).from(feePayments),
     db.select({ n: sql<number>`coalesce(sum(price_pesewas),0)` }).from(outbox),
   ]);
-  const price = new Map(allPlans.map((p) => [p.key, p.pricePerMonthPesewas]));
+  const price = new Map(allPlans.map((p) => [p.key, p.pricePerTermPesewas]));
   const active = allSchools.filter((s) => s.status === "active");
-  const mrr = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
+  const mrr = Math.round(active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0) / 4); // a term is four months
   const collected = subs.reduce((a, s) => a + s.amount, 0);
 
   const byPlan = new Map<string, { n: number; amount: number }>();

@@ -16,11 +16,11 @@ export default async function Overview() {
     db.select({ n: sql<number>`count(*)` }).from(students).where(eq(students.status, "active")),
     db.select({ n: sql<number>`coalesce(sum(amount_pesewas),0)` }).from(feePayments),
   ]);
-  const price = new Map(allPlans.map((p) => [p.key, p.pricePerMonthPesewas]));
+  const price = new Map(allPlans.map((p) => [p.key, p.pricePerTermPesewas]));
   const active = allSchools.filter((s) => s.status === "active");
   const trials = allSchools.filter((s) => s.status === "trial");
   const attention = allSchools.filter((s) => ["past_due", "suspended", "expired"].includes(s.status));
-  const mrr = active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0);
+  const mrr = Math.round(active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0) / 4); // a term is four months
   const collected = subs.reduce((a, s) => a + s.amountPesewas, 0);
   const recentSchools = allSchools.slice(0, 6);
   const tone = (st: string) =>

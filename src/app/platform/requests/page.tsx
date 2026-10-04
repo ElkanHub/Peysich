@@ -74,7 +74,7 @@ export default async function PlatformRequests() {
                 <span className="rounded-full bg-muted px-2.5 py-1 text-[12px] font-medium text-muted-foreground">{band} students</span>
               </div>
               <p className="mt-2 text-sm">
-                Their estimate: <span className="font-semibold">{ghsPlan(r.estimatePesewas)}/month</span>
+                Their estimate: <span className="font-semibold">{ghsPlan(r.estimatePesewas)}/term</span>
                 <span className="text-muted-foreground"> — the number they saw; negotiate from here.</span>
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -95,14 +95,14 @@ export default async function PlatformRequests() {
                       <input name="name" defaultValue={`${r.schoolName ?? "Custom"} plan`} className={inputCls} />
                     </label>
                     <label className="grid gap-1 text-sm">
-                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / month</span>
-                      <input name="monthly" type="number" step="0.01" min="0"
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / term</span>
+                      <input name="term" type="number" step="0.01" min="0"
                         defaultValue={(r.estimatePesewas / 100).toString()} className={inputCls} />
                     </label>
                     <label className="grid gap-1 text-sm">
-                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / year</span>
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / academic year</span>
                       <input name="yearly" type="number" step="0.01" min="0"
-                        defaultValue={((r.estimatePesewas * 10) / 100).toString()} className={inputCls} />
+                        defaultValue={((r.estimatePesewas * 2.5) / 100).toString()} className={inputCls} />
                     </label>
                     <label className="grid gap-1 text-sm">
                       <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Student cap</span>

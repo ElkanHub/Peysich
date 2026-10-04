@@ -97,10 +97,10 @@ function Btn({ href, children, solid, icon = "→", className = "" }: {
 const H2 = "text-[clamp(40px,5.6vw,78px)] font-medium leading-[.98] tracking-[-.035em] text-balance";
 
 export default async function Home() {
-  const plans = (await getPublicPlans()).filter((p) => p.pricePerMonthPesewas > 0);
+  const plans = (await getPublicPlans()).filter((p) => p.pricePerTermPesewas > 0);
   const year = new Date().getFullYear();
-  const cheapest = Math.min(...plans.map((p) => p.pricePerMonthPesewas)) / 100;
-  const dearest = Math.max(...plans.map((p) => p.pricePerMonthPesewas)) / 100;
+  const cheapest = Math.min(...plans.map((p) => p.pricePerTermPesewas)) / 100;
+  const dearest = Math.max(...plans.map((p) => p.pricePerTermPesewas)) / 100;
   // structured data: what Google shows as a rich result and what assistants
   // read; kept in step with the visible page (same FAQ array, live prices)
   const jsonLd = [
@@ -118,9 +118,9 @@ export default async function Home() {
         "Fees recorded and receipted by SMS", "Announcements and SMS to every parent", "Timetable that catches clashes", "Works offline on any phone"],
       offers: plans.length ? { "@type": "AggregateOffer", priceCurrency: "GHS", lowPrice: cheapest, highPrice: dearest,
         offerCount: plans.length, url: `${BASE}/#pricing`,
-        offers: plans.map((p) => ({ "@type": "Offer", name: p.name, price: p.pricePerMonthPesewas / 100, priceCurrency: "GHS",
-          priceSpecification: { "@type": "UnitPriceSpecification", price: p.pricePerMonthPesewas / 100, priceCurrency: "GHS",
-            unitText: "MONTH", billingIncrement: 1 } })) } : undefined },
+        offers: plans.map((p) => ({ "@type": "Offer", name: p.name, price: p.pricePerTermPesewas / 100, priceCurrency: "GHS",
+          priceSpecification: { "@type": "UnitPriceSpecification", price: p.pricePerTermPesewas / 100, priceCurrency: "GHS",
+            unitText: "school term (4 months)", billingIncrement: 1 } })) } : undefined },
     { "@context": "https://schema.org", "@type": "FAQPage",
       mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
   ];
@@ -236,9 +236,9 @@ export default async function Home() {
               <div key={p.key} className={`flex flex-col border border-[#221a22] px-[34px] pb-10 pt-[38px] text-center ${tone}`}>
                 <h3 className="text-[26px] font-semibold tracking-[-.02em]">{p.name}</h3>
                 <p className={`mt-1.5 font-mono text-[13px] ${sub}`}>
-                  {ghs(p.pricePerMonthPesewas)} / month · {p.studentCap ? `up to ${p.studentCap} students` : "unlimited students"}
+                  {ghs(p.pricePerTermPesewas)} / term · {p.studentCap ? `up to ${p.studentCap} students` : "unlimited students"}
                 </p>
-                <p className={`font-mono text-[11.5px] ${sub}`}>or {ghs(p.pricePerYearPesewas)} / year — 2 months free</p>
+                <p className={`font-mono text-[11.5px] ${sub}`}>or {ghs(p.pricePerYearPesewas)} for the academic year</p>
                 <ul className="mb-[30px] mt-[26px] text-left">
                   {rows.map((r) => (
                     <li key={r} className="border-b border-dashed border-current py-2 text-[14px] font-medium">

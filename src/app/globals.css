@@ -48,7 +48,9 @@
   --danger: #c81e1e;
   --danger-soft: #fbe2e2;
 
-  --radius: 10px;
+  /* Corners: a slight curve, not a soft one. Every rounded-* utility reads
+     from the scale below, so this one number sets the feel of the whole app. */
+  --radius: 5px;
   --shadow-sm: 0 1px 2px rgb(43 10 28 / 0.06);
   --shadow-md: 0 2px 8px -2px rgb(43 10 28 / 0.10), 0 1px 2px rgb(43 10 28 / 0.06);
   --shadow-lg: 0 12px 32px -8px rgb(43 10 28 / 0.18);
@@ -109,8 +111,12 @@
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 4px);
+  --radius-lg: calc(var(--radius) + 1px);
+  --radius-xl: calc(var(--radius) + 3px);
+  --radius-2xl: calc(var(--radius) + 5px);
+  --radius-3xl: calc(var(--radius) + 7px);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
@@ -172,6 +178,13 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
 *::-webkit-scrollbar { height: 8px; width: 8px; }
 *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+
+/* Buttons, chips, badges and toggles were capsules (rounded-full). They take
+   the same slight curve as everything else. Anything with rounded-full and
+   padding is one of those; a bare rounded-full — an avatar, a dot, a progress
+   bar — has no padding and stays round. */
+.rounded-full[class*=" px-"], .rounded-full[class*=" p-"],
+.rounded-full[class^="px-"], .rounded-full[class^="p-"] { border-radius: var(--radius-md); }
 
 /* consistent focus everywhere */
 :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }

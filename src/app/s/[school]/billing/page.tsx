@@ -16,6 +16,10 @@ import { redirect } from "next/navigation";
 import { withFlash } from "@/lib/flash";
 import { verifyTransaction } from "@/lib/paystack";
 import { creditTopUp, getBalance, ghs as ghsMoney, topUpAmountFromReference } from "@/messaging/wallet";
+import { quotePlan } from "@/core/billing";
+import { markInstallationPaid } from "@/core/installation";
+import { asCycle, CYCLE_WORDS, type Cycle } from "@/core/plan-const";
+import { InstallationCard } from "./installation-card";
 import { CancelPlan } from "./cancel";
 import { UpgradeButton } from "./upgrade";
 import { MessagingCard } from "./messaging-card";
@@ -27,11 +31,11 @@ import { MessagingCard } from "./messaging-card";
 
 export default async function Billing({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ cycle?: string; topup?: string }>;
+  searchParams: Promise<{ cycle?: string; topup?: string; install?: string }>;
 }) {
   const { school: slug } = await params;
-  const { cycle: cycleRaw, topup } = await searchParams;
-  const cycle: "monthly" | "yearly" = cycleRaw === "yearly" ? "yearly" : "monthly";
+  const { cycle: cycleRaw, topup, install } = await searchParams;
+  const cycle: Cycle = cycleRaw === "year" ? "year" : "term";
   const { school, user } = await requireSchool(slug, ["admin"]);
 
   // back from Paystack: credit the wallet (the webhook may already have — idempotent) and say so
@@ -44,12 +48,21 @@ export default async function Billing({ params, searchParams }: {
     redirect(withFlash("/billing", "That payment did not go through. Nothing was added.", { error: true }));
   }
 
+  // back from Paystack with the installation fee (the webhook may already have recorded it)
+  if (install?.startsWith("ins_")) {
+    if (await verifyTransaction(install)) {
+      await markInstallationPaid(school.id, "Paystack");
+      redirect(withFlash("/billing", "Installation and training paid. We will call you to agree the day."));
+    }
+    redirect(withFlash("/billing", "That payment did not go through. Nothing was charged.", { error: true }));
+  }
+
   const [visiblePlans, [latestSub], [{ n: activeStudents }]] = await Promise.all([
     db.select().from(plans)
       .where(and(eq(plans.active, true), or(eq(plans.isPublic, true), eq(plans.schoolId, school.id))))
-      .orderBy(plans.pricePerMonthPesewas),
+      .orderBy(plans.pricePerTermPesewas),
     db.select().from(subscriptions).where(eq(subscriptions.schoolId, school.id))
-      .orderBy(desc(subscriptions.createdAt)).limit(1),
+      .orderBy(desc(subscriptions.periodEnd)).limit(1),
     db.select({ n: sql<number>`count(*)` }).from(students)
       .where(and(eq(students.schoolId, school.id), eq(students.status, "active"))),
   ]);
@@ -59,12 +72,15 @@ export default async function Billing({ params, searchParams }: {
   const cancelPending = (school.settings as { cancelRequested?: { at: string; reason: string } }).cancelRequested;
   const ghs = (p: number) => `GHS ${(p / 100).toLocaleString()}`;
   const price = (p: typeof visiblePlans[number]) =>
-    cycle === "yearly" ? p.pricePerYearPesewas : p.pricePerMonthPesewas;
+    cycle === "year" ? p.pricePerYearPesewas : p.pricePerTermPesewas;
   const usedPct = current?.studentCap
     ? Math.min(100, Math.round((Number(activeStudents) / current.studentCap) * 100)) : null;
 
   // Cards: paid public plans plus this school's own private plan, if any.
   const cardPlans = visiblePlans.filter((p) => p.key !== "trial");
+  // what each card would charge today and cover: a renewal stacks, a change of plan is credited
+  const quotes = new Map(await Promise.all(cardPlans.map(async (p) => [p.key, await quotePlan(school.id, p, cycle)] as const)));
+  const day = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
   return (
     <div className="max-w-5xl">
@@ -82,7 +98,7 @@ export default async function Billing({ params, searchParams }: {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {latestSub
-                ? <>Renews {latestSub.periodEnd.toISOString().slice(0, 10)} · {latestSub.cycle} · {ghs(latestSub.amountPesewas)}</>
+                ? <>Paid until {day(latestSub.periodEnd)} · by the {CYCLE_WORDS[asCycle(latestSub.cycle)]}</>
                 : school.trialEndsAt && school.status === "trial"
                   ? <>Trial ends {school.trialEndsAt.toISOString().slice(0, 10)} — pick a plan below before then.</>
                   : <>No payment on file yet.</>}
@@ -112,20 +128,25 @@ export default async function Billing({ params, searchParams }: {
         </div>
       </Card>
 
+      <InstallationCard slug={slug} school={school} />
       <MessagingCard slug={slug} schoolId={school.id} />
 
       {/* Cycle toggle */}
       <div className="mb-4 flex items-center gap-3">
         <div className="inline-flex rounded-full bg-muted p-1">
-          {(["monthly", "yearly"] as const).map((c) => (
+          {(["term", "year"] as const).map((c) => (
             <Link key={c} href={`?cycle=${c}`} scroll={false}
-              className={cn("rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors",
+              className={cn("rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
                 cycle === c ? "bg-brand-container text-on-brand-container" : "text-muted-foreground hover:text-foreground")}>
-              {c}
+              {c === "term" ? "By the term" : "By the academic year"}
             </Link>
           ))}
         </div>
-        {cycle === "yearly" && <span className="text-sm font-medium text-success">2 months free on every plan</span>}
+        <span className="text-sm text-muted-foreground">
+          {cycle === "year"
+            ? <><b className="text-success">Pay for two and a half terms, get three.</b> Covers twelve months from the day you pay.</>
+            : <>A term payment covers four months: the term and the holiday after it.</>}
+        </span>
       </div>
 
       {/* Plan cards — with what's IN and what's OUT */}
@@ -143,7 +164,7 @@ export default async function Billing({ params, searchParams }: {
               </div>
               <p className="mt-2 text-3xl font-semibold tracking-tight">
                 {ghs(price(p))}
-                <span className="text-sm font-normal text-muted-foreground">/{cycle === "yearly" ? "year" : "month"}</span>
+                <span className="text-sm font-normal text-muted-foreground">/{CYCLE_WORDS[cycle]}</span>
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {p.studentCap ? `Up to ${p.studentCap.toLocaleString()} students` : "Unlimited students"}
@@ -161,9 +182,21 @@ export default async function Billing({ params, searchParams }: {
                 ))}
               </ul>
               <div className="mt-4">
-                {isCurrent
-                  ? <span className="text-sm font-medium text-success">This is your plan</span>
-                  : <UpgradeButton schoolId={school.id} planKey={p.key} email={email} cycle={cycle} />}
+                {isCurrent && <p className="mb-2 text-sm font-medium text-success">This is your plan</p>}
+                {(() => {
+                  const q = quotes.get(p.key)!;
+                  return (
+                    <>
+                      <UpgradeButton schoolId={school.id} planKey={p.key} email={email} cycle={cycle}
+                        label={isCurrent && school.status !== "trial" ? `Pay for the next ${CYCLE_WORDS[cycle]}`
+                          : q.chargePesewas < 100 ? "Switch to this plan, nothing to pay" : "Switch to this plan"} />
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {q.creditPesewas > 0 && <>{ghs(q.chargePesewas)} today: {ghs(q.creditPesewas)} is credited for the unused days of your current plan. </>}
+                        Covers {day(q.start)} to {day(q.end)}.
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             </Card>
           );

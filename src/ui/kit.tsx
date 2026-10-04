@@ -3,7 +3,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { TableSearch } from "./table-search";
 
-/* Assembly UI kit — capsules for action, calm radii for structure,
+/* Assembly UI kit — one slight curve for actions and structure alike (the
+   radius scale lives in globals.css; rounded-full on a padded control resolves to it),
    hairline borders, one accent, stable action placement (doc 06 laws). */
 
 export const inputCls =

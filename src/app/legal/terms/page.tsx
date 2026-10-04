@@ -15,7 +15,7 @@ export default function Terms() {
       <Summary items={[
         "You get a working school system, we get the subscription. That is the deal.",
         "The school owns its data and is responsible for what it puts in and who it gives logins to.",
-        "14 days free, then a monthly or yearly plan paid by card or mobile money. Cancel any time.",
+        "14 days free, then a plan paid by the term or by the academic year, by card or mobile money. Cancel any time.",
         "SMS you send from the app is charged at the rate shown before you send.",
         "We are liable up to what you paid us in the last 12 months. We are not liable for what a school does with the system.",
       ]} />
@@ -53,7 +53,7 @@ export default function Terms() {
       <P>A new school gets 14 days free with everything switched on. No card is needed. On day 14 the school chooses a plan or the account pauses; nothing is deleted.</P>
       <H3>Plans and payment</H3>
       <Ul items={[
-        "Plans are priced in Ghana cedis per month or per year, as shown on the billing page. Yearly plans are twelve months for the price of ten.",
+        "Plans are priced in Ghana cedis per term or per academic year, as shown on the billing page. A term payment covers four months from the day you pay; an academic year covers twelve, for the price of two and a half terms.",
         "Payment is by card or mobile money through Paystack. The subscription renews automatically at the end of each period until cancelled.",
         "Prices may change. We give at least 30 days’ notice by email to the school’s administrators, and a change never applies to a period already paid for.",
         "A plan has a student limit. If the school passes it, we will ask it to move to the next plan; we will not switch anything off without warning.",

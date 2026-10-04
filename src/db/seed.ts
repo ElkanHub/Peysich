@@ -9,9 +9,9 @@ import { eq } from "drizzle-orm";
 async function main() {
   await db.insert(plans).values([
     { key: "trial", name: "Trial", moduleKeys: ["attendance", "assessment", "comms"], studentCap: 50 },
-    { key: "starter", name: "Starter", moduleKeys: ["attendance", "assessment", "comms"], studentCap: 200, pricePerMonthPesewas: 9900, pricePerYearPesewas: 99000 },
-    { key: "standard", name: "Standard", moduleKeys: ["attendance", "assessment", "comms", "timetable", "homework", "fees"], studentCap: 600, storageCapMb: 10240, pricePerMonthPesewas: 24900, pricePerYearPesewas: 249000 },
-    { key: "premium", name: "Premium", moduleKeys: ["attendance", "assessment", "comms", "timetable", "homework", "fees", "admissions", "library", "transport", "inventory", "hr", "analytics"], studentCap: null, storageCapMb: 51200, pricePerMonthPesewas: 49900, pricePerYearPesewas: 499000 },
+    { key: "starter", name: "Starter", moduleKeys: ["attendance", "assessment", "comms"], studentCap: 200, pricePerTermPesewas: 50000, pricePerYearPesewas: 125000 },
+    { key: "standard", name: "Standard", moduleKeys: ["attendance", "assessment", "comms", "timetable", "homework", "fees"], studentCap: 600, storageCapMb: 10240, pricePerTermPesewas: 100000, pricePerYearPesewas: 250000 },
+    { key: "premium", name: "Premium", moduleKeys: ["attendance", "assessment", "comms", "timetable", "homework", "fees", "admissions", "library", "transport", "inventory", "hr", "analytics"], studentCap: null, storageCapMb: 51200, pricePerTermPesewas: 200000, pricePerYearPesewas: 500000 },
   ]).onConflictDoNothing();
 
   const existing = await db.select().from(schools).limit(1);

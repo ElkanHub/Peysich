@@ -12,7 +12,11 @@ import { Card } from "@/ui/kit";
 
 export type SetupItem = { key: string; label: string; href: string; done: boolean };
 
-export function SetupChecklist({ schoolName, items }: { schoolName: string; items: SetupItem[] }) {
+export function SetupChecklist({ schoolName, items, installation }: {
+  schoolName: string; items: SetupItem[];
+  /** "offer": say we can do it for them · "arranged": we are coming to do it */
+  installation?: "offer" | "arranged" | null;
+}) {
   const key = "schoolspec-setup-dismissed";
   const [dismissed, setDismissed] = useState(false);
   // read storage without an effect; the server snapshot hides it so nothing flashes
@@ -55,6 +59,14 @@ export function SetupChecklist({ schoolName, items }: { schoolName: string; item
           </li>
         ))}
       </ul>
+      {installation && (
+        <p className="mt-3 border-t border-border pt-3 text-[14px] text-muted-foreground">
+          {installation === "arranged"
+            ? <><b className="text-foreground">SchoolSpec is coming to set this up with you</b> and train your staff. You can leave these steps to us.</>
+            : <>Rather have us do it? We come to the school, set everything up and train your staff.{" "}
+                <Link href="/billing#installation" className="font-medium text-primary hover:underline">Ask for installation →</Link></>}
+        </p>
+      )}
     </Card>
   );
 }

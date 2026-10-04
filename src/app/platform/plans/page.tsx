@@ -13,7 +13,7 @@ import { savePlan } from "../plan-admin-actions";
    tag regenerates it — no redeploy, no dynamic rendering).               */
 
 export default async function PlatformPlans() {
-  const allPlans = await db.select().from(plans).orderBy(asc(plans.pricePerMonthPesewas));
+  const allPlans = await db.select().from(plans).orderBy(asc(plans.pricePerTermPesewas));
   const customSchoolIds = allPlans.map((p) => p.schoolId).filter((x): x is string => !!x);
   const schoolNames = new Map<string, string>();
   for (const sid of customSchoolIds) {
@@ -61,12 +61,12 @@ function PlanForm({ plan: p, schoolName }: {
             <input name="name" defaultValue={p.name} className={inputCls} />
           </label>
           <label className="grid gap-1 text-sm">
-            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / month</span>
-            <input name="monthly" type="number" step="0.01" min="0"
-              defaultValue={(p.pricePerMonthPesewas / 100).toString()} className={inputCls} />
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / term</span>
+            <input name="term" type="number" step="0.01" min="0"
+              defaultValue={(p.pricePerTermPesewas / 100).toString()} className={inputCls} />
           </label>
           <label className="grid gap-1 text-sm">
-            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / year</span>
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">GHS / academic year</span>
             <input name="yearly" type="number" step="0.01" min="0"
               defaultValue={(p.pricePerYearPesewas / 100).toString()} className={inputCls} />
           </label>

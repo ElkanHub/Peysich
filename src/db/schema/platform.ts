@@ -36,8 +36,14 @@ export const schools = pgTable("schools", {
   trialEndsAt: timestamp("trial_ends_at"),
   // Platform plane (docs/MESSAGING_BUILD_PLAN.md §2): where the school is in
   // the pipeline, the owner's WhatsApp number, and the automatic-message pause.
-  stage: text("stage").notNull().default("signed_up"), // signed_up|setting_up|live|trial_ending|paying|past_due|suspended|left
+  stage: text("stage").notNull().default("signed_up"), // signed_up|installing|setting_up|live|trial_ending|paying|past_due|suspended|left
   stageSince: timestamp("stage_since").notNull().defaultNow(),
+  /** What the daily sweep last worked out. The sweep moves a school only when
+   *  this changes, so a card dragged by hand stays where it was put. */
+  stageAuto: text("stage_auto").notNull().default("signed_up"),
+  /** In-person installation and training: none|requested|offered|paid|done. */
+  installation: text("installation").notNull().default("none"),
+  installFeePesewas: integer("install_fee_pesewas").notNull().default(0), // the fee quoted to this school
   ownerPhone: text("owner_phone"),
   autoMessagesPaused: boolean("auto_messages_paused").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -50,11 +56,15 @@ export const plans = pgTable("plans", {
   moduleKeys: jsonb("module_keys").$type<string[]>().notNull().default([]),
   studentCap: integer("student_cap"), // null = unlimited
   storageCapMb: integer("storage_cap_mb").notNull().default(2048),
-  // SaaS billing: monthly or yearly, like any other SaaS (no term-date chasing)
-  pricePerMonthPesewas: integer("price_per_month_pesewas").notNull().default(0),
-  pricePerYearPesewas: integer("price_per_year_pesewas").notNull().default(0),
-  /** @deprecated superseded by monthly/yearly pricing; kept for history */
+  // Billing follows the school year: a term (4 months of cover — the term and
+  // the holiday after it) or an academic year (12 months), counted from the
+  // day of payment. See src/core/billing.ts.
   pricePerTermPesewas: integer("price_per_term_pesewas").notNull().default(0),
+  pricePerYearPesewas: integer("price_per_year_pesewas").notNull().default(0), // one academic year
+  /** @deprecated monthly billing was replaced by terms; kept for history */
+  pricePerMonthPesewas: integer("price_per_month_pesewas").notNull().default(0),
+  /** One-time installation and training, done in person at the school. */
+  installFeePesewas: integer("install_fee_pesewas").notNull().default(0),
   active: boolean("active").notNull().default(true),
   /** Shown on the marketing page and in every school's Billing page. Custom
    *  (negotiated) plans are private: bound to ONE school via schoolId. */
@@ -103,7 +113,7 @@ export const subscriptions = pgTable("subscriptions", {
   status: subscriptionStatus("status").notNull().default("active"),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
-  cycle: text("cycle").notNull().default("monthly"), // monthly|yearly
+  cycle: text("cycle").notNull().default("term"), // term|year (monthly|yearly on rows from before terms)
   amountPesewas: integer("amount_pesewas").notNull().default(0),
   paystackCustomerCode: text("paystack_customer_code"),
   paystackSubscriptionCode: text("paystack_subscription_code"),
@@ -125,7 +135,7 @@ export const pendingCheckouts = pgTable("pending_checkouts", {
   reference: text("reference").primaryKey(),
   schoolId: text("school_id").notNull(),
   planKey: text("plan_key").notNull(),
-  cycle: text("cycle").notNull().default("monthly"), // monthly|yearly
+  cycle: text("cycle").notNull().default("term"), // term|year
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
