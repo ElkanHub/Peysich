@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /** A risograph print pinned to the drafting paper: white mat, hard offset
@@ -16,12 +17,9 @@ export function Riso({ file, alt, ratio = "4/3", caption, note, tilt = 0, classN
       <div className="border border-[#221a22] bg-white p-2 shadow-[6px_6px_0_#221a22] sm:p-2.5">
         <div className="riso relative overflow-hidden border border-[#d6cfd4] bg-[#5E1D3E]" style={{ aspectRatio: ratio }}>
           {!missing && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={`/marketing/${file}`} alt={alt} onError={() => setMissing(true)}
-              // a 404 that fired before hydration never reaches onError — read it off the element
-              ref={(el) => { if (el && el.complete && el.naturalWidth === 0) setMissing(true); }}
-              loading={priority ? "eager" : "lazy"} decoding="async"
-              className="absolute inset-0 h-full w-full object-cover" />
+            <Image src={`/marketing/${file}`} alt={alt} fill onError={() => setMissing(true)}
+              priority={priority} sizes="(max-width: 640px) 100vw, (max-width: 1040px) 90vw, 1000px"
+              className="object-cover" />
           )}
           {missing && (
             <div className="riso-ph absolute inset-0 flex items-center justify-center p-5 text-center font-mono text-[12px] leading-relaxed text-[#f2dce8]">

@@ -32,23 +32,23 @@ async function requestTab(slug: string) {
  *  members (Team & access) get checked against the tab they're opening —
  *  everything they weren't granted redirects to the friendly block page. */
 export const requireSchool = cache(async (slug: string, roles?: string[]): Promise<Ctx> => {
-  const school = await getSchoolBySlug(slug);
+  // the slug lookup and the session cookie do not depend on each other
+  const [school, session] = await Promise.all([getSchoolBySlug(slug), getSession()]);
   if (!school || school.status === "archived") notFound();
-  const session = await getSession();
   if (!session) redirect("/sign-in");
   const user = session.user as Ctx["user"];
   if (user.schoolId !== school.id && user.role !== "platform_admin") redirect("/sign-in");
   if (roles && !roles.includes(user.role) && user.role !== "platform_admin") redirect(".");
-  let grants: AdminGrants | null = null;
-  if (user.role === "admin") {
-    grants = await getAdminGrants(school.id, user.id);
-    if (grants) {
-      const tab = await requestTab(slug);
-      if (!OPEN_TABS.has(tab) && !grants.tabs.has(tab))
-        redirect(`/no-access?t=${encodeURIComponent(tab)}`);
-    }
+  const [grants, modules] = await Promise.all([
+    user.role === "admin" ? getAdminGrants(school.id, user.id) : null,
+    getEnabledModules(school.id),
+  ]);
+  if (grants) {
+    const tab = await requestTab(slug);
+    if (!OPEN_TABS.has(tab) && !grants.tabs.has(tab))
+      redirect(`/no-access?t=${encodeURIComponent(tab)}`);
   }
-  return { school, user, modules: await getEnabledModules(school.id), grants };
+  return { school, user, modules, grants };
 });
 
 /** Same gate + module check, for module pages/actions. */

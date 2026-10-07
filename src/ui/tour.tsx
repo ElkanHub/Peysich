@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { CircleHelp, ArrowLeftRight, HelpCircle, LogOut, Menu as MenuIcon } from "lucide-react";
+import { ArrowLeftRight, HelpCircle, LogOut, Menu as MenuIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { btnCls, btnGhostCls } from "@/ui/kit";
 import { LogoMark } from "./logo";
@@ -396,12 +396,3 @@ export function ProductTour({ role, schoolName, items }: { role: string; schoolN
 }
 
 /** The menu-footer relaunch, with its word. */
-export function TourRelaunch() {
-  return (
-    <button type="button" title="Show me around again"
-      onClick={() => window.dispatchEvent(new Event("schoolspec:tour"))}
-      className="flex h-8 items-center gap-1.5 text-[12px] font-medium text-ink-text/60 transition-colors hover:text-ink-text-strong">
-      <CircleHelp size={12} /> Help
-    </button>
-  );
-}

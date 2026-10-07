@@ -20,7 +20,7 @@ export async function WelcomeHero({ role, name, title, line, schoolId }: {
   return (
     <section className="relative mb-6 overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-md)]">
       {/* eslint-disable-next-line @next/next/no-img-element -- a decorative photograph, already sized and compressed */}
-      <img src={`/hero/${pickHero(role)}.jpg`} alt="" aria-hidden
+      <img src={`/hero/${pickHero(role)}.jpg`} alt="" aria-hidden loading="lazy" decoding="async"
         className="absolute inset-y-0 right-0 hidden h-full w-[64%] object-cover object-[center_30%] sm:block" />
       <div className="absolute inset-0 hidden sm:block"
         style={{ background: "linear-gradient(90deg, var(--card) 0%, var(--card) 38%, color-mix(in srgb, var(--card) 55%, transparent) 54%, transparent 72%)" }} />

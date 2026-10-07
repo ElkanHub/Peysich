@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import QRCode from "qrcode";
 import { PenLine, Smartphone, Stamp, X } from "lucide-react";
 import { btnGhostCls } from "@/ui/kit";
 import { SignaturePad } from "@/ui/signature-pad";
@@ -49,7 +48,7 @@ function PhoneQR({ slug, slot, stamp, onDone, onClose }: {
       if (!("token" in res) || !res.token) return setState("error");
       const url = `${window.location.origin}/sign/${res.token}`;
       setLink(url);
-      setQr(await QRCode.toDataURL(url, { width: 260, margin: 1 }));
+      setQr(await (await import("qrcode")).toDataURL(url, { width: 260, margin: 1 }));
       setState("waiting");
       while (!stop.current) {
         await new Promise((r) => setTimeout(r, 2500));
