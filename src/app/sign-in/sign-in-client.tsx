@@ -51,10 +51,7 @@ export function SignInClient({ google }: { google: boolean }) {
 
   return (
     <Door
-      side={{
-        title: "Run the whole school from one calm place.",
-        body: "Attendance in 30 seconds. Report cards in one click. Fees parents can actually pay — with the papers signed, stamped and ready. Built for preschool through JHS.",
-      }}
+      side={{ note: "Sign in with the login your school gave you — the same door for heads, teachers, parents and students." }}
       footer={<p>Passwords are never sent by SchoolSpec — only your school office can reset one.</p>}
     >
       <h2 className="text-[26px] font-semibold leading-tight tracking-tight">
