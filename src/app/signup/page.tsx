@@ -59,7 +59,6 @@ export default function Signup() {
 
   return (
     <Door
-      side={{ note: "Create the account and name the school — classes, subjects and a free trial are set up for you. Mark your first register tomorrow morning." }}
       footer={<p>Already set up? <a href="/sign-in" className="font-semibold text-primary hover:underline">Sign in</a></p>}
     >
       <ol className="flex items-center gap-2 text-[14px] font-medium">

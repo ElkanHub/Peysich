@@ -7,10 +7,12 @@ import { LogoLockup } from "./logo";
    Safe-area aware — in the installed app the band tucks under the status
    bar and the form clears the home indicator.
 
-   The rail is a SCENE: a cut-out photograph of the people the app is for
-   and the pitch written to them. A fresh load picks one of three — the same
-   habit as the dashboard photograph — chosen by a two-line inline script
-   before first paint, so the static page still varies and never flashes. */
+   The rail is a SCENE: a cut-out photograph of the people the app is for,
+   a headline and one line. The rail's right edge is cut on a slant and the
+   figures rise over the words, so the picture sits in front of the page
+   rather than behind it. A fresh load picks one of three — the same habit
+   as the dashboard photograph — chosen by a two-line inline script before
+   first paint, so the static page still varies and never flashes. */
 
 export const doorInputCls =
   "h-12 w-full rounded-xl border border-border bg-card px-4 text-[15px] text-foreground outline-none transition " +
@@ -22,29 +24,21 @@ export const doorGhostCls =
   "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 text-[15px] font-semibold " +
   "transition-colors hover:bg-muted disabled:opacity-60";
 
-const ROLES = ["Head", "Teacher", "Parent", "Student"];
-
-const SCENES = [
+const SCENES: { key: string; file: string; top?: string; title: React.ReactNode; line: string }[] = [
   {
     key: "students", file: "students.webp",
-    eyebrow: "For every child",
     title: <>Every child, <em className="not-italic text-[#e9a9c9]">seen every day.</em></>,
-    body: "The register is in by 8:05. The scores add up. The report card prints under your crest — and the parent already knows.",
-    proof: ["30-second register", "GES-style report cards", "Fee receipts by SMS"],
+    line: "Register, scores, report cards and fees — one calm place, any phone.",
   },
   {
     key: "teacher", file: "teacher.webp",
-    eyebrow: "For the teacher",
     title: <>Less paperwork. <em className="not-italic text-[#e9a9c9]">More teaching.</em></>,
-    body: "Mark the class from your phone, enter scores once, and let the report cards and the parents' messages write themselves.",
-    proof: ["Works offline", "Any phone", "Nothing to install"],
+    line: "Mark the class from your phone; the report cards write themselves.",
   },
   {
-    key: "staff", file: "staff.webp",
-    eyebrow: "For the whole school",
+    key: "staff", file: "staff.webp", top: "36%",
     title: <>One school. One system. <em className="not-italic text-[#e9a9c9]">Every role.</em></>,
-    body: "Head, teachers, parents and students sign in to the same school — each sees exactly what is theirs, nothing more.",
-    proof: ["Creche to JHS 3", "Set up in a morning", "Made in Ghana"],
+    line: "Head, teachers, parents and students — one sign-in, each their own view.",
   },
 ];
 
@@ -53,68 +47,50 @@ const SCENE_CSS =
   ".door-scene{display:none}" +
   SCENES.map((s) => `[data-scene="${s.key}"] .door-scene[data-k="${s.key}"]{display:block}`).join("") +
   `aside:not([data-scene]) .door-scene[data-k="${SCENES[0].key}"]{display:block}`;
-/** Feather the cut-out on all four sides: the generated PNGs carry a soft
- *  halo whose edge would otherwise read as a faint rectangle on the ink. */
-const MASK_IMG = "linear-gradient(to bottom, transparent 0%, #000 38%, #000 100%), linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%)";
+/** Feather the cut-out's sides: the generated PNGs carry a soft halo whose
+ *  edge would otherwise read as a faint rectangle on the ink. */
+const MASK_IMG = "linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 10%)";
 const MASK: React.CSSProperties = { maskImage: MASK_IMG, WebkitMaskImage: MASK_IMG, maskComposite: "intersect", WebkitMaskComposite: "source-in" };
+/** The slant: the rail's right edge runs from the top corner to a point
+ *  short of it at the floor, like a page lifted at one corner. */
+const SLANT: React.CSSProperties = { clipPath: "polygon(0 0, 100% 0, 86% 100%, 0 100%)" };
 const PICK_JS =
   `var a=document.currentScript.parentNode;a.setAttribute("data-scene",${JSON.stringify(SCENES.map((s) => s.key))}[Math.floor(Math.random()*${SCENES.length})])`;
 
-export function Door({ side, children, footer }: {
-  /** One line the page adds under the pitch — what THIS door is for. */
-  side?: { note: string };
+export function Door({ children, footer }: {
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
   return (
     <main className="light-scope min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       {/* ink rail — the statement */}
-      <aside suppressHydrationWarning
+      <aside suppressHydrationWarning style={SLANT}
         className="relative hidden overflow-hidden bg-ink text-ink-text lg:flex lg:flex-col">
         <style dangerouslySetInnerHTML={{ __html: SCENE_CSS }} />
         <div className="relative z-[2] p-10 pb-0"><LogoLockup size={30} dark /></div>
 
         {SCENES.map((s) => (
           <div key={s.key} data-k={s.key} className="door-scene">
-            {/* the photograph: cut out, anchored to the floor of the rail, fading
-                into the ink at the top so the words always have a clean field */}
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 top-[50%]">
+            <div className="relative z-[2] max-w-[480px] px-10 pt-9">
+              <h1 className="text-[40px] font-semibold leading-[1.04] tracking-[-0.025em] text-ink-text-strong">{s.title}</h1>
+              <p className="mt-3 text-[15px] leading-relaxed text-ink-text/80">{s.line}</p>
+            </div>
+
+            {/* the photograph: cut out, anchored to the floor, raised IN FRONT of
+                the words so the figures overlap the last line — depth, not wallpaper */}
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[3]" style={{ top: s.top ?? "27%" }}>
               <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 85%, color-mix(in srgb, var(--primary) 45%, transparent), transparent 70%)" }} />
               {/* eslint-disable-next-line @next/next/no-img-element -- decorative cut-out, one of three */}
               <img src={`/door/${s.file}`} alt="" loading="lazy" decoding="async"
-                className="absolute inset-0 h-full w-full object-cover object-top"
+                className="absolute inset-0 h-full w-full object-cover object-top drop-shadow-[0_-18px_40px_rgba(0,0,0,0.55)]"
                 style={MASK} />
-              <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-ink via-ink/75 to-transparent" />
-            </div>
-
-            <div className="relative z-[2] max-w-[420px] px-10 pt-10">
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e9a9c9]">{s.eyebrow}</p>
-              <h1 className="mt-2.5 text-[36px] font-semibold leading-[1.05] tracking-[-0.02em] text-ink-text-strong">{s.title}</h1>
-              <p className="mt-3.5 text-[15px] leading-relaxed text-ink-text/85">{s.body}</p>
-              <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-medium text-ink-text/70">
-                {s.proof.map((p) => (
-                  <li key={p} className="flex items-center gap-1.5">
-                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[#e9a9c9]" />{p}
-                  </li>
-                ))}
-              </ul>
-              {side && <p className="mt-5 border-l-2 border-ink-border pl-3 text-[13.5px] leading-snug text-ink-text/60">{side.note}</p>}
+              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
             </div>
           </div>
         ))}
         <script dangerouslySetInnerHTML={{ __html: PICK_JS }} />
 
-        <div className="relative z-[2] mt-auto flex items-end justify-between gap-4 p-10 pt-0">
-          <div>
-            <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-text/50">One sign-in · your own view</p>
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              {ROLES.map((r) => (
-                <span key={r} className="rounded-full border border-ink-border bg-ink/60 px-3 py-1 text-[13px] font-medium text-ink-text backdrop-blur-sm">{r}</span>
-              ))}
-            </div>
-          </div>
-          <p className="shrink-0 text-[12.5px] text-ink-text/50">© {new Date().getFullYear()} SchoolSpec</p>
-        </div>
+        <p className="relative z-[4] mt-auto p-10 pt-0 text-[12.5px] text-ink-text/55">© {new Date().getFullYear()} SchoolSpec · Made for schools in Ghana</p>
       </aside>
 
       {/* phone: a slim ink band carries the brand under the status bar */}
