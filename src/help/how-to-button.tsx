@@ -4,8 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LifeBuoy, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { forPage, type HowTo } from "./steps";
+import type { HowTo, Section } from "./steps";
 import { Rich } from "./rich";
+
+type ForPage = typeof import("./steps").forPage;
+/** The steps are 40 KB of text — fetched the first time the panel opens,
+ *  not on every page load. */
+let forPage: ForPage | null = null;
 
 /** The one button that is on EVERY page, in the same place, in the school's
  *  colour: "Show me how". It drops down only the steps that belong to the
@@ -15,10 +20,12 @@ export function HowToButton({ role }: { role: string }) {
   const [open, setOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  const sections = forPage(role, pathname);
+  const [loaded, setLoaded] = useState(!!forPage);
+  const sections: Section[] = loaded && forPage ? forPage(role, pathname) : [];
 
   useEffect(() => {
     if (!open) return;
+    if (!forPage) import("./steps").then((m) => { forPage = m.forPage; setLoaded(true); });
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -49,7 +56,9 @@ export function HowToButton({ role }: { role: string }) {
                 className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted"><X size={18} /></button>
             </div>
 
-            {items.length === 0 ? (
+            {!loaded ? (
+              <p className="px-4 py-5 text-[15px] text-muted-foreground">Loading…</p>
+            ) : items.length === 0 ? (
               <p className="px-4 py-5 text-[15px] text-muted-foreground">Nothing to do here but read. Every step for the whole app is one tap below.</p>
             ) : (
               <ul className="divide-y divide-border">

@@ -8,14 +8,27 @@ import {
   UserPlus, Library, Bus, Boxes, Briefcase, BarChart3, ClipboardList, Menu, X,
   CalendarRange,
   School, ListChecks, Inbox, Radio, ScrollText, Banknote,
-  ArrowLeftRight, Sun, Moon,
+  ArrowLeftRight, Sun, Moon, CircleHelp,
   type LucideIcon, BookOpenCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 import { SignOutButton } from "./signout";
 import { authClient } from "@/lib/auth-client";
 import { rememberAccount } from "@/lib/device-accounts";
-import { ProductTour, TourRelaunch } from "./tour";
+import dynamic from "next/dynamic";
+
+// the walkthrough is ~40 KB of script text: off the first paint, loaded after hydration
+const ProductTour = dynamic(() => import("./tour").then((m) => m.ProductTour), { ssr: false });
+
+function TourRelaunch() {
+  return (
+    <button type="button" title="Show me around again"
+      onClick={() => window.dispatchEvent(new Event("schoolspec:tour"))}
+      className="flex h-8 items-center gap-1.5 text-[12px] font-medium text-ink-text/60 transition-colors hover:text-ink-text-strong">
+      <CircleHelp size={12} /> Help
+    </button>
+  );
+}
 
 const ICONS: Record<string, LucideIcon> = {
   Home: LayoutDashboard, Students: Users, Parents: HeartHandshake,

@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
 import { withFlash } from "@/lib/flash";
 import { Card, btnCls, btnGhostCls } from "@/ui/kit";
 import { importStudentRows, type ImportRow } from "./actions";
@@ -39,7 +38,8 @@ const COLUMNS: [string, keyof ImportRow, string][] = [
   ["Payment Note", "paymentNote", "How/where this family pays fees."],
 ];
 
-function buildTemplate(schoolName: string, classNames: string[]) {
+async function buildTemplate(schoolName: string, classNames: string[]) {
+  const XLSX = await import("xlsx"); // 430 KB — only when someone actually uses it
   const wb = XLSX.utils.book_new();
   const students = XLSX.utils.aoa_to_sheet([
     COLUMNS.map(([h]) => h),
@@ -100,6 +100,7 @@ export function ExcelImport({ slug, schoolName, classNames }: {
 
   async function parseFile(file: File) {
     setResult(null);
+    const XLSX = await import("xlsx");
     const wb = XLSX.read(await file.arrayBuffer(), { cellDates: false });
     const sheet = wb.Sheets["Students"] ?? wb.Sheets[wb.SheetNames[0]];
     // blankrows: keep them so "Row N" matches Excel — numbered first, dropped after
