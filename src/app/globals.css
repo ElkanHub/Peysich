@@ -205,48 +205,12 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
   body { background: #fff; }
 }
 
-/* ── Marketing — the drafting-paper language (landing page only) ────────
-   Kraft exercise-book ground with a squared grid, hand-lettered
-   marginalia, typewriter controls with a hard offset shadow. Scoped to
-   .mk-* so the app's own kit is untouched. */
-.mk-paper {
-  background-color: #E8DFD0;
-  background-image: linear-gradient(rgba(70,40,40,.11) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(70,40,40,.11) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.mk-wrap { max-width: 1240px; margin: 0 auto; padding-left: 28px; padding-right: 28px; }
-.mk-hand { font-family: var(--font-hand), cursive; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #5f5359; }
-.mk-hand-u { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
-.mk-btn { display: inline-flex; align-items: stretch; border: 1px solid #221a22; background: #fff; color: #221a22;
-  font-family: var(--font-mono); font-size: 13px; box-shadow: 3px 3px 0 #221a22; transition: transform .12s, box-shadow .12s; }
-.mk-btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #221a22; }
-.mk-btn i { width: 34px; display: flex; align-items: center; justify-content: center; background: #E58A2E; color: #fff; font-style: normal; border-right: 1px solid #221a22; }
-.mk-btn span { padding: 10px 16px; display: flex; align-items: center; white-space: nowrap; }
-.mk-btn-solid { background: #5E1D3E; color: #fff; border-color: #3d1128; box-shadow: 3px 3px 0 #3d1128; }
-.mk-btn-solid:hover { box-shadow: 4px 4px 0 #3d1128; }
-.mk-btn-solid i { border-color: #3d1128; }
-/* blog posts: rendered Markdown on the paper */
-.prose-paper { font-size: 17.5px; line-height: 1.6; color: #221a22; }
-.prose-paper h2 { font-size: 26px; font-weight: 500; letter-spacing: -.02em; line-height: 1.15; margin: 2em 0 .5em; text-wrap: balance; }
-.prose-paper h3 { font-size: 20px; font-weight: 600; margin: 1.6em 0 .4em; }
-.prose-paper p { margin: 0 0 1.1em; }
-.prose-paper ul { list-style: disc; margin: 0 0 1.2em; padding-left: 1.4em; }
-.prose-paper ol { list-style: decimal; margin: 0 0 1.2em; padding-left: 1.4em; }
-.prose-paper li { margin: .35em 0; }
-.prose-paper blockquote { margin: 1.2em 0; border-left: 4px solid #E58A2E; background: rgba(255,255,255,.65); padding: .8em 1.1em; font-size: 16.5px; }
-.prose-paper blockquote p { margin: 0; }
-.prose-paper strong { font-weight: 600; }
-.prose-paper em { font-style: italic; }
-.prose-paper a { color: #5E1D3E; text-decoration: underline; text-underline-offset: 4px; }
-.prose-paper hr { border: 0; border-top: 1px dashed #221a22; margin: 2em 0; }
-.prose-paper img { max-width: 100%; border: 1px solid #221a22; box-shadow: 6px 6px 0 #221a22; }
-@media (prefers-reduced-motion: reduce) { .mk-btn { transition: none; } }
-
 /* -- Landing: the card-on-ground language (landing page only) ----------
    Assembly tokens, rounder corners, pill buttons. Scoped to .lp-* so the
    app's radius rule (padded rounded-full -> radius-md) stays untouched. */
 .lp-wrap { max-width: 1240px; margin: 0 auto; }
+.mk-wrap { max-width: 1240px; margin: 0 auto; padding-left: 28px; padding-right: 28px; } /* the footer's measure */
+.lp-eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--primary); }
 .lp-btn, .lp-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 22px;
   border-radius: 9999px; font-size: 15px; font-weight: 600; white-space: nowrap; transition: background-color .15s, transform .1s; }
 .lp-btn { background: var(--primary); color: var(--primary-foreground); }
@@ -254,6 +218,22 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 .lp-btn-ghost { border: 1px solid var(--border-strong); background: var(--card); color: var(--foreground); }
 .lp-btn-ghost:hover { background: var(--muted); }
 .lp-btn:active, .lp-btn-ghost:active { transform: scale(.98); }
+@media (prefers-reduced-motion: reduce) { .lp-btn, .lp-btn-ghost { transition: none; } }
+/* blog posts: rendered Markdown in the card */
+.lp-prose { font-size: 17.5px; line-height: 1.65; color: var(--foreground); }
+.lp-prose h2 { font-size: 26px; font-weight: 600; letter-spacing: -.025em; line-height: 1.15; margin: 2em 0 .5em; text-wrap: balance; }
+.lp-prose h3 { font-size: 20px; font-weight: 600; margin: 1.6em 0 .4em; }
+.lp-prose p { margin: 0 0 1.1em; }
+.lp-prose ul { list-style: disc; margin: 0 0 1.2em; padding-left: 1.4em; }
+.lp-prose ol { list-style: decimal; margin: 0 0 1.2em; padding-left: 1.4em; }
+.lp-prose li { margin: .35em 0; }
+.lp-prose blockquote { margin: 1.2em 0; border-left: 4px solid var(--primary); background: var(--brand-soft); border-radius: 0 16px 16px 0; padding: .8em 1.1em; font-size: 16.5px; }
+.lp-prose blockquote p { margin: 0; }
+.lp-prose strong { font-weight: 600; }
+.lp-prose em { font-style: italic; }
+.lp-prose a { color: var(--primary); text-decoration: underline; text-underline-offset: 4px; }
+.lp-prose hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
+.lp-prose img { max-width: 100%; border-radius: 16px; box-shadow: var(--shadow-md); }
 
 /* ── Phone card lists ──────────────────────────────────────────────────────
    Below md a DataTable stops being a table: each row is a card and each cell

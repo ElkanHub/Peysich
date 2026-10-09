@@ -10,8 +10,8 @@ export const metadata: Metadata = pageMeta({
 export default function Cookies() {
   return (
     <>
-      <p className="mk-hand">cookies & local storage</p>
-      <h1 className="mt-2 text-[clamp(36px,5vw,56px)] font-medium leading-[.98] tracking-[-.035em]">Two cookies, no tracking, no pop-up</h1>
+      <p className="lp-eyebrow">cookies & local storage</p>
+      <h1 className="mt-3 text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.04] tracking-[-.035em] text-balance">Two cookies, no tracking, no pop-up</h1>
       <Summary items={[
         "One cookie keeps you signed in. One routes you to your school on a preview address. That is all.",
         "No advertising, no analytics, no third-party cookies, nothing that follows you to other sites.",

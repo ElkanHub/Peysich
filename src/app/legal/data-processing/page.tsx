@@ -10,8 +10,8 @@ export const metadata: Metadata = pageMeta({
 export default function DPA() {
   return (
     <>
-      <p className="mk-hand">data processing agreement</p>
-      <h1 className="mt-2 text-[clamp(36px,5vw,56px)] font-medium leading-[.98] tracking-[-.035em]">How we handle your school’s data on your instructions</h1>
+      <p className="lp-eyebrow">data processing agreement</p>
+      <h1 className="mt-3 text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.04] tracking-[-.035em] text-balance">How we handle your school’s data on your instructions</h1>
       <Summary items={[
         "The school is the controller. SchoolSpec is the processor. We act only on the school’s instructions.",
         "We keep the data confidential, secure, inside the school’s own space, and with the named providers only.",

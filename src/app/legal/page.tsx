@@ -10,8 +10,8 @@ export const metadata: Metadata = pageMeta({
 export default function LegalIndex() {
   return (
     <>
-      <p className="mk-hand">plain english, on purpose</p>
-      <h1 className="mt-2 text-[clamp(36px,5vw,56px)] font-medium leading-[.98] tracking-[-.035em]">The legal pages</h1>
+      <p className="lp-eyebrow">plain english, on purpose</p>
+      <h1 className="mt-3 text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.04] tracking-[-.035em] text-balance">The legal pages</h1>
       <P>Five documents. Each one starts with the short version, then says the whole thing without hiding anything in the long version.</P>
       <Summary items={[
         "Your school’s data is yours. We process it for you and never sell it.",

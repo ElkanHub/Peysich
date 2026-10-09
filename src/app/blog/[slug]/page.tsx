@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageMeta, BASE } from "@/lib/seo";
 import { allPosts, getPost, longDate } from "@/lib/blog";
-import { PaperShell } from "@/ui/paper-shell";
+import { SiteShell } from "@/ui/site-shell";
 
 export function generateStaticParams() {
   return allPosts().map((p) => ({ slug: p.slug }));
@@ -29,36 +29,39 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     image: `${BASE}/og.jpg`, mainEntityOfPage: `${BASE}/blog/${p.slug}`, isPartOf: { "@id": `${BASE}/blog#blog` },
   };
   return (
-    <PaperShell current="blog">
+    <SiteShell current="blog">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <article className="mk-wrap max-w-[760px] pt-16">
-        <p className="mk-hand !text-[12px]"><Link href="/blog" className="underline-offset-4 hover:underline">Blog</Link> · {p.tags.join(" · ")}</p>
-        <h1 className="mt-3 text-[clamp(34px,5vw,60px)] font-medium leading-[1] tracking-[-.03em] text-balance">{p.title}</h1>
-        <p className="mt-4 text-[19px] leading-relaxed text-[#3a3138]">{p.description}</p>
-        <p className="mt-4 font-mono text-[12.5px] text-[#5f5359]">{p.author} · {longDate(p.date)} · {p.minutes} min read</p>
-        <div className="prose-paper mt-10" dangerouslySetInnerHTML={{ __html: p.html }} />
-        <aside className="mt-14 border border-[#221a22] bg-white p-6 shadow-[6px_6px_0_#221a22]">
-          <p className="mk-hand !text-[12px]">the app this was written for</p>
-          <p className="mt-2 text-[17px]">SchoolSpec runs the register, report cards, fees and parent SMS for basic schools in Ghana, on any phone. 14 days free, set up with you in an hour.</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link href="/signup" className="mk-btn mk-btn-solid"><i aria-hidden>→</i><span>Start free</span></Link>
-            <Link href="/#features" className="mk-btn"><i aria-hidden>▶</i><span>See how it works</span></Link>
+      <article className="px-3 pt-4 sm:px-4 sm:pt-5">
+        <div className="lp-wrap rounded-[28px] bg-card px-6 py-12 shadow-[var(--shadow-md)] sm:rounded-[36px] sm:px-10 lg:px-16 lg:py-16">
+          <div className="mx-auto max-w-[720px]">
+            <p className="lp-eyebrow"><Link href="/blog" className="hover:underline underline-offset-4">Blog</Link> · {p.tags.join(" · ")}</p>
+            <h1 className="mt-3 text-[clamp(32px,4.8vw,56px)] font-semibold leading-[1.04] tracking-[-.035em] text-balance">{p.title}</h1>
+            <p className="mt-5 text-[18px] leading-relaxed text-muted-foreground">{p.description}</p>
+            <p className="mt-5 text-[13px] text-faint">{p.author} · {longDate(p.date)} · {p.minutes} min read</p>
+            <div className="lp-prose mt-10" dangerouslySetInnerHTML={{ __html: p.html }} />
+          </div>
+        </div>
+      </article>
+      <section className="lp-wrap grid gap-5 px-4 pb-20 pt-5 sm:pb-28 lg:grid-cols-[7fr_5fr]">
+        <aside className="rounded-[28px] bg-primary p-7 text-white shadow-[var(--shadow-lg)] sm:p-10">
+          <h2 className="text-[clamp(24px,2.8vw,34px)] font-semibold leading-[1.08] tracking-[-.03em] text-balance">The app this was written for.</h2>
+          <p className="mt-4 max-w-[36em] text-[16px] leading-relaxed text-[#e8c8da]">SchoolSpec runs the register, report cards, fees and parent SMS for basic schools in Ghana, on any phone. 14 days free, set up with you in an hour.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/signup" className="lp-btn !bg-white !text-primary hover:!bg-brand-soft">Start free</Link>
+            <Link href="/#features" className="lp-btn-ghost !border-white/30 !bg-transparent !text-white hover:!bg-white/10">See how it works</Link>
           </div>
         </aside>
-      </article>
-      {others.length > 0 && (
-        <section className="mk-wrap pt-16 max-w-[760px]">
-          <p className="mk-hand !text-[12px]">read next</p>
-          <ul className="mt-3 divide-y divide-dashed divide-[#221a22]">
+        {others.length > 0 && (
+          <div className="rounded-[28px] bg-card px-7 py-3 shadow-[var(--shadow-sm)] sm:px-8">
             {others.map((o) => (
-              <li key={o.slug} className="py-3.5">
-                <Link href={`/blog/${o.slug}`} className="text-[18px] font-medium underline-offset-4 hover:underline">{o.title}</Link>
-                <p className="mt-1 text-[14.5px] text-[#5f5359]">{o.description}</p>
-              </li>
+              <Link key={o.slug} href={`/blog/${o.slug}`} className="group block border-b border-border py-5 last:border-0">
+                <p className="text-[17px] font-semibold leading-snug tracking-[-.01em] group-hover:text-primary">{o.title}</p>
+                <p className="mt-1 text-[14.5px] leading-relaxed text-muted-foreground">{o.description}</p>
+              </Link>
             ))}
-          </ul>
-        </section>
-      )}
-    </PaperShell>
+          </div>
+        )}
+      </section>
+    </SiteShell>
   );
 }

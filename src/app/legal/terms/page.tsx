@@ -10,8 +10,8 @@ export const metadata: Metadata = pageMeta({
 export default function Terms() {
   return (
     <>
-      <p className="mk-hand">terms of service</p>
-      <h1 className="mt-2 text-[clamp(36px,5vw,56px)] font-medium leading-[.98] tracking-[-.035em]">The agreement between your school and SchoolSpec</h1>
+      <p className="lp-eyebrow">terms of service</p>
+      <h1 className="mt-3 text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.04] tracking-[-.035em] text-balance">The agreement between your school and SchoolSpec</h1>
       <Summary items={[
         "You get a working school system, we get the subscription. That is the deal.",
         "The school owns its data and is responsible for what it puts in and who it gives logins to.",

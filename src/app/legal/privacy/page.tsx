@@ -10,8 +10,8 @@ export const metadata: Metadata = pageMeta({
 export default function Privacy() {
   return (
     <>
-      <p className="mk-hand">privacy policy</p>
-      <h1 className="mt-2 text-[clamp(36px,5vw,56px)] font-medium leading-[.98] tracking-[-.035em]">What we know about you, and what we do with it</h1>
+      <p className="lp-eyebrow">privacy policy</p>
+      <h1 className="mt-3 text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.04] tracking-[-.035em] text-balance">What we know about you, and what we do with it</h1>
       <Summary items={[
         "Your school entered your information to run the school. We keep it for the school; we do not sell it or use it for advertising.",
         "Children’s records are handled on the school’s instructions only, and never shown to anyone outside that school.",
