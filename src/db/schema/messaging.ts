@@ -73,6 +73,7 @@ export type OutboxMeta = {
   subject?: string; html?: string; fromName?: string; // email
   smsFallback?: { to: string; body: string }; // sent if WhatsApp fails for good
   bot?: "ops";                            // Telegram: the operator bot
+  doc?: { kind: "invoice" | "receipt"; id: string; name: string }; // the PDF to attach (email) or send (Telegram)
 };
 
 /** Free text that lives in the app: the ping carries its title and a link. */

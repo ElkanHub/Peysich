@@ -25,7 +25,7 @@ export type NotifySchool = { id: string; name: string; branding?: { smsSenderId?
 export type NotifyTo =
   | { kind: "guardian"; id: string }
   | { kind: "staff"; id: string }
-  | { kind: "phone"; phone: string }; // a bare number: SMS only
+  | { kind: "phone"; phone: string; email?: string }; // a bare contact (an applicant's family): SMS, and email if given
 
 export type NotifyOpts = {
   school: NotifySchool;
@@ -39,6 +39,11 @@ export type NotifyOpts = {
   messageId?: string; // the `messages` row this ping is for
   senderId?: string;  // override the school's SMS sender name
   logKind?: string;   // override the outbox kind (the sendSms shim uses it)
+  /** A paper that goes with it: the PDF is attached on email and sent on Telegram.
+   *  WhatsApp and SMS carry the kind's sentence, the ping that says it arrived. */
+  doc?: { kind: "invoice" | "receipt"; id: string; name: string };
+  /** The email, when the person has an address: without it, email stays quiet. */
+  email?: { subject: string; html: string };
 };
 
 export type NotifyResult = {
@@ -54,7 +59,7 @@ export type NotifyResult = {
 
 /** How one person can be reached. */
 export type Recipient = {
-  phone: string | null; userId: string | null; phoneOnly: boolean;
+  phone: string | null; email: string | null; userId: string | null; phoneOnly: boolean;
   whatsapp: string | null; telegram: string | null; hasPush: boolean;
 };
 export type RouteEnv = {
@@ -67,7 +72,7 @@ export type Planned = {
 
 /** The routing rule, pure: which channels this person gets this message on,
  *  with the text and the price of each. */
-export function route(o: Pick<NotifyOpts, "school" | "kind" | "vars" | "link" | "url" | "urgent" | "fullText" | "senderId">,
+export function route(o: Pick<NotifyOpts, "school" | "kind" | "vars" | "link" | "url" | "urgent" | "fullText" | "senderId" | "doc" | "email">,
   r: Recipient, env: RouteEnv): Planned[] {
   const tpl = TEMPLATES[o.kind];
   const vars = { school: o.school.name, link: o.link, ...o.vars };
@@ -79,8 +84,15 @@ export function route(o: Pick<NotifyOpts, "school" | "kind" | "vars" | "link" | 
   const out: Planned[] = [];
   if (r.userId && r.hasPush)
     out.push({ channel: "push", to: r.userId, body: text.slice(0, 140), parts: 1, price: 0, meta: { title: o.school.name, url: o.url ?? "/" } });
+  // Telegram is the default for everything, papers included — free
   if (r.telegram && env.telegram)
-    out.push({ channel: "telegram", to: r.telegram, body: text, parts: 1, price: 0, meta: {} });
+    out.push({ channel: "telegram", to: r.telegram, body: text, parts: 1, price: 0, meta: o.doc ? { doc: o.doc } : {} });
+  // email carries the papers and anything written for it — free
+  if (r.email && (o.email || o.doc))
+    out.push({ channel: "email", to: r.email, body: text, parts: 1, price: 0,
+      meta: { subject: o.email?.subject ?? `${o.school.name}: ${o.doc?.name ?? "message"}`,
+        html: o.email?.html ?? `<p style="font-family:system-ui,sans-serif;font-size:15px">${text}</p>`,
+        fromName: o.school.name, ...(o.doc ? { doc: o.doc } : {}) } });
 
   const sms = (): Planned => {
     const parts = smsParts(text);
@@ -119,9 +131,9 @@ export async function loadRecipients(schoolId: string, tos: NotifyTo[]): Promise
   const ids = (k: "guardian" | "staff") => [...new Set(tos.flatMap((t) => t.kind === k ? [t.id] : []))];
   const gIds = ids("guardian"), sIds = ids("staff");
   const [gs, ss, chans] = await Promise.all([
-    gIds.length ? db.select({ id: guardians.id, phone: guardians.phone, userId: guardians.userId, pref: guardians.contactPref })
+    gIds.length ? db.select({ id: guardians.id, phone: guardians.phone, email: guardians.email, userId: guardians.userId, pref: guardians.contactPref })
       .from(guardians).where(and(eq(guardians.schoolId, schoolId), inArray(guardians.id, gIds))) : [],
-    sIds.length ? db.select({ id: staff.id, phone: staff.phone, userId: staff.userId })
+    sIds.length ? db.select({ id: staff.id, phone: staff.phone, email: staff.email, userId: staff.userId })
       .from(staff).where(and(eq(staff.schoolId, schoolId), inArray(staff.id, sIds))) : [],
     gIds.length || sIds.length ? db.select().from(contactChannels)
       .where(and(eq(contactChannels.schoolId, schoolId), inArray(contactChannels.ownerId, [...gIds, ...sIds]))) : [],
@@ -133,10 +145,10 @@ export async function loadRecipients(schoolId: string, tos: NotifyTo[]): Promise
     : []);
   const chan = new Map(chans.map((c) => [`${c.ownerKind}:${c.ownerId}`, c]));
   const out = new Map<string, Recipient>();
-  const add = (k: string, x: { phone: string | null; userId: string | null }, phoneOnly: boolean) => {
+  const add = (k: string, x: { phone: string | null; email?: string | null; userId: string | null }, phoneOnly: boolean) => {
     const c = chan.get(k);
     out.set(k, {
-      phone: x.phone || null, userId: x.userId, phoneOnly,
+      phone: x.phone || null, email: x.email || null, userId: x.userId, phoneOnly,
       whatsapp: c?.whatsappConsent && c.whatsapp ? c.whatsapp : null,
       telegram: c?.telegramChatId ?? null, hasPush: !!x.userId && pushers.has(x.userId),
     });
@@ -144,7 +156,7 @@ export async function loadRecipients(schoolId: string, tos: NotifyTo[]): Promise
   for (const g of gs) add(`guardian:${g.id}`, g, g.pref === "phone");
   for (const s of ss) add(`staff:${s.id}`, s, false);
   for (const t of tos) if (t.kind === "phone" && t.phone)
-    out.set(key(t), { phone: t.phone, userId: null, phoneOnly: false, whatsapp: null, telegram: null, hasPush: false });
+    out.set(key(t), { phone: t.phone, email: t.email ?? null, userId: null, phoneOnly: false, whatsapp: null, telegram: null, hasPush: false });
   return out;
 }
 
@@ -250,6 +262,6 @@ export function sentSentence(r: NotifyResult, who = "parents") {
   const out: string[] = [];
   if (r.sent) out.push(`${r.sent} ${who} told (${how} · ${ghs(r.costPesewas)}).`);
   if (r.held) out.push(`${r.held} not sent — not enough messaging balance. Top up under Billing.`);
-  if (r.free) out.push(`${r.free} reached in the app or on Telegram, free.`);
+  if (r.free) out.push(`${r.free} reached free — ${[r.channels.push && `${r.channels.push} in the app`, r.channels.telegram && `${r.channels.telegram} on Telegram`, r.channels.email && `${r.channels.email} by email`].filter(Boolean).join(", ")}.`);
   return out.join(" ");
 }

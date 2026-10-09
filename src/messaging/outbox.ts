@@ -5,7 +5,8 @@ import { sendEmail } from "@/lib/notify";
 import { pushEnabled, pushToUsers } from "@/lib/push";
 import { uid } from "@/lib/utils";
 import { arkeselConfigured, sendArkesel } from "./providers/arkesel";
-import { sendTelegram, telegramConfigured } from "./providers/telegram";
+import { sendTelegram, sendTelegramDocument, telegramConfigured } from "./providers/telegram";
+import { docBuffer } from "./docs";
 import { sendWhatsAppTemplate, whatsappConfigured } from "./providers/whatsapp";
 import { getSettings, setSetting } from "./settings";
 import { smsParts } from "./sms-parts";
@@ -37,12 +38,19 @@ async function deliver(r: OutboxRow, s: Awaited<ReturnType<typeof getSettings>>)
       phoneNumberId: r.plane === "platform" ? s.wa_number_platform : s.wa_number_school,
       to: r.to, template: r.meta.template ?? "", params: r.meta.params ?? [],
     });
-    case "telegram": return sendTelegram({ bot: r.meta.bot, chatId: r.to, text: r.body });
+    case "telegram": {
+      const file = r.meta.doc && r.schoolId ? await docBuffer(r.schoolId, r.meta.doc) : null;
+      return file
+        ? sendTelegramDocument({ bot: r.meta.bot, chatId: r.to, caption: r.body, file, filename: r.meta.doc!.name })
+        : sendTelegram({ bot: r.meta.bot, chatId: r.to, text: r.body });
+    }
     case "push":
       await pushToUsers([r.to], { title: r.meta.title ?? "SchoolSpec", body: r.body, url: r.meta.url });
       return {};
     default: {
-      const { sent } = await sendEmail(r.to, r.meta.subject ?? "SchoolSpec", r.meta.html ?? r.body, r.meta.fromName);
+      const file = r.meta.doc && r.schoolId ? await docBuffer(r.schoolId, r.meta.doc) : null;
+      const { sent } = await sendEmail(r.to, r.meta.subject ?? "SchoolSpec", r.meta.html ?? r.body, r.meta.fromName,
+        file ? [{ filename: r.meta.doc!.name, content: file }] : undefined);
       if (!sent) throw new Error("Resend refused the email");
       return {};
     }

@@ -1,28 +1,35 @@
 "use server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { schools, scorePublications, scoreSheets, terms, user, platformAuditLogs, classes } from "@/db/schema";
+import { schools, scorePublications, scoreSheets, terms, platformAuditLogs, classes } from "@/db/schema";
 import { publishTermReports, publishPreschoolReports } from "@/modules/assessment/publish";
 import { REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/report-config";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { withFlash } from "@/lib/flash";
 import { uid } from "@/lib/utils";
 
-async function tellFamilies(schoolId: string, schoolName: string, body: string) {
+/** Every family of an active child, one row per child and guardian, through
+ *  the one door: app, Telegram, then WhatsApp or SMS. Students with a login
+ *  get the app notification. */
+async function tellFamilies(school: { id: string; name: string; slug: string; branding: { smsSenderId?: string } }, body: string,
+  kind: "results_ready" | "report_card_ready", termName: string, termId: string) {
   const { pushToUsers, schoolAudience } = await import("@/lib/push");
-  await pushToUsers(await schoolAudience(schoolId, { roles: ["parent", "student"] }),
-    { title: schoolName, body, url: "/reports", tag: "reports" });
+  await pushToUsers(await schoolAudience(school.id, { roles: ["student"] }), { title: school.name, body, url: "/reports", tag: "reports" });
+  const { students, studentGuardians } = await import("@/db/schema");
+  const fam = await db.select({ guardianId: studentGuardians.guardianId, sid: students.id, first: students.firstName, last: students.lastName })
+    .from(studentGuardians).innerJoin(students, eq(students.id, studentGuardians.studentId))
+    .where(and(eq(students.schoolId, school.id), eq(students.status, "active")));
+  const { notifyMany } = await import("@/messaging/notify");
+  const { schoolUrl } = await import("@/messaging/render");
+  return notifyMany(school, fam.map((f) => ({
+    to: { kind: "guardian" as const, id: f.guardianId }, kind,
+    vars: { child: `${f.first} ${f.last}`, term: termName },
+    url: `/students/${f.sid}/report/${termId}`, link: schoolUrl(school.slug, `/students/${f.sid}/report/${termId}`),
+  })));
 }
 
-/** How many parents a school-wide message reaches — the number the confirm
- *  and the toast both quote (the page runs the same count). */
-async function countParents(schoolId: string) {
-  const [r] = await db.select({ n: sql<number>`count(*)` }).from(user)
-    .where(and(eq(user.schoolId, schoolId), eq(user.role, "parent")));
-  return Number(r?.n ?? 0);
-}
 
 /** Send one test's results to parents — recorded per test, with who sent
  *  it and when. Refused on the server too if a class has not submitted. */
@@ -46,10 +53,10 @@ export async function releaseComponent(slug: string, componentId: string) {
   await db.insert(scorePublications).values({
     id: uid(), schoolId: school.id, termId: term.id, componentId, publishedBy: me.name,
   }).onConflictDoNothing();
-  await tellFamilies(school.id, school.name, "New results are out — open Reports to see them.");
-  const p = await countParents(school.id);
+  const r = await tellFamilies(school, "New results are out — open Reports to see them.", "results_ready", term.name, term.id);
+  const { sentSentence } = await import("@/messaging/notify");
   revalidatePath("/reports"); revalidatePath("/assessment");
-  redirect(withFlash("/reports", `${comp?.name ?? "Test"} results sent to ${p} parents.`));
+  redirect(withFlash("/reports", `${comp?.name ?? "Test"} results released. ${sentSentence(r)}`));
 }
 
 /** Send the end-of-term report cards for the current term (locks scores). */
@@ -58,10 +65,10 @@ export async function releaseTermReports(slug: string) {
   const term = await getCurrentTerm(school.id);
   if (!term) redirect("/reports");
   await publishTermReports(school.id, term.id);
-  await tellFamilies(school.id, school.name, `${term.name} report cards are ready — open Reports to see them.`);
-  const p = await countParents(school.id);
+  const r = await tellFamilies(school, `${term.name} report cards are ready — open Reports to see them.`, "report_card_ready", term.name, term.id);
+  const { sentSentence } = await import("@/messaging/notify");
   revalidatePath("/reports"); revalidatePath("/assessment");
-  redirect(withFlash("/reports", `Report cards sent to ${p} parents. Scores are locked.`));
+  redirect(withFlash("/reports", `Report cards released. ${sentSentence(r)} Scores are locked.`));
 }
 
 /** Send the preschool skills reports (their end-of-term report card — the
@@ -71,7 +78,7 @@ export async function releasePreschoolReports(slug: string) {
   const term = await getCurrentTerm(school.id);
   if (!term) redirect("/reports");
   const n = await publishPreschoolReports(school.id, term.id);
-  if (n > 0) await tellFamilies(school.id, school.name, `${term.name} reports are ready — open Reports to see them.`);
+  if (n > 0) await tellFamilies(school, `${term.name} reports are ready — open Reports to see them.`, "report_card_ready", term.name, term.id);
   revalidatePath("/reports");
   redirect(n > 0
     ? withFlash("/reports", `Skills reports sent for ${n} children.`)

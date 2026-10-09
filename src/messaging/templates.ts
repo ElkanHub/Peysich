@@ -35,6 +35,8 @@ export const TEMPLATES = {
   // ── free text lives in the app: the ping carries the title and a link ──
   notice_ping: { log: "notice", sms: "{{school}}: new notice — \"{{title}}\". Read it: {{link}}", wa: { name: "notice_ping" } },
   announcement_ping: { log: "announcement", sms: "{{school}}: announcement — \"{{title}}\". Read it: {{link}}", wa: { name: "announcement_ping" } },
+  invoice_ready: { log: "invoice", sms: "{{school}}: {{child}}'s bill for {{term}} is GHS {{amount}}{{due}}. The invoice is in your email and on Telegram. {{link}}",
+    wa: { name: "invoice_ready" } },
   results_ready: { log: "results", sms: "{{school}}: {{child}}'s {{term}} results are ready. See them: {{link}}", wa: { name: "results_ready" } },
   report_card_ready: { log: "report", sms: "{{school}}: {{child}}'s report card for {{term}} is ready. See it: {{link}}", wa: { name: "report_card_ready" } },
   homework_set: { log: "homework", sms: "{{school}}: new homework for {{class}} — {{title}}, due {{due}}.", wa: { name: "homework_set" } },

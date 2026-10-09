@@ -10,7 +10,6 @@ import {
 import { requireModule } from "@/core/school-context";
 import { invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
-import { sendEmail } from "@/lib/notify";
 import { getIntakeConfig, parseDocs, type IntakeDoc } from "@/modules/admissions/config";
 
 const touch = (extra?: string) => {
@@ -110,21 +109,19 @@ async function sendOfferEverywhere(
 ) {
   const gs = await db.select().from(applicantGuardians)
     .where(eq(applicantGuardians.applicantId, applicantId));
-  const phones = [...new Set(gs.map((g) => g.phone).filter(Boolean))];
-  const emails = [...new Set(gs.map((g) => g.email).filter((e): e is string => Boolean(e)))];
-  const { notifyMany } = await import("@/messaging/notify");
-  await notifyMany(school, phones.map((phone) => ({
-    to: { kind: "phone" as const, phone }, kind: "admission_offer" as const, vars: { text: message },
-  })));
-  for (const to of emails) {
-    await sendEmail(to, `Admission offer — ${school.name}`,
-      `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">
+  const seen = new Set<string>();
+  const contacts = gs.filter((g) => g.phone && !seen.has(g.phone) && seen.add(g.phone));
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">
         <h2 style="margin:0 0 8px">${school.name}</h2>
         <p style="font-size:15px;line-height:1.6;white-space:pre-line">${message}</p>
         <p style="color:#888;font-size:12px;margin-top:20px">Sent via SchoolSpec on behalf of ${school.name}.</p>
-      </div>`, school.name);
-  }
-  return { phones: phones.length, emails: emails.length };
+      </div>`;
+  const { notifyMany } = await import("@/messaging/notify");
+  await notifyMany(school, contacts.map((g) => ({
+    to: { kind: "phone" as const, phone: g.phone, email: g.email ?? undefined }, kind: "admission_offer" as const, vars: { text: message },
+    email: { subject: `Admission offer — ${school.name}`, html },
+  })));
+  return { phones: contacts.length, emails: contacts.filter((g) => g.email).length };
 }
 
 export async function makeOffer(slug: string, id: string, f: FormData) {

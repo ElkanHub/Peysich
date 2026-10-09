@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   feeTypes, feeItems, feeInvoices, students, guardians, studentGuardians,
-  scholarships, studentScholarships, feeAdjustments, outbox, schools,
+  scholarships, studentScholarships, feeAdjustments, schools,
 } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
 import { requireWritableTerm } from "@/core/terms";
@@ -275,25 +275,25 @@ export async function voidPayment(slug: string, paymentId: string) {
 }
 
 // ── papers out ─────────────────────────────────────────────────────────
-/** Email this exact invoice, as a PDF, to every guardian with an email. */
+/** Send this exact invoice to the child's family: the PDF by email and on
+ *  Telegram, a ping on WhatsApp or SMS saying it has arrived, and in the app. */
 export async function emailInvoice(slug: string, invoiceId: string) {
   const { school } = await requireFees(slug);
-  const { loadInvoiceDoc, guardianEmailsFor } = await import("@/modules/fees/docs");
+  const { loadInvoiceDoc } = await import("@/modules/fees/docs");
   const d = await loadInvoiceDoc(school, invoiceId);
   if (!d) redirect(withFlash("/fees", "That bill could not be found.", { error: true }));
-  const to = await guardianEmailsFor(school.id, d.student.id);
-  if (!to.length) redirect(withFlash(`/fees/invoice/${invoiceId}`,
-    "No guardian of this child has an email on file — add one under Guardians first.", { error: true }));
-  const { invoicePdfBuffer } = await import("@/modules/fees/pdf");
-  const { sendEmail } = await import("@/lib/notify");
-  const pdf = await invoicePdfBuffer(d);
+  const gs = await db.select({ id: guardians.id }).from(studentGuardians)
+    .innerJoin(guardians, eq(studentGuardians.guardianId, guardians.id))
+    .where(eq(studentGuardians.studentId, d.student.id));
+  if (!gs.length) redirect(withFlash(`/fees/invoice/${invoiceId}`, "No guardian is linked to this child yet — add one under Guardians first.", { error: true }));
   const cfg = getFeesConfig(school.settings);
+  const balance = (Math.max(0, d.invoice.totalPesewas - d.invoice.paidPesewas) / 100).toFixed(2);
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">
       <h2 style="margin:0 0 4px">${school.name}</h2>
       <p style="margin:0 0 14px;color:#6b7280;font-size:13px">Fee invoice for ${d.student.firstName} ${d.student.lastName} — ${d.termName}, ${d.yearName}</p>
       <p style="font-size:15px">The attached PDF is the full invoice, exactly as it prints at the school.
-        Balance due: <b>GHS ${(Math.max(0, d.invoice.totalPesewas - d.invoice.paidPesewas) / 100).toFixed(2)}</b>${d.invoice.dueDate ? ` by <b>${d.invoice.dueDate}</b>` : ""}.</p>
+        Balance due: <b>GHS ${balance}</b>${d.invoice.dueDate ? ` by <b>${d.invoice.dueDate}</b>` : ""}.</p>
       <div style="border:1.5px solid #b45309;border-radius:8px;padding:12px;font-size:13px;margin:14px 0">
         <b style="color:#b45309">⚠ Before you send money electronically:</b> confirm any payment number with the school
         ${cfg.confirmPhone ? `by calling <b>${cfg.confirmPhone}</b>` : "directly"} first. ${school.name} never changes its
@@ -301,23 +301,21 @@ export async function emailInvoice(slug: string, invoiceId: string) {
       </div>
       <p style="color:#9aa1ab;font-size:12px">Sent by ${school.name} via SchoolSpec.</p>
     </div>`;
-  let sentAny = false;
-  for (const g of to) {
-    const { sent } = await sendEmail(g.email, `${school.name} — fee invoice (${d.termName})`, html,
-      school.name, [{ filename: `${(d.invoice.invoiceNo ?? "invoice").replace(/\s/g, "-")}.pdf`, content: pdf }]);
-    sentAny = sentAny || sent;
-    await db.insert(outbox).values({
-      id: uid(), schoolId: school.id, to: g.email, body: `Invoice ${d.invoice.invoiceNo ?? ""} · ${d.termName}`,
-      kind: "invoice-email", channel: "email", status: sent ? "sent" : "failed", sentAt: sent ? new Date() : null,
-    });
-  }
+  const { notifyMany, sentSentence } = await import("@/messaging/notify");
+  const { schoolUrl } = await import("@/messaging/render");
+  const r = await notifyMany(school, gs.map((g) => ({
+    to: { kind: "guardian" as const, id: g.id }, kind: "invoice_ready" as const,
+    vars: { child: `${d.student.firstName} ${d.student.lastName}`, term: d.termName, amount: balance, due: d.invoice.dueDate ? `, due ${d.invoice.dueDate}` : "" },
+    url: "/fees", link: schoolUrl(slug, "/fees"),
+    doc: { kind: "invoice" as const, id: invoiceId, name: `${(d.invoice.invoiceNo ?? "invoice").replace(/\s/g, "-")}.pdf` },
+    email: { subject: `${school.name} — fee invoice (${d.termName})`, html },
+  })));
   touch(`/fees/invoice/${invoiceId}`);
+  const reached = r.sent + r.free;
   redirect(withFlash(`/fees/invoice/${invoiceId}`,
-    sentAny ? `Invoice emailed to ${to.map((g) => g.name).join(", ")}.` : "Email is not switched on yet — the invoice was queued, not sent.", { error: !sentAny }));
+    reached ? `Invoice sent. ${sentSentence(r, "parents")}` : "Nobody could be reached — no phone, email or Telegram on the guardian records.", { error: !reached }));
 }
 
-/** Reminder SMS to guardians of OVERDUE invoices, confirm-number included.
- *  One send per day: the time and count live in schools.settings.feeRemindersSent. */
 export async function sendFeeReminders(slug: string) {
   const { school } = await requireFees(slug);
   const term = await getCurrentTerm(school.id);

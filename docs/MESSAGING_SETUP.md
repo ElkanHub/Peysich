@@ -125,6 +125,7 @@ Category **Utility** unless marked. Variables in `{{n}}`. Keep the wording exact
 | `announcement_ping` | {{1}}: announcement — "{{2}}". Read it: {{3}} |
 | `results_ready` | {{1}}: {{2}}'s {{3}} results are ready. See them: {{4}} |
 | `report_card_ready` | {{1}}: {{2}}'s report card for {{3}} is ready. See it: {{4}} |
+| `invoice_ready` | {{1}}: {{2}}'s bill for {{3}} is GHS {{4}}{{5}}. The invoice is in your email and on Telegram. {{6}} |
 | `emergency_illness` | {{1}}: {{2}} is unwell at school. Please call {{3}} now. Details: {{4}} |
 | `emergency_injury` | {{1}}: {{2}} has had an accident at school and is being looked after. Please call {{3}}. Details: {{4}} |
 | `emergency_medical` | {{1}}: {{2}} needs medical attention. Please call {{3}} immediately. Details: {{4}} |

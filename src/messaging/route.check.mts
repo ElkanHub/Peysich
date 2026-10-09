@@ -10,7 +10,7 @@ const { readLinkPayload, linkPayload } = await import("./providers/telegram");
 
 const school = { id: "s1", name: "St. Mary's", branding: { smsSenderId: "StMarys" } };
 const env = { whatsapp: true, telegram: true, approved: new Set(["absence_alert", "emergency_illness", "announcement_ping"]), smsPrice: 6, whatsappPrice: 8 };
-const none = { phone: null, userId: null, phoneOnly: false, whatsapp: null, telegram: null, hasPush: false };
+const none = { phone: null, email: null, userId: null, phoneOnly: false, whatsapp: null, telegram: null, hasPush: false };
 const channels = (p: { channel: string }[]) => p.map((x) => x.channel).join(",");
 
 // SMS arithmetic: 160 in one part, 153 after; one non-GSM character makes it 70/67
@@ -39,7 +39,7 @@ assert.equal(channels(route(absence, { ...none, phone: "024", whatsapp: "233" },
 assert.equal(channels(route({ ...absence, vars: { child: "Ama" } }, { ...none, phone: "024", whatsapp: "233" }, env)), "sms");
 
 // the app and Telegram always, free, before the paid ping
-p = route(absence, { phone: "024", userId: "u1", hasPush: true, telegram: "99", whatsapp: null, phoneOnly: false }, env);
+p = route(absence, { phone: "024", email: null, userId: "u1", hasPush: true, telegram: "99", whatsapp: null, phoneOnly: false }, env);
 assert.equal(channels(p), "push,telegram,sms");
 assert.equal(p[0].price + p[1].price, 0);
 
@@ -67,5 +67,17 @@ assert.ok(/^[A-Za-z0-9_-]{1,64}$/.test(payload));
 assert.deepEqual(readLinkPayload(payload), { kind: "guardian", idNoDashes: id.replace(/-/g, "") });
 assert.equal(readLinkPayload(payload.replace(/^g/, "s")), null);
 
-console.log("messaging: ok (routing, prices, SMS parts, WhatsApp parameters, Telegram link)");
+// a paper: Telegram carries the PDF, email gets it attached, the phone gets the ping — email stays quiet without a paper or an email body
+const paper = { school, kind: "invoice_ready" as const, vars: { child: "Ama", term: "Term 1", amount: "500.00", due: "" },
+  doc: { kind: "invoice" as const, id: "inv1", name: "INV-1.pdf" } };
+const family = { ...none, phone: "024", email: "p@x.com", telegram: "99" };
+p = route(paper, family, env);
+assert.equal(channels(p), "telegram,email,sms");
+assert.deepEqual(p[0].meta.doc, paper.doc);
+assert.deepEqual(p[1].meta.doc, paper.doc);
+assert.equal(p[1].price + p[0].price, 0);
+assert.equal(channels(route(absence, family, env)), "telegram,sms");
+assert.equal(channels(route({ ...absence, email: { subject: "s", html: "<p>h</p>" } }, family, env)), "telegram,email,sms");
+
+console.log("messaging: ok (routing, prices, SMS parts, WhatsApp parameters, Telegram link, papers)");
 process.exit(0);

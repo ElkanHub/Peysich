@@ -22,6 +22,18 @@ export async function sendTelegram(o: { bot?: Bot; chatId: string; text: string 
   return { providerId: String(r.message_id) };
 }
 
+/** A PDF with a caption, the way a receipt or an invoice travels on Telegram. */
+export async function sendTelegramDocument(o: { bot?: Bot; chatId: string; caption: string; file: Buffer; filename: string }): Promise<{ providerId?: string }> {
+  const form = new FormData();
+  form.set("chat_id", o.chatId);
+  form.set("caption", o.caption.slice(0, 1024));
+  form.set("document", new Blob([new Uint8Array(o.file)], { type: "application/pdf" }), o.filename);
+  const res = await fetch(`https://api.telegram.org/bot${token(o.bot ?? "school")}/sendDocument`, { method: "POST", body: form });
+  const j = await res.json().catch(() => null) as { ok?: boolean; result?: { message_id: number }; description?: string } | null;
+  if (!j?.ok) throw new Error(`Telegram ${res.status}: ${j?.description ?? ""}`.trim());
+  return { providerId: String(j.result?.message_id) };
+}
+
 const sign = (s: string) =>
   crypto.createHmac("sha256", process.env.MESSAGING_LINK_SECRET ?? process.env.BETTER_AUTH_SECRET ?? "dev").update(s).digest("base64url");
 

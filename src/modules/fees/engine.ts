@@ -218,7 +218,7 @@ export async function payingGuardian(studentId: string) {
  *  texted (and whether the wallet held it), or null when nobody has a phone
  *  on file. Logged as kind "receipt". */
 export async function sendReceiptSms(school: { id: string; name: string; branding: { smsSenderId?: string } }, p: {
-  studentId: string; amountPesewas: number; receiptNo: string; balanceAfter: number;
+  studentId: string; amountPesewas: number; receiptNo: string; balanceAfter: number; paymentId?: string;
 }) {
   const [s] = await db.select({ firstName: students.firstName, lastName: students.lastName })
     .from(students).where(eq(students.id, p.studentId));
@@ -227,6 +227,8 @@ export async function sendReceiptSms(school: { id: string; name: string; brandin
   const { notify } = await import("@/messaging/notify");
   const r = await notify({
     school, to: { kind: "guardian", id: g.id }, kind: "receipt", url: "/fees",
+    // the receipt itself goes by email and on Telegram; the sentence is the ping
+    doc: p.paymentId ? { kind: "receipt", id: p.paymentId, name: `${p.receiptNo.replace(/\s/g, "-")}.pdf` } : undefined,
     vars: {
       amount: (p.amountPesewas / 100).toFixed(2), child: `${s.firstName} ${s.lastName}`,
       receiptNo: p.receiptNo, balance: (Math.max(0, p.balanceAfter) / 100).toFixed(2),

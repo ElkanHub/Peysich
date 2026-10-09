@@ -13,3 +13,5 @@ public/sw.js
 
 # pnpm is the package manager (Vercel installs from pnpm-lock.yaml); an npm lockfile only drifts
 package-lock.json
+
+.vercel

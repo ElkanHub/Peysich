@@ -1,9 +1,9 @@
 "use server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { assignments, classes, pushSubscriptions } from "@/db/schema";
+import { assignments, classes } from "@/db/schema";
 import { requireModule, getTeacherScope } from "@/core/school-context";
 import { withFlash } from "@/lib/flash";
 import { uid } from "@/lib/utils";
@@ -45,28 +45,20 @@ export async function createHomework(slug: string, f: FormData) {
     dueDate, createdBy: user.id,
   });
 
-  // tell the class's parents where push is on — count only people actually reached
+  // tell the class's families through the one door: app, Telegram, WhatsApp or SMS
   const [cls] = await db.select({ name: classes.name }).from(classes).where(eq(classes.id, classId));
   const className = cls?.name ?? "the class";
-  let told = 0;
-  const { pushEnabled, schoolAudience, pushToUsers } = await import("@/lib/push");
-  if (pushEnabled) {
-    const parents = await schoolAudience(school.id, { roles: ["parent"], classId });
-    const reachable = parents.length
-      ? await db.selectDistinct({ userId: pushSubscriptions.userId }).from(pushSubscriptions)
-          .where(inArray(pushSubscriptions.userId, parents))
-      : [];
-    if (reachable.length) {
-      const { sent } = await pushToUsers(reachable.map((r) => r.userId), {
-        title: `${className}: new homework`, body: `${title} — due ${dueWord(dueDate)}`,
-        url: `/homework`, tag: `homework-${classId}`,
-      });
-      if (sent > 0) told = reachable.length;
-    }
-  }
+  const { students, studentGuardians } = await import("@/db/schema");
+  const fam = await db.select({ guardianId: studentGuardians.guardianId })
+    .from(studentGuardians).innerJoin(students, eq(students.id, studentGuardians.studentId))
+    .where(and(eq(students.classId, classId), eq(students.status, "active")));
+  const { notifyMany, sentSentence } = await import("@/messaging/notify");
+  const r = await notifyMany(school, [...new Set(fam.map((f) => f.guardianId))].map((id) => ({
+    to: { kind: "guardian" as const, id }, kind: "homework_set" as const,
+    vars: { class: className, title, due: dueWord(dueDate) }, url: "/homework",
+  })));
   revalidatePath(`/homework`);
-  redirect(withFlash(back,
-    `Given to ${className} · due ${dueWord(dueDate)}.${told ? ` ${told} parent${told === 1 ? "" : "s"} told.` : ""}`));
+  redirect(withFlash(back, `Given to ${className} · due ${dueWord(dueDate)}. ${sentSentence(r)}`));
 }
 
 /** School choice: track hand-ins? also record marks in-app? */

@@ -412,3 +412,21 @@ Steps 1 to 7 are in, with these deliberate shortcuts, each marked `ponytail:` in
 - A school whose subscription lapses can still read everything and pay arrears, and sees one
   card with one button.
 - `src/core/terms.check.mts` passes; the help pages show the new entries on the right screens.
+
+---
+
+## 9. The channel rules (October 2026)
+
+One door, `notify()` in `src/messaging/notify.ts`, and one rule for every message:
+
+| Channel | Role | Cost |
+|---|---|---|
+| Push | the app's own notification, for anyone with the app installed | free |
+| **Telegram** | **the default for everything**, papers included: a receipt or invoice arrives as the PDF with a caption | free |
+| Email | the papers (PDF attached) and anything written for email; platform mail to the school owner | free |
+| WhatsApp | the ping: the kind's sentence, saying something has arrived or needs attention; needs Meta's approved template | paid, wallet |
+| SMS | the same ping when WhatsApp is off, unconsented or unapproved; held when the wallet is empty, except absence and emergencies | paid, wallet |
+
+A message carries `doc` (invoice or receipt, built from the live record at send time) and/or
+`email` (subject and body). Email stays quiet without one of those. Results, report cards,
+homework and admission offers now go through the door like everything else.
