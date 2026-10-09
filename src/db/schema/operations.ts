@@ -338,3 +338,17 @@ export const feeCheckouts = pgTable("fee_checkouts", {
   amountPesewas: integer("amount_pesewas").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+/** The term snapshot (docs/11 §2.6): one row per section of a closed term —
+ *  registers, scores, bills, messages, the lot — with names already resolved,
+ *  so the record reads the same years later whatever changed since. Built at
+ *  close, rebuilt if the term is reopened and closed again. */
+export const termArchives = pgTable("term_archives", {
+  id: text("id").primaryKey(), schoolId: sid(),
+  termId: text("term_id").notNull(),
+  section: text("section").notNull(), title: text("title").notNull(),
+  count: integer("count").notNull().default(0),
+  columns: jsonb("columns").$type<[string, string][]>().notNull().default([]),
+  rows: jsonb("rows").$type<Record<string, unknown>[]>().notNull().default([]),
+  builtAt: timestamp("built_at").notNull().defaultNow(),
+}, (t) => [uniqueIndex("term_archives_term_section").on(t.termId, t.section)]);

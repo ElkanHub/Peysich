@@ -246,6 +246,13 @@
       "when": 1791551615380,
       "tag": "0034_term_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791555098091,
+      "tag": "0035_term_archives",
+      "breakpoints": true
     }
   ]
 }

@@ -112,6 +112,29 @@ read-only:
   close; the pay button stays.
 - *Announcements, calendar, timetable*: as they ran.
 
+**The snapshot (research, October 2026).** Of the 80-odd tables, 13 carry a term id
+(registers, score sheets, component scores, publications, skills, report cards, fee
+structures and items, adjustments, invoices, analytics); the rest carry only a timestamp
+(messages, outbox, homework, events, applicants, loans, ledger, payments, audit) or nothing
+at all (timetable, staff, inventory, transport). Reading a closed term from the live tables
+would therefore need a term id here, a date window there and "whatever it is now" for the
+rest, and it would drift as names and classes change. So a closed term is **materialised**:
+`term_archives` holds one row per section with the names already written in (child, class,
+teacher, fee, book), built the moment the term closes and rebuilt if it is reopened and
+closed again. Sections: class roll, registers, scores, preschool skills, report cards, fee
+amounts, bills, payments (every payment on the term's bills, whenever made, plus every payment
+made in the term), discounts and scholarships, money ledger, notices and announcements, SMS
+and messages sent, homework, timetable as it ran, calendar, admissions, staff and leave,
+library loans, transport riders, inventory and items held, and the changes log. Terms closed
+before snapshots existed are snapshotted on first sight. Each row keeps the id it needs to
+open the live bill, receipt, report card or student, which are never deleted.
+
+**The term page** (`/archives/[termId]`): the close summary, one chip per section with its
+count, a search box across the section, pages of 150 rows, **Open →** on each row, and
+**Export this term**, one workbook with a sheet per section. Teachers see the teaching
+sections (roll, registers, scores, skills, report cards, homework, timetable, calendar,
+notices) for their own classes only.
+
 **Inside a year.** Adds what only makes sense across terms: the promotion record, the year's
 fee totals, cumulative report cards where used. The leaving certificate and transcript pull
 from here.

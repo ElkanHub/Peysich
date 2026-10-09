@@ -22,7 +22,7 @@ export default async function Archives({ params }: { params: Promise<{ school: s
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Archives" sub="Every closed term, exactly as it was sent to parents. Read only; fees still owed can still be paid." />
+      <PageHeader title="Archives" sub="Every closed term, everything it produced — registers, scores, report cards, bills, receipts, messages, the lot — kept as it was. Read only; fees still owed can still be paid." />
       {!years.length && (
         <Empty icon={<Archive size={22} />} title="Nothing archived yet"
           hint="A term appears here the day it is closed from Home. The current term never does." />
@@ -56,9 +56,9 @@ export default async function Archives({ params }: { params: Promise<{ school: s
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[14px] font-medium text-primary">
-                      <Link href={`/attendance/register?t=${t.id}`} className="hover:underline">Record book</Link>
-                      {user.role === "admin" && <Link href={`/reports?t=${t.id}`} className="hover:underline">Report cards</Link>}
-                      {user.role === "admin" && <Link href={`/fees?t=${t.id}`} className="hover:underline">Fees</Link>}
+                      <Link href={`/archives/${t.id}`} className="rounded-full bg-primary px-3.5 py-1.5 text-primary-foreground hover:bg-brand-strong">Open the term →</Link>
+                      <Link href={`/attendance/register?t=${t.id}`} className="self-center hover:underline">Record book</Link>
+                      {user.role === "admin" && <Link href={`/reports?t=${t.id}`} className="self-center hover:underline">Report cards</Link>}
                     </div>
                   </li>
                 );

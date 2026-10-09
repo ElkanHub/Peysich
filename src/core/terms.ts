@@ -156,6 +156,9 @@ export async function closeTerm(schoolId: string, termId: string, by: { id: stri
   await db.update(terms).set({ closedAt: new Date(), closedBy: by.name, scoresLocked: true, closeSummary: summary, isCurrent: false })
     .where(eq(terms.id, termId));
   await audit(schoolId, by.id, "term.close", { termId, termName: t.name, year: t.year.name, ...summary });
+  // the snapshot: everything the term produced, names written in, kept under the term
+  const { buildTermArchive } = await import("./term-archive");
+  await buildTermArchive(schoolId, termId);
   await pingTeam(schoolId, "term_closed", { term: t.name, year: t.year.name, reports: String(summary.reportCards) }, "/archives");
   return summary;
 }
