@@ -28,6 +28,7 @@ export default function Refunds() {
         "Sign in as the school’s administrator, open Your SchoolSpec plan, and tap I want to cancel. Tell us why in a sentence — it helps.",
         "We call within one working day to confirm. Nothing changes until we have spoken; nothing is deleted at all.",
         "Cancellation takes effect at the end of the period you have paid for. You are not billed again.",
+        "After that the school is read-only: everyone can still sign in and read every term, parents can still pay what they owe, and you can download everything from Your SchoolSpec plan. Records stay for 12 months, then they are deleted; we write to you 90, 30 and 7 days before.",
       ]} />
 
       <H2>What comes back</H2>

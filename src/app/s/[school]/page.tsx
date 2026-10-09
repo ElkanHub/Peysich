@@ -69,7 +69,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
       <div>
         <WelcomeHero role="parent" name={user.name} schoolId={school.id} title="Your children at school"
           line={`Attendance, fees and report cards from ${school.name}, in one place.`} />
-        <TermPulseBar school={school} />
+        <TermPulseBar school={school} slug={slug} />
         {kids.length === 0 && (
           <p className="text-[16px] text-muted-foreground">
             No children linked to your account yet — please contact the school office.
@@ -182,7 +182,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
       <div className="max-w-2xl">
         <WelcomeHero role="student" name={me.firstName} schoolId={school.id} title={`Ready for today, ${me.firstName}?`}
           line="Your lessons, your homework and your results are below." />
-        <TermPulseBar school={school} />
+        <TermPulseBar school={school} slug={slug} />
 
         {/* the student's own file card — personal AND official */}
         <Card className="mb-5">
@@ -342,7 +342,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
       <div>
         <WelcomeHero role="teacher" name={user.name} schoolId={school.id} title="Your classes today"
           line="Mark the register, enter scores and set homework. Everything that needs you is below." />
-        <TermPulseBar school={school} />
+        <TermPulseBar school={school} slug={slug} />
         {!scope && (
           <p className="mb-4 text-sm text-muted-foreground">
             Your login isn&apos;t linked to a staff record yet — ask your admin to check your Staff File.
@@ -507,7 +507,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     <div>
       <WelcomeHero role="admin" name={user.name} schoolId={school.id} title={`Welcome back to ${school.name}`}
         line={school.branding.motto || "What needs you today is below, most urgent first."} />
-      <TermPulseBar school={school} />
+      <TermPulseBar school={school} slug={slug} admin />
       {!term && (
         <Card className="mb-6">
           <p className="font-medium">First things first</p>

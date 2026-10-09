@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { attendanceRecords, students, classes, staff, staffNudges, terms } from "@/db/schema";
-import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
+import { requireModule, getTeacherScope } from "@/core/school-context";
+import { inTerm, listTerms, schoolWritable, termWritable, whyNotWritable } from "@/core/terms";
 import { getHolidayMap, isWeekend } from "@/core/calendar";
 import { uid } from "@/lib/utils";
 import { withFlash } from "@/lib/flash";
@@ -33,11 +34,13 @@ export async function saveRegister(slug: string, classId: string, f: FormData) {
   const holidayMap = await getHolidayMap(school.id);
   if (holidayMap.has(date)) return { err: "holiday" as const };
 
-  // the record belongs to the term whose dates contain it
-  const allTerms = await db.select().from(terms).where(eq(terms.schoolId, school.id));
-  const term = allTerms.find((t) => t.startsAt <= date && date <= t.endsAt)
-    ?? (await getCurrentTerm(school.id));
-  if (!term) throw new Error("No current term");
+  // the record belongs to the term whose dates contain it, and only a term
+  // that can still take writes (open, or ended within the correction window)
+  if (!schoolWritable(school.status)) return { err: "term" as const, msg: "The school's subscription has ended. Records are kept and readable; renew to mark registers again." };
+  const allTerms = await listTerms(school.id);
+  const term = allTerms.find((t) => inTerm(t, date));
+  if (!term) return { err: "term" as const, msg: "That day is outside every term's dates. Check the term dates under School settings." };
+  if (!termWritable(term)) return { err: "term" as const, msg: whyNotWritable(term) };
 
   const roster = await db.select({ id: students.id }).from(students)
     .where(and(eq(students.schoolId, school.id), eq(students.classId, classId),

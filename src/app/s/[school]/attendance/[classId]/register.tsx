@@ -81,7 +81,7 @@ export function Register({ slug, classId, className, roster, initial, date, save
       throw e;
     }
     if (r && "err" in r && typeof r.err === "string") {
-      router.push(withFlash(here, REFUSED[r.err] ?? "That didn’t go through — nothing was saved.", { error: true }));
+      router.push(withFlash(here, REFUSED[r.err] ?? (("msg" in r && r.msg) || "That didn’t go through — nothing was saved."), { error: true }));
       return;
     }
     const told = r?.told ?? 0;

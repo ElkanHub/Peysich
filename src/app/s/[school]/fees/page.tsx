@@ -5,7 +5,9 @@ import {
   feeInvoices, feeInvoiceLines, feePayments, ledgerEntries, students, classes,
   levels, guardians, studentGuardians, user as userTable,
 } from "@/db/schema";
-import { requireModule, getCurrentTerm } from "@/core/school-context";
+import { requireModule } from "@/core/school-context";
+import { getViewingTerm } from "@/core/terms";
+import { TermBanner } from "@/ui/term-banner";
 import { getParentChildren } from "@/core/portal";
 import { canFeeAction } from "@/core/access";
 import { getFeesConfig, getRemindersSent, reminderBody, confirmTail, ghs } from "@/modules/fees/config";
@@ -25,12 +27,12 @@ const bigBtn = btnCls + " h-11 text-[14.5px]";
 
 export default async function Fees({ params, searchParams }: {
   params: Promise<{ school: string }>;
-  searchParams: Promise<{ q?: string; c?: string; f?: string; child?: string; tab?: string }>;
+  searchParams: Promise<{ q?: string; c?: string; f?: string; child?: string; tab?: string; t?: string }>;
 }) {
   const { school: slug } = await params;
   const sp = await searchParams;
   const { school, user } = await requireModule(slug, "fees");
-  const term = await getCurrentTerm(school.id);
+  const term = await getViewingTerm(school.id, sp.t);
   const cfg = getFeesConfig(school.settings);
   if (!term) return <Empty title="No academic year yet" hint="Set up your year and terms in Settings first." />;
   const today = new Date().toISOString().slice(0, 10);
@@ -70,7 +72,8 @@ export default async function Fees({ params, searchParams }: {
 
     return (
       <div className="max-w-3xl">
-        <PageHeader title="Fees" sub="Your children's bills, receipts and history — one place, per child" />
+        {term.viewingPast && <TermBanner term={term} />}
+      <PageHeader title="Fees" sub="Your children's bills, receipts and history — one place, per child" />
         <div className="mb-4 flex flex-wrap gap-2">
           {kids.map((k) => {
             const isActive = k.id === active.id;

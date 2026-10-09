@@ -43,6 +43,12 @@ export const TEMPLATES = {
   emergency_medical: { log: "emergency", sms: "{{school}}: {{child}} needs medical attention. Please call {{phone}} immediately. Details: {{detail}}", wa: { name: "emergency_medical" } },
   emergency_behaviour: { log: "emergency", sms: "{{school}}: the head would like to speak with you about {{child}} today. Please call {{phone}}. Details: {{detail}}", wa: { name: "emergency_behaviour" } },
   emergency_come: { log: "emergency", sms: "{{school}}: please come to the school about {{child}} as soon as you can. Details: {{detail}}", wa: { name: "emergency_come" } },
+  // ── the cycle of use: to the admins and their team only (docs/11) ──
+  term_opened: { log: "term", sms: "{{school}}: {{term}} ({{year}}) is open. Registers, scores and fees record into it until {{ends}}." },
+  term_closed: { log: "term", sms: "{{school}}: {{term}} ({{year}}) is closed and in Archives. {{reports}} report cards were sent. Fees still owed can still be paid." },
+  term_reopened: { log: "term", sms: "{{school}}: {{who}} reopened {{term}} ({{year}}) for a correction. Close it again when the change is done." },
+  term_close_due: { log: "term", sms: "{{school}}: {{term}} ended three weeks ago and is still open. Close it from Home so it goes to Archives." },
+  retention_warning: { log: "term", sms: "{{school}}: your SchoolSpec records are kept until {{date}} ({{days}} days). Renew to keep them, or download everything from Billing." },
   emergency_pickup: { log: "emergency", sms: "{{school}}: please collect {{child}} early today at {{time}}. Details: {{detail}}", wa: { name: "emergency_pickup" } },
 } as const satisfies Record<string, Template>;
 

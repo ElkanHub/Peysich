@@ -15,6 +15,8 @@ import {
   renameClass, deleteClass, updateRoom,
 } from "./structure-actions";
 import { updateTermDates, saveSchoolHours } from "./calendar-actions";
+import { reopenTermAction } from "../term-actions";
+import { termState } from "@/core/terms";
 import { updateMemberGrants, revokeTeamMember } from "./team-actions";
 import { AddTeamMember, AccessPicker } from "./team";
 import { presetOf } from "./preset-of";
@@ -169,8 +171,7 @@ export default async function Settings({ params, searchParams }: {
                 .sort((a, c) => a.startsAt.localeCompare(c.startsAt))
                 .map((t) => {
                   const weeks = termWeeks(t).length;
-                  const status = current?.id === t.id ? "active"
-                    : t.endsAt < today ? "past" : t.startsAt > today ? "upcoming" : "open";
+                  const status = termState(t, today);
                   return (
                     <form key={t.id} action={updateTermDates.bind(null, slug, t.id)}
                       className="flex flex-wrap items-end gap-2 rounded-lg border border-border px-3 py-2.5">
@@ -183,20 +184,34 @@ export default async function Settings({ params, searchParams }: {
                       </Field>
                       <span className="pb-2.5 text-[13px] text-muted-foreground" data-nums="">{weeks} weeks</span>
                       <span className="pb-2">
-                        {status === "active" && <Badge tone="success">active now</Badge>}
-                        {status === "past" && <Badge tone="default">ended</Badge>}
-                        {status === "upcoming" && <Badge tone="warning">upcoming</Badge>}
+                        {status === "open" && <Badge tone="success">open</Badge>}
+                        {status === "ended" && <Badge tone="warning">ended · close it from Home</Badge>}
+                        {status === "closed" && <Badge tone="default">closed · in Archives</Badge>}
+                        {status === "upcoming" && <Badge tone="brand">upcoming</Badge>}
                       </span>
-                      <SubmitButton className={btnGhostCls + " ml-auto"} pendingText="Saving…">Save dates</SubmitButton>
+                      {status !== "closed" && <SubmitButton className={btnGhostCls + " ml-auto"} pendingText="Saving…">Save dates</SubmitButton>}
                     </form>
                   );
                 })}
             </div>
           </div>
         ))}
+        {tms.filter((t) => termState(t, today) === "closed").length > 0 && (
+          <details className="mb-4 rounded-lg border border-border px-3 py-2.5">
+            <summary className="cursor-pointer text-[14px] font-medium">Reopen a closed term for a correction</summary>
+            <p className="mt-1 text-[13px] text-muted-foreground">A reopened term leaves Archives until it is closed again. Every reopen is recorded with your name and the reason.</p>
+            {tms.filter((t) => termState(t, today) === "closed").sort((a, c) => c.startsAt.localeCompare(a.startsAt)).map((t) => (
+              <form key={t.id} action={reopenTermAction.bind(null, slug, t.id)} className="mt-2 flex flex-wrap items-end gap-2">
+                <span className="w-36 pb-2 text-sm font-medium">{t.name} · {yrs.find((y) => y.id === t.yearId)?.name}</span>
+                <Field label="Why"><input name="reason" required placeholder="a mark on one report card" className={inputCls + " w-64"} /></Field>
+                <SubmitButton className={btnGhostCls} pendingText="Reopening…">Reopen</SubmitButton>
+              </form>
+            ))}
+          </details>
+        )}
         <p className="mb-4 text-[13.5px] text-muted-foreground">
-          The <b>active term</b> follows today&apos;s date automatically — when {current ? `${current.name} ends` : "a term ends"},
-          the next one takes over on its first day. No switch to remember.
+          A term <b>opens by itself on its first day</b> and runs to its last day. After that you have three weeks for
+          corrections, then you <b>close it from Home</b> and it goes to Archives. One term is open at a time.
         </p>
         <form action={createYear.bind(null, slug)} className="grid grid-cols-3 gap-3 border-t border-border pt-4">
           <Field label="New year name"><input name="name" placeholder="2027/2028" required className={inputCls} /></Field>
@@ -636,13 +651,13 @@ export default async function Settings({ params, searchParams }: {
 
       {tab === "yearend" && <>
       {/* ── 11 · year end ── */}
-      <Section danger title="End of year"
-        hint="Move every class up, keep repeaters back, top-level leavers become past students, open the new year">
+      <Section danger title="Close the year"
+        hint="Move every class up, keep repeaters back, top-level leavers become past students, set next year's dates">
         <p className="text-sm text-muted-foreground">
-          Guided promotion: choose each class&apos;s destination, tick the students repeating,
-          the top level leaves the school as past students, and the new academic year opens — in one pass.
+          Close every term first. Then choose each class&apos;s destination, tick the students repeating,
+          enter next year&apos;s term dates, and the year goes to Archives with next year&apos;s Term 1 waiting to open.
         </p>
-        <a href="/settings/promotion" className={btnCls + " mt-3 inline-block bg-danger"}>Move everyone up</a>
+        <a href="/settings/promotion" className={btnCls + " mt-3 inline-block bg-danger"}>Close the year</a>
       </Section>
       </>}
     </div>

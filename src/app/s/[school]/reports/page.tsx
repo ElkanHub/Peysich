@@ -3,6 +3,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { students, scorePublications, scoreSheets, reportCards, levels, terms, academicYears, user } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
+import { termState } from "@/core/terms";
+import { TermBanner } from "@/ui/term-banner";
 import { getStructure, SECTIONS, SECTION_LABELS, type Section } from "@/core/academics";
 import { getReportConfig, REPORT_CONFIG_LABELS, REPORT_CONFIG_DEFAULTS, type ReportConfig } from "@/modules/assessment/report-config";
 import { Card, PageHeader, Badge, Empty, btnCls, btnGhostCls } from "@/ui/kit";
@@ -139,11 +141,7 @@ export default async function Reports({ params, searchParams }: {
           </span>
         ))}
       </div>
-      {viewingPast && (
-        <p className="mb-4 rounded-md bg-muted px-3 py-2 text-[13.5px] text-muted-foreground">
-          You are looking at a past term&apos;s records — reference only, nothing here can be sent or changed.
-        </p>
-      )}
+      {viewingPast && <TermBanner term={{ ...term, state: termState(term), year: { name: yearName.get(term.yearId) ?? "" } }} />}
 
       {/* ── sent to parents: one row per test, its own state, nothing blurred ── */}
       <Card className="mb-5">

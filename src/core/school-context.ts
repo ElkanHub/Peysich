@@ -7,7 +7,8 @@ import { getSession } from "./session";
 import { getEnabledModules } from "./entitlements";
 import { getAdminGrants, type AdminGrants } from "./access";
 import { db } from "@/db";
-import { terms, academicYears, staff, classes, teachingAssignments } from "@/db/schema";
+import { staff, classes, teachingAssignments } from "@/db/schema";
+import { getWorkingTerm } from "./terms";
 
 export type Ctx = {
   school: NonNullable<Awaited<ReturnType<typeof getSchoolBySlug>>>;
@@ -18,7 +19,7 @@ export type Ctx = {
 };
 
 /** Tabs that never need a grant: the dashboard, own account, block page. */
-const OPEN_TABS = new Set(["", "account", "no-access", "go", "help"]);
+const OPEN_TABS = new Set(["", "account", "no-access", "go", "help", "archives"]);
 
 /** Which tab this request is for — first segment after any /s/{slug}. */
 async function requestTab(slug: string) {
@@ -58,26 +59,11 @@ export async function requireModule(slug: string, moduleKey: string, roles?: str
   return ctx;
 }
 
-/** Current term (and year) for a school — most flows hang off this.
- *  The conventional rule: the ACTIVE term is the one whose start/end dates
- *  contain today. During vacation (between terms) the admin's chosen term
- *  keeps working; with no choice we fall to the next upcoming, then the
- *  most recently ended — so the app always has a sensible term to stand on. */
-export const getCurrentTerm = cache(async (schoolId: string) => {
-  const ts = await db.select().from(terms).where(eq(terms.schoolId, schoolId));
-  if (!ts.length) return null;
-  const today = new Date().toISOString().slice(0, 10);
-  const flagged = ts.find((t) => t.isCurrent);
-  const containing = ts.filter((t) => t.startsAt <= today && today <= t.endsAt);
-  const byStart = [...ts].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-  const t =
-    (flagged && containing.some((c) => c.id === flagged.id) ? flagged : containing[0])
-    ?? flagged
-    ?? byStart.find((x) => x.startsAt > today)
-    ?? byStart.at(-1)!;
-  const [y] = await db.select().from(academicYears).where(eq(academicYears.id, t.yearId));
-  return { ...t, year: y };
-});
+/** Current term (and year) for a school — most flows hang off this. It is the
+ *  WORKING term of the lifecycle (core/terms.ts): the open or not-yet-closed
+ *  one, else the last closed one so every page still has something to read.
+ *  `writable` says whether anything new may be recorded in it today. */
+export const getCurrentTerm = cache(async (schoolId: string) => getWorkingTerm(schoolId));
 
 
 /** THE teacher capability model — two distinct rights, never blended:

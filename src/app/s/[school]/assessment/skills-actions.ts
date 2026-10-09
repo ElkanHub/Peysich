@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { skillRatings, students } from "@/db/schema";
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
+import { schoolWritable, whyNotWritable } from "@/core/terms";
 
 export type SaveResult = { ok: true } | { ok: false; error: string };
 
@@ -18,6 +19,8 @@ export async function saveSkillRatings(
   }
   const term = await getCurrentTerm(school.id);
   if (!term) return { ok: false, error: "There is no current term." };
+  if (!schoolWritable(school.status)) return { ok: false, error: "The school's subscription has ended. Ratings are kept and readable; renew to change them." };
+  if (!term.writable) return { ok: false, error: whyNotWritable(term) };
   if (term.scoresLocked) return { ok: false, error: "This term is closed — ratings can no longer change." };
   // labels come from the school's configurable scale
   const { getStructure } = await import("@/core/academics");

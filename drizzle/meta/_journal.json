@@ -239,6 +239,13 @@
       "when": 1791074017084,
       "tag": "0033_term_billing_installation",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791551615380,
+      "tag": "0034_term_lifecycle",
+      "breakpoints": true
     }
   ]
 }

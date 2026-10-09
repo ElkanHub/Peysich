@@ -153,6 +153,20 @@ and the warnings go into the privacy policy and the refunds page.
 **Reactivation.** Paying flips status to active and nothing else. The admin then opens the
 next term, or runs **Close the year** if they left before promotion.
 
+### 2.7a Who gets told
+
+Calendar events ping **the admins and their team only**: every admin login that has a
+staff record, through the normal routing (the app and Telegram free; paid channels by the
+school's own rules). Parents, teachers and students are never told about the calendar.
+
+| Event | Ping |
+|---|---|
+| a term opens (by the sweep or early) | `term_opened` |
+| a term is closed | `term_closed`, with the report-card count |
+| a term is reopened | `term_reopened`, naming who did it |
+| a term is still open 21 days after its last day | `term_close_due`, once |
+| a lapsed school is 90, 30 or 7 days from deletion | `retention_warning` |
+
 ### 2.8 Billing and the calendar stay separate
 
 - The subscription gates *writing*, never *reading*. Past due becomes read-only after grace;
@@ -350,7 +364,23 @@ Add to the `billing` section:
 
 ---
 
-## 7. What done looks like
+## 7. Shipped (October 2026)
+
+Steps 1 to 7 are in, with these deliberate shortcuts, each marked `ponytail:` in code:
+
+- The viewing term (`?t=`) is honoured by Reports, the record book and Fees; the other
+  modules still read the working term. Archives links only to those three.
+- Parents and students get their past terms from the child's page as it already stood
+  (report cards by term, bills by term); no separate *Past terms* list was added.
+- Frozen mode hides nothing in the UI beyond the one card; every write is refused on the
+  server with a plain sentence instead.
+- Deletion after the retention year is not automated: the warnings go out, the deletion is
+  a decision taken by hand.
+- An admin without a staff record gets no ping; the Staff page creates one.
+- Migration: of the terms that had already run, the latest stays live for the admin to
+  close; earlier ones are closed as they ended, so Archives is full from day one.
+
+## 8. What done looks like
 
 - The demo school opens on an open term the day it is seeded, with earlier terms in Archives.
 - Marking a register for a date outside the term is refused with a plain sentence.

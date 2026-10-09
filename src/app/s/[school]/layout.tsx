@@ -8,6 +8,7 @@ import { AnnouncementGate } from "@/ui/announcement-gate";
 import { Shell } from "@/ui/shell";
 import { cn } from "@/lib/utils";
 import { getBalance, ghs, LOW_BALANCE_PESEWAS } from "@/messaging/wallet";
+import { deleteAfter, fmtDay, getWorkingTerm, schoolWritable } from "@/core/terms";
 import type { Metadata } from "next";
 
 /** A school's pages are private. Belt and braces with the proxy's
@@ -28,19 +29,6 @@ export default async function SchoolLayout({ children, params }: {
   const { school: slug } = await params;
   const { school, user, modules, grants } = await requireSchool(slug);
 
-  if (school.status === "suspended" && user.role !== "platform_admin") {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-8 text-center">
-        <div>
-          <h1 className="text-xl font-semibold">Account suspended</h1>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            {school.name}&apos;s subscription needs attention. Your data is safe.
-            Please contact the school office or settle the outstanding payment.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const trialDays = school.status === "trial" && school.trialEndsAt
     ? daysUntil(school.trialEndsAt) : null;
@@ -50,6 +38,12 @@ export default async function SchoolLayout({ children, params }: {
     user.role === "admin" ? getBalance(school.id) : null,
   ]);
   const walletLow = balance !== null && balance < LOW_BALANCE_PESEWAS;
+  // frozen: the subscription lapsed, or no term can take writes. Everything
+  // stays readable; the server refuses writes; one card says what to do.
+  const lapsed = !schoolWritable(school.status);
+  const term = await getWorkingTerm(school.id);
+  const frozen = lapsed || (term !== null && !term.writable);
+  const until = lapsed ? await deleteAfter(school) : null;
   if (unacked.length) badges["/comms"] = unacked.length;
 
   // school logo (top bar) + the user's own avatar (sidebar) — both optional
@@ -72,6 +66,22 @@ export default async function SchoolLayout({ children, params }: {
           <a href="/billing" className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
             Choose a plan
           </a>
+        </div>
+      )}
+      {frozen && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-[14px] shadow-[var(--shadow-sm)]">
+          <span>
+            {lapsed
+              ? user.role === "admin"
+                ? <><b>Your subscription has ended.</b> Everything is kept and readable{until ? ` until ${fmtDay(until)}` : ""}. Renew to open the next term.</>
+                : <><b>The school&apos;s account is paused.</b> Records are kept and readable.</>
+              : term?.state === "closed"
+                ? <><b>{term.year.name} is closed.</b> {user.role === "admin" ? "Open the next term when school resumes." : "Records stay readable until the next term opens."}</>
+                : <><b>{term?.name} has ended.</b> {user.role === "admin" ? "Close it from Home, then open the next term." : "Records stay readable until the next term opens."}</>}
+          </span>
+          {user.role === "admin" && lapsed && (
+            <a href="/billing" className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">Renew</a>
+          )}
         </div>
       )}
       {school.status === "past_due" && user.role === "admin" && (

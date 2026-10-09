@@ -49,8 +49,8 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="End of year"
-        sub="Every class already has its next class filled in. Tick only the children who are repeating." />
+      <PageHeader title="Close the year"
+        sub="Every class already has its next class filled in. Tick only the children who are repeating, and give next year its dates." />
       <form action={runPromotion.bind(null, slug)} className="space-y-4">
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -58,10 +58,22 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
               <input name="yearName" placeholder={`${y}/${y + 1}`} className={inputCls + " w-44"} />
             </Field>
             <p className="max-w-sm text-[14px] text-muted-foreground">
-              Go opens the new year, moves every class up, keeps ticked children back as
+              Go closes this year into Archives, moves every class up, keeps ticked children back as
               <em> repeating</em>, and the top level leaves the school as past students.
               Children who are leaving should be exited from their Student File first.
             </p>
+          </div>
+          <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
+            {[1, 2, 3].map((n) => {
+              const [ds, de] = [[`${y}-09-01`, `${y}-12-18`], [`${y + 1}-01-06`, `${y + 1}-04-02`], [`${y + 1}-04-20`, `${y + 1}-07-30`]][n - 1];
+              return (
+                <div key={n} className="rounded-lg border border-border p-3">
+                  <p className="mb-2 text-sm font-medium">Term {n}</p>
+                  <Field label="First day"><input name={`t${n}s`} type="date" defaultValue={ds} required className={inputCls} /></Field>
+                  <div className="mt-2"><Field label="Last day"><input name={`t${n}e`} type="date" defaultValue={de} required className={inputCls} /></Field></div>
+                </div>
+              );
+            })}
           </div>
         </Card>
 
@@ -108,9 +120,9 @@ export default async function Promotion({ params }: { params: Promise<{ school: 
         <div className="flex items-center justify-between">
           <Link href="/settings" className={btnGhostCls}>Keep everything as it is</Link>
           <ConfirmButton className={btnCls + " h-11 bg-danger px-6 text-[15px]"} danger confirmLabel="Go"
-            title={`Move ${placed} children up one class and start ${yearLabel}?`}
-            body={`${leavers} ${topName} leavers become past students. Ticked children repeat their class.`}>
-            Move everyone up
+            title={`Close the year, move ${placed} children up one class and set up ${yearLabel}?`}
+            body={`${leavers} ${topName} leavers become past students. Ticked children repeat their class. ${yearLabel}'s Term 1 opens on its first day.`}>
+            Close the year
           </ConfirmButton>
         </div>
       </form>

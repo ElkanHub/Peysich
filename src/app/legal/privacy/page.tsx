@@ -74,7 +74,7 @@ export default function Privacy() {
       <H2 id="how-long">6. How long it stays</H2>
       <Ul items={[
         "As long as the school uses SchoolSpec, its records stay, because a school’s records are permanent by nature: a report card from three years ago is still a report card.",
-        "When a school leaves, nothing is deleted at once. After 90 days the school’s data is deleted from the live systems and, within a further 35 days, from backups — unless the school asks us to keep it, or a law says we must keep part of it (invoices, for example).",
+        "When a school’s subscription ends, nothing is deleted at once. Everyone can still sign in and read every term for 12 months, and the administrator can download everything. We write to the administrator 90, 30 and 7 days before the end of that year. Then the school’s data is deleted from the live systems and, within a further 35 days, from backups — unless the school renews, asks us to keep it, or a law says we must keep part of it (invoices, for example).",
         "Sent SMS and email are logged for 24 months so the school can see what was sent and what it cost.",
         "Technical logs are kept for 30 days.",
         "A walkthrough request from the website is kept for 12 months, then deleted.",

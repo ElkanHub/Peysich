@@ -8,6 +8,7 @@ import {
   scholarships, studentScholarships, feeAdjustments, outbox, schools,
 } from "@/db/schema";
 import { requireModule, getCurrentTerm } from "@/core/school-context";
+import { requireWritableTerm } from "@/core/terms";
 import { canFeeAction, type FeeActionKey } from "@/core/access";
 import { invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
@@ -32,6 +33,12 @@ const touch = (extra?: string) => {
 };
 
 // ── settings ───────────────────────────────────────────────────────────
+/** The term new money records into, or back to the page with the reason. */
+async function writableOr(school: { id: string; status: string }, back: string) {
+  try { return await requireWritableTerm(school); }
+  catch (e) { redirect(withFlash(back, (e as Error).message, { error: true })); }
+}
+
 export async function saveFeesSettings(slug: string, f: FormData) {
   const { school } = await requireFees(slug, "catalog");
   const settings = {
@@ -82,8 +89,7 @@ export async function deleteFeeType(slug: string, typeId: string) {
 // ── catalog: amounts per level ─────────────────────────────────────────
 export async function saveFeeItem(slug: string, f: FormData) {
   const { school } = await requireFees(slug, "catalog");
-  const term = await getCurrentTerm(school.id);
-  if (!term) redirect(`/fees/setup?flash=error`);
+  const term = await writableOr(school, "/fees/setup");
   const feeTypeId = String(f.get("feeTypeId"));
   const levelId = String(f.get("levelId"));
   const amount = Math.round(Number(f.get("amountGhs")) * 100);
@@ -107,8 +113,8 @@ export async function saveFeeItem(slug: string, f: FormData) {
 /** Start the new term from the previous one — amounts copy, then adjust. */
 export async function copyItemsFromTerm(slug: string, fromTermId: string) {
   const { school } = await requireFees(slug, "catalog");
-  const term = await getCurrentTerm(school.id);
-  if (!term || fromTermId === term.id) redirect(`/fees/setup?flash=error`);
+  const term = await writableOr(school, "/fees/setup");
+  if (fromTermId === term.id) redirect(`/fees/setup?flash=error`);
   const src = await db.select().from(feeItems).where(and(
     eq(feeItems.schoolId, school.id), eq(feeItems.termId, fromTermId)));
   for (const it of src) {
@@ -173,8 +179,7 @@ export async function setTransportRider(slug: string, studentId: string, f: Form
 
 export async function addAdjustment(slug: string, studentId: string, f: FormData) {
   const { school, user } = await requireFees(slug, "catalog");
-  const term = await getCurrentTerm(school.id);
-  if (!term) redirect(`/students/${studentId}?tab=fees&flash=error`);
+  const term = await writableOr(school, `/students/${studentId}?tab=fees`);
   const amount = Math.round(Number(f.get("amountGhs")) * 100);
   const reason = String(f.get("reason") ?? "").trim();
   if (!amount || !reason) redirect(`/students/${studentId}?tab=fees&flash=error`);
@@ -213,8 +218,7 @@ export async function addAdjustment(slug: string, studentId: string, f: FormData
 /** Create this term's bills, then tell each parent by SMS. */
 export async function generateInvoices(slug: string) {
   const { school, user } = await requireFees(slug, "generate");
-  const term = await getCurrentTerm(school.id);
-  if (!term) redirect(withFlash("/fees", "No current term — set one under Settings first.", { error: true }));
+  const term = await writableOr(school, "/fees");
   const r = await generateInvoicesForTerm(school, term.id, user.id);
   touch();
   if (!r.created) redirect(withFlash("/fees", "Every child already has a bill for this term. Nothing new to create."));

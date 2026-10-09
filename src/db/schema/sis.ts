@@ -9,6 +9,8 @@ export const academicYears = pgTable("academic_years", {
   name: text("name").notNull(), // "2025/2026"
   startsAt: date("starts_at").notNull(), endsAt: date("ends_at").notNull(),
   isCurrent: boolean("is_current").notNull().default(false),
+  /** Set by "Close the year" once every term is closed — the year is then in Archives. */
+  closedAt: timestamp("closed_at"),
 }, (t) => [index("ay_school").on(t.schoolId)]);
 
 export const terms = pgTable("terms", {
@@ -18,6 +20,14 @@ export const terms = pgTable("terms", {
   startsAt: date("starts_at").notNull(), endsAt: date("ends_at").notNull(),
   isCurrent: boolean("is_current").notNull().default(false),
   scoresLocked: boolean("scores_locked").notNull().default(false),
+  /** The lifecycle (docs/11): upcoming → open (openedAt) → ended (the end date
+   *  passed) → closed (closedAt). State is derived in core/terms.ts, never stored. */
+  openedAt: timestamp("opened_at"),
+  closedAt: timestamp("closed_at"), closedBy: text("closed_by"),
+  closeSummary: jsonb("close_summary").$type<{
+    students: number; reportCards: number; collectedPesewas: number; outstandingPesewas: number;
+    attendanceRate: number | null; weeks: number;
+  }>(),
 }, (t) => [index("terms_school").on(t.schoolId, t.yearId)]);
 
 export const levels = pgTable("levels", {

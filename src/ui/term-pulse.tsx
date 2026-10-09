@@ -5,7 +5,7 @@ import { CalendarRange, Clock } from "lucide-react";
 /** The slim orientation strip every dashboard carries: where we are in the
  *  term (Week N of M) and where we are in the school day (closes at…, time
  *  left) — ticking live on the client. */
-export function TermPulse({ termName, week, total, phase, open, close, off, endsFmt }: {
+export function TermPulse({ termName, week, total, phase, open, close, off, endsFmt, warn, children }: {
   termName: string;
   week: number | null; total: number;
   /** "starts 1 Sep" before the term, "ended" after — null while inside it */
@@ -14,6 +14,10 @@ export function TermPulse({ termName, week, total, phase, open, close, off, ends
   /** weekend / holiday note for today, null on a school day */
   off: string | null;
   endsFmt: string;
+  /** "still open N days after its last day" — the nag to close */
+  warn?: string | null;
+  /** the ceremony buttons (admins) */
+  children?: React.ReactNode;
 }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -58,6 +62,8 @@ export function TermPulse({ termName, week, total, phase, open, close, off, ends
         <Clock size={13} />
         {clock || "…"}
       </span>
+      {warn && <span className="font-medium text-warning">{warn}</span>}
+      {children && <span className="ml-auto flex flex-wrap items-center gap-2">{children}</span>}
     </div>
   );
 }

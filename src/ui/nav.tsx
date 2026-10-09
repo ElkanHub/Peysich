@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Users, HeartHandshake, BriefcaseBusiness, Settings, CreditCard,
+  LayoutDashboard, Users, HeartHandshake, BriefcaseBusiness, Settings, CreditCard, Archive,
   CalendarCheck, GraduationCap, CalendarDays, BookOpen, Megaphone, Wallet,
   UserPlus, Library, Bus, Boxes, Briefcase, BarChart3, ClipboardList, Menu, X,
   CalendarRange,
@@ -32,7 +32,7 @@ function TourRelaunch() {
 
 const ICONS: Record<string, LucideIcon> = {
   Home: LayoutDashboard, Students: Users, Parents: HeartHandshake,
-  Staff: BriefcaseBusiness, "School settings": Settings, "Your SchoolSpec plan": CreditCard,
+  Staff: BriefcaseBusiness, "School settings": Settings, "Your SchoolSpec plan": CreditCard, Archives: Archive,
   Attendance: CalendarCheck, Scores: GraduationCap, "Report cards": ClipboardList,
   Timetable: CalendarDays, Homework: BookOpen, Announcements: Megaphone, Fees: Wallet,
   Calendar: CalendarRange,
@@ -53,6 +53,7 @@ const NAV_GROUPS: [string, string[]][] = [
   ["Every day", ["Home", "Attendance", "Scores", "Fees", "Announcements"]],
   ["People", ["Students", "Parents", "Staff", "Admissions"]],
   ["This term", ["Report cards", "Timetable", "Calendar", "Homework"]],
+  ["Past terms", ["Archives"]],
   ["Extras", ["Library", "Transport", "Inventory", "Leave", "Analytics"]],
   ["Setup", ["School settings", "Your SchoolSpec plan"]],
 ];

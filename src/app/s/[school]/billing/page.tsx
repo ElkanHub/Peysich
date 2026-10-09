@@ -10,7 +10,7 @@ import {
   MODULE_LABELS, SIZE_BANDS,
 } from "@/core/plan-const";
 import { PlanBuilder } from "@/modules/plans/builder";
-import { Badge, Card, PageHeader } from "@/ui/kit";
+import { Badge, Card, PageHeader, btnGhostCls } from "@/ui/kit";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { withFlash } from "@/lib/flash";
@@ -265,6 +265,13 @@ export default async function Billing({ params, searchParams }: {
               Cancellation requested — we&apos;ll call you before anything changes.
             </p>
           : <CancelPlan slug={slug} />}
+      <Card className="mt-4">
+        <h2 className="font-semibold">Export everything</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every record the school holds here — students, parents, classes, terms, attendance, scores, bills and payments — as one spreadsheet, any time. Yours to keep whether you stay or go.
+        </p>
+        <a href="/api/export" className={btnGhostCls + " mt-3 inline-flex"} download>Download the workbook</a>
+      </Card>
       </div>
     </div>
   );

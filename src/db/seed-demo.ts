@@ -44,18 +44,31 @@ async function main() {
   let [year] = await db.select().from(academicYears)
     .where(and(eq(academicYears.schoolId, sid), eq(academicYears.isCurrent, true)));
   if (!year) {
+    // the year that contains today (Sep–Jul), so the demo always stands on a
+    // term that is open — or, in August, on Term 3 just ended
+    const now = new Date();
+    const y0 = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    const today = now.toISOString().slice(0, 10);
+    const span: [string, string, string][] = [
+      ["Term 1", `${y0}-09-02`, `${y0}-12-18`], ["Term 2", `${y0 + 1}-01-06`, `${y0 + 1}-04-02`], ["Term 3", `${y0 + 1}-04-20`, `${y0 + 1}-07-30`],
+    ];
+    const live = span.find(([, s, e]) => s <= today && today <= e)?.[0]
+      ?? [...span].reverse().find(([, s]) => s <= today)?.[0] ?? "Term 1";
     const yid = uid();
     await db.insert(academicYears).values({
-      id: yid, schoolId: sid, name: "2025/2026", startsAt: "2025-09-02", endsAt: "2026-07-30", isCurrent: true,
+      id: yid, schoolId: sid, name: `${y0}/${y0 + 1}`, startsAt: span[0][1], endsAt: span[2][2], isCurrent: true,
     });
-    await db.insert(terms).values([
-      { id: uid(), schoolId: sid, yearId: yid, name: "Term 1", startsAt: "2025-09-02", endsAt: "2025-12-18", isCurrent: false },
-      { id: uid(), schoolId: sid, yearId: yid, name: "Term 2", startsAt: "2026-01-06", endsAt: "2026-04-02", isCurrent: true },
-      { id: uid(), schoolId: sid, yearId: yid, name: "Term 3", startsAt: "2026-04-20", endsAt: "2026-07-30", isCurrent: false },
-    ]);
+    await db.insert(terms).values(span.map(([name, startsAt, endsAt]) => ({
+      id: uid(), schoolId: sid, yearId: yid, name, startsAt, endsAt,
+      isCurrent: name === live,
+      openedAt: startsAt <= today ? new Date(startsAt) : null,
+      // every earlier term is closed and in Archives; the live one is not
+      closedAt: endsAt < today && name !== live ? new Date(endsAt) : null,
+      closedBy: endsAt < today && name !== live ? "demo" : null,
+    })));
     [year] = await db.select().from(academicYears)
       .where(and(eq(academicYears.schoolId, sid), eq(academicYears.isCurrent, true)));
-    log("academic year 2025/2026 + 3 terms");
+    log(`academic year ${y0}/${y0 + 1} + 3 terms, ${live} live`);
   }
   const [term] = await db.select().from(terms)
     .where(and(eq(terms.schoolId, sid), eq(terms.isCurrent, true)));

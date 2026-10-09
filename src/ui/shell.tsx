@@ -10,6 +10,7 @@ const CORE_NAV: { label: string; href: string; roles: Role[] }[] = [
   { label: "Students", href: "/students", roles: ["admin", "teacher"] },
   { label: "Parents", href: "/guardians", roles: ["admin"] },
   { label: "Staff", href: "/staff", roles: ["admin"] },
+  { label: "Archives", href: "/archives", roles: ["admin", "teacher"] },
   { label: "School settings", href: "/settings", roles: ["admin"] },
   { label: "Your SchoolSpec plan", href: "/billing", roles: ["admin"] },
 ];
@@ -31,7 +32,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
     ...CORE_NAV.filter((n) => n.roles.includes(role as Role)),
     ...moduleNav,
   ]
-    .filter((n) => !allowedTabs || n.href === "" || allowedTabs.has(n.href.replace(/^\//, "")))
+    .filter((n) => !allowedTabs || n.href === "" || n.href === "/archives" || allowedTabs.has(n.href.replace(/^\//, "")))
     .map((n) => ({ ...n, badge: badges?.[n.href] }));
 
   return (

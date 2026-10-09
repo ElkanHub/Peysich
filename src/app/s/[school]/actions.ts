@@ -28,19 +28,16 @@ export async function createYear(slug: string, f: FormData) {
   const s = new Date(String(f.get("startsAt"))), e = new Date(String(f.get("endsAt")));
   const third = (e.getTime() - s.getTime()) / 3;
   const d = (t: number) => new Date(t).toISOString().slice(0, 10);
-  await db.insert(terms).values([1, 2, 3].map((n) => ({
+  // the term whose dates contain today opens at once; the rest wait their turn
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = [1, 2, 3].map((n) => ({
     id: uid(), schoolId: school.id, yearId, name: `Term ${n}`,
     startsAt: d(s.getTime() + third * (n - 1)), endsAt: d(s.getTime() + third * n),
-    isCurrent: n === 1,
+  }));
+  const live = rows.find((r) => r.startsAt <= today && today <= r.endsAt);
+  await db.insert(terms).values(rows.map((r) => ({
+    ...r, isCurrent: r === (live ?? rows[0]), openedAt: r === live ? new Date() : null,
   })));
-  revalidatePath(`/settings`);
-}
-
-export async function setCurrentTerm(slug: string, termId: string) {
-  const { school } = await requireSchool(slug, ["admin"]);
-  await db.update(terms).set({ isCurrent: false }).where(eq(terms.schoolId, school.id));
-  await db.update(terms).set({ isCurrent: true })
-    .where(and(eq(terms.id, termId), eq(terms.schoolId, school.id)));
   revalidatePath(`/settings`);
 }
 

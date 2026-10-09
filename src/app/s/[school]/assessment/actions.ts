@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { componentScores, scoreSheets, scorePublications } from "@/db/schema";
 import { publishTermReports } from "@/modules/assessment/publish";
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
+import { schoolWritable, whyNotWritable } from "@/core/terms";
 import { getStructure } from "@/core/academics";
 import { uid } from "@/lib/utils";
 import { withFlash } from "@/lib/flash";
@@ -30,8 +31,10 @@ async function guard(slug: string, classId: string, subjectId: string, component
     const scope = await getTeacherScope(school.id, user.id);
     if (!scope?.canScore(classId, subjectId)) return { error: "This is not your sheet." };
   }
+  if (!schoolWritable(school.status)) return { error: "The school's subscription has ended. Scores are kept and readable; renew to change them." };
   const term = await getCurrentTerm(school.id);
   if (!term) return { error: "There is no current term." };
+  if (!term.writable) return { error: whyNotWritable(term) };
   if (term.scoresLocked) return { error: "This term is closed — scores can no longer change." };
   const S = await getStructure(school.id);
   const cls = S.classById.get(classId);
