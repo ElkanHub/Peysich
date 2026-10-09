@@ -241,13 +241,19 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 .prose-paper a { color: #5E1D3E; text-decoration: underline; text-underline-offset: 4px; }
 .prose-paper hr { border: 0; border-top: 1px dashed #221a22; margin: 2em 0; }
 .prose-paper img { max-width: 100%; border: 1px solid #221a22; box-shadow: 6px 6px 0 #221a22; }
-/* the riso frame's paper-grain veil (placeholder and art alike) */
-.riso::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .35;
-  background-image: radial-gradient(rgba(232,223,208,.28) .7px, transparent .8px); background-size: 4px 4px; }
-.riso-tape { position: absolute; z-index: 3; width: min(78px, 26%); height: 22px; background: rgba(229,138,46,.55);
-  box-shadow: 0 1px 1px rgba(34,26,34,.18); pointer-events: none; }
-.riso-ph { background: radial-gradient(120% 80% at 30% 20%, #7a3a5c 0, #5E1D3E 45%, #3d1128 100%); }
 @media (prefers-reduced-motion: reduce) { .mk-btn { transition: none; } }
+
+/* -- Landing: the card-on-ground language (landing page only) ----------
+   Assembly tokens, rounder corners, pill buttons. Scoped to .lp-* so the
+   app's radius rule (padded rounded-full -> radius-md) stays untouched. */
+.lp-wrap { max-width: 1240px; margin: 0 auto; }
+.lp-btn, .lp-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 22px;
+  border-radius: 9999px; font-size: 15px; font-weight: 600; white-space: nowrap; transition: background-color .15s, transform .1s; }
+.lp-btn { background: var(--primary); color: var(--primary-foreground); }
+.lp-btn:hover { background: var(--brand-strong); }
+.lp-btn-ghost { border: 1px solid var(--border-strong); background: var(--card); color: var(--foreground); }
+.lp-btn-ghost:hover { background: var(--muted); }
+.lp-btn:active, .lp-btn-ghost:active { transform: scale(.98); }
 
 /* ── Phone card lists ──────────────────────────────────────────────────────
    Below md a DataTable stops being a table: each row is a card and each cell
