@@ -15,7 +15,7 @@ const DESCRIPTION = "School management software for basic schools in Ghana. Mark
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
-  title: { default: "SchoolSpec — school management for basic schools in Ghana", template: "%s · SchoolSpec" },
+  title: { default: "SchoolSpec — the school management system built for schools in Ghana", template: "%s · SchoolSpec" },
   description: DESCRIPTION,
   applicationName: "SchoolSpec",
   keywords: ["school management software Ghana", "school management system Ghana", "attendance register app",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website", siteName: "SchoolSpec", locale: "en_GH", url: "/",
-    title: "SchoolSpec — run the school at the speed of the morning",
+    title: "SchoolSpec — the school management system built for schools in Ghana",
     description: DESCRIPTION,
     // JPEG under 150 KB on purpose: WhatsApp drops previews over ~300 KB, and
     // WhatsApp is where school owners share links
@@ -48,8 +48,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SchoolSpec — run the school at the speed of the morning",
-    description: "Attendance, report cards, fees and parent SMS for basic schools in Ghana. Creche to JHS 3, on any phone.",
+    title: "SchoolSpec — the school management system built for schools in Ghana",
+    description: "Attendance, report cards, fees by mobile money and parent messages for basic schools in Ghana. Creche to JHS 3, on any phone.",
     images: [OG_IMAGE.url],
   },
   formatDetection: { telephone: false },

@@ -8,7 +8,7 @@ everything else private.
 
 | Address | Indexed? | Title | Share card | Why |
 |---|---|---|---|---|
-| `schoolspec.com/` | **Yes** | SchoolSpec — school management software for basic schools in Ghana | og.jpg | The one page that sells |
+| `schoolspec.com/` | **Yes** | SchoolSpec — the school management system built for schools in Ghana | og.jpg | The one page that sells |
 | `schoolspec.com/signup` | **Yes** | Start your free trial · SchoolSpec | og.jpg | People search "SchoolSpec sign up" |
 | `schoolspec.com/sign-in` | Yes | Sign in · SchoolSpec | og.jpg | People search "SchoolSpec login" |
 | `www.schoolspec.com/*` | 308 → apex | | | One address, no duplicate copy |

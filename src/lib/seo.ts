@@ -6,8 +6,9 @@ export const BASE = ROOT.includes("localhost") ? `http://${ROOT}` : `https://${R
 /** The one share card. JPEG under 150 KB on purpose: WhatsApp, where school
  *  owners share links, drops previews above ~300 KB. */
 export const OG_IMAGE = {
-  url: "/og.jpg", width: 1200, height: 630, type: "image/jpeg",
-  alt: "SchoolSpec: 30-second register, report cards in one click, fees receipted by SMS, parents in the loop",
+  // the version in the query busts WhatsApp's and Facebook's preview caches when the card changes
+  url: "/og.jpg?v=3", width: 1200, height: 630, type: "image/jpeg",
+  alt: "SchoolSpec: the school management system built for schools in Ghana. Mark the register in 30 seconds, report cards in one click, fees by mobile money, every parent informed.",
 };
 
 /** Search + share metadata for one public page. Next replaces a parent's

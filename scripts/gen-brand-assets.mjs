@@ -152,7 +152,7 @@ writeFileSync(out("src/app/splash-manifest.json"), JSON.stringify(manifest, null
 // previews above that
 {
   const card = readFileSync(out("scripts/og-card.html"), "utf8")
-    .replace("__REGISTER_IMG__", "data:image/webp;base64," + readFileSync(out("public/marketing/feat-register.webp")).toString("base64"));
+    .replace("__HERO_IMG__", "data:image/webp;base64," + readFileSync(out("public/marketing/hero-people.webp")).toString("base64"));
   await page.setViewportSize({ width: 1200, height: 630 });
   await page.setContent(card);
   await page.waitForTimeout(800); // web fonts
