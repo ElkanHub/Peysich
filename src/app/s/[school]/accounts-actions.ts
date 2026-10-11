@@ -2,7 +2,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { staff, guardians, students, classes, user as userTable } from "@/db/schema";
+import { staff, guardians, students, classes, session, user as userTable } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { auth } from "@/core/auth";
 import { createSchoolLogin, tempPassword } from "@/core/accounts";
@@ -68,6 +68,8 @@ export async function resetLogin(
   const password = tempPassword();
   const ctx = await auth.$context;
   await ctx.internalAdapter.updatePassword(u.id, await ctx.password.hash(password));
+  // whoever held the old password is signed out everywhere
+  await db.delete(session).where(eq(session.userId, u.id));
   return { loginAs: u.username ?? u.email, password };
 }
 

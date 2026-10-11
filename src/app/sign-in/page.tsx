@@ -8,8 +8,7 @@ export const metadata: Metadata = pageMeta({
   path: "/sign-in",
 });
 
-/** The door. The server knows whether Google is configured; the client
- *  knows which accounts this device has used before. */
+/** The door. The client knows which accounts this device has used before. */
 export default function SignIn() {
-  return <SignInClient google={!!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)} />;
+  return <SignInClient />;
 }

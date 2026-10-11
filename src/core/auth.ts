@@ -1,27 +1,34 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { username } from "better-auth/plugins";
+import { captcha, username } from "better-auth/plugins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-
-const google =
-  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-    ? {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        },
-      }
-    : {}; // Google button hidden until creds exist (HANDOFF.md)
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
-  emailAndPassword: { enabled: true },
-  socialProviders: google,
-  // username plugin: school-issued logins for students/parents without email
-  plugins: [username()],
+  emailAndPassword: { enabled: true, revokeSessionsOnPasswordReset: true },
+  // username plugin: school-issued logins for students/parents without email.
+  // Turnstile guards the doors once its keys exist (docs/CONNECTIONS.md §2):
+  // the client sends the token in x-captcha-response, the plugin verifies it
+  // before sign-in / sign-up / username sign-in run. No key = no gate (dev).
+  plugins: [
+    username(),
+    ...(process.env.TURNSTILE_SECRET_KEY ? [captcha({
+      provider: "cloudflare-turnstile",
+      secretKey: process.env.TURNSTILE_SECRET_KEY,
+      endpoints: ["/sign-up/email", "/sign-in/email", "/sign-in/username", "/request-password-reset"],
+    })] : []),
+  ],
+  // Brute force: per IP, in the database (serverless has no shared memory).
+  // 60 auth calls a minute in general, 30 sign-in attempts a minute at the door.
+  rateLimit: {
+    storage: "database",
+    window: 60, max: 60,
+    // ponytail: 30 not 10 — a staff room behind one carrier NAT shares an IP at 7:30am
+    customRules: { "/sign-in/*": { window: 60, max: 30 }, "/sign-up/*": { window: 60, max: 5 } },
+  },
   user: {
     additionalFields: {
       role: { type: "string", defaultValue: "parent", input: false },

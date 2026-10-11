@@ -260,6 +260,13 @@
       "when": 1791744088635,
       "tag": "0036_console_pass_two",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791758163586,
+      "tag": "0037_rate_limit",
+      "breakpoints": true
     }
   ]
 }

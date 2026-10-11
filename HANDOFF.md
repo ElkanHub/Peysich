@@ -38,9 +38,9 @@ redeploy, subdomain mode takes over automatically — no code changes.
 ## 3. Auth (Phase 0 deploy)
 - [ ] Generate a secret: `openssl rand -base64 32` → `BETTER_AUTH_SECRET`.
 - [ ] Set `BETTER_AUTH_URL=https://schoolspec.com`.
-- [ ] **Google sign-in**: Google Cloud console → create project → OAuth consent screen
-      (external) → Credentials → OAuth client (Web). Authorized redirect URI:
-      `https://schoolspec.com/api/auth/callback/google` → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- [ ] **Turnstile** (robot check on sign-in / sign-up): Cloudflare dashboard → Turnstile →
+      Add widget, hostnames `schoolspec.com` + `localhost` → `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
+      `TURNSTILE_SECRET_KEY` (docs/CONNECTIONS.md §2). Email + password is the only sign-in.
 
 ## 4. File storage — Cloudflare R2 (Phase 1)
 - [ ] Cloudflare account → R2 → create bucket `peysich` → API token (Object Read & Write)

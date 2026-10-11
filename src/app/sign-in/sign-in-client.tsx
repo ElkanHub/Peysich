@@ -4,7 +4,8 @@ import { Eye, EyeOff, X, ArrowRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useDeviceAccounts, rememberAccount, forgetAccount, type DeviceAccount } from "@/lib/device-accounts";
 import { useClientValue } from "@/pwa/client";
-import { Door, doorInputCls, doorBtnCls, doorGhostCls } from "@/ui/door";
+import { Door, doorInputCls, doorBtnCls } from "@/ui/door";
+import { Turnstile, captchaHeaders } from "@/ui/turnstile";
 import { cn } from "@/lib/utils";
 
 const label = "block font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground";
@@ -12,12 +13,14 @@ const label = "block font-mono text-[11px] font-medium uppercase tracking-wider 
 /** Sign-in. Accounts used on this device are remembered (name + identifier,
  *  never the password) so a teacher who is also a parent switches in two
  *  taps. Email OR school-issued username — the same box takes both. */
-export function SignInClient({ google }: { google: boolean }) {
+export function SignInClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [captcha, setCaptcha] = useState("");
+  const [captchaReset, setCaptchaReset] = useState(0);
   const accounts = useDeviceAccounts();
   const switching = useClientValue(() => new URLSearchParams(window.location.search).has("switch"), false);
   const passRef = useRef<HTMLInputElement>(null);
@@ -28,11 +31,12 @@ export function SignInClient({ google }: { google: boolean }) {
     if (!navigator.onLine) { setError("You're offline. Signing in needs a connection — try again when you have one."); return; }
     setPending(true); setError("");
     const id = email.trim();
+    const fetchOptions = { headers: captchaHeaders(captcha) };
     const r = id.includes("@")
-      ? await authClient.signIn.email({ email: id, password, callbackURL: "/go" })
-      : await authClient.signIn.username({ username: id, password });
+      ? await authClient.signIn.email({ email: id, password, callbackURL: "/go", fetchOptions })
+      : await authClient.signIn.username({ username: id, password, fetchOptions });
     if (r.error) {
-      setPending(false);
+      setPending(false); setCaptchaReset((n) => n + 1);
       // better-auth deliberately returns one 401 for "no such account" and
       // "wrong password", so the copy names both rather than blaming the password.
       setError(r.error.status === 401 || /invalid|incorrect|not found/i.test(r.error.message ?? "")
@@ -114,26 +118,13 @@ export function SignInClient({ google }: { google: boolean }) {
         {error && (
           <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[16px] text-danger">{error}</p>
         )}
+        <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
         <button type="submit" disabled={pending} className={cn(doorBtnCls, "text-[16px]")}>
           {pending ? "Signing in…" : <>Sign in <ArrowRight size={16} /></>}
         </button>
         <p className="text-[16px] text-muted-foreground">Forgotten your password? Ask the school office to reset it.</p>
       </form>
 
-      {google && (
-        <>
-          <div className="my-5 flex items-center gap-3 text-[12px] text-faint">
-            <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
-          </div>
-          <button type="button" className={cn(doorGhostCls, "text-[16px]")}
-            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/go" })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-              <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.3 14.6 2.3 12 2.3 6.6 2.3 2.3 6.6 2.3 12s4.3 9.7 9.7 9.7c5.6 0 9.3-3.9 9.3-9.5 0-.6-.1-1.1-.2-1.6H12z" />
-            </svg>
-            Continue with Google
-          </button>
-        </>
-      )}
 
       <p className="mt-8 text-[16px] text-muted-foreground">
         New school? <a href="/signup" className="font-semibold text-primary hover:underline">Start a free trial</a>

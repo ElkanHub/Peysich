@@ -5,6 +5,7 @@ import { authClient } from "@/lib/auth-client";
 import { rememberAccount } from "@/lib/device-accounts";
 import { createMySchool } from "./actions";
 import { Door, doorInputCls, doorBtnCls } from "@/ui/door";
+import { Turnstile, captchaHeaders } from "@/ui/turnstile";
 import { cn } from "@/lib/utils";
 
 const label = "block font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground";
@@ -27,6 +28,8 @@ export default function Signup() {
   const [school, setSchool] = useState("");
   const [slug, setSlug] = useState<string | null>(null); // null = follow the school name
   const [editing, setEditing] = useState(false);
+  const [captcha, setCaptcha] = useState("");
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   const host = typeof window !== "undefined" ? window.location.host : "";
   const bareHost = host.replace(/^www\./, "");
@@ -38,9 +41,10 @@ export default function Signup() {
     const id = String(f.get("email"));
     const { error } = await authClient.signUp.email({
       name: String(f.get("name")), email: id, password: String(f.get("password")),
+      fetchOptions: { headers: captchaHeaders(captcha) },
     });
     setPending(false);
-    if (error) return setError(error.message ?? "That didn't go through — try again.");
+    if (error) { setCaptchaReset((n) => n + 1); return setError(error.message ?? "That didn't go through — try again."); }
     rememberAccount({ id, name: String(f.get("name")) });
     setStep(2);
   }
@@ -92,6 +96,7 @@ export default function Signup() {
           <div><label className={label} htmlFor="password">Password</label>
             <input id="password" name="password" type="password" minLength={8} required autoComplete="new-password" className={input} />
             <p className="mt-1.5 text-[14px] text-muted-foreground">At least 8 characters.</p></div>
+          <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
           <button disabled={pending} className={btn}>{pending ? "Creating…" : <>Continue <ArrowRight size={16} /></>}</button>
         </form>
       )}

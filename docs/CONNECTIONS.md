@@ -121,19 +121,23 @@ confirm you land on the school's subdomain, still signed in.
 
 ---
 
-## 2. Google sign-in (optional, recommended for admins)
-1. Google Cloud Console → create a project → **APIs & Services → OAuth consent screen**
-   (External) → fill the app name "SchoolSpec", support email, and add
-   `schoolspec.com` under authorised domains.
-2. **Credentials → Create credentials → OAuth client ID → Web application**.
-   - Authorised JavaScript origins: `https://schoolspec.com`
-   - Authorised redirect URI: `https://schoolspec.com/api/auth/callback/google`
+## 2. Cloudflare Turnstile — the robot check on the doors
+Sign-in is email (or school username) + password only; Turnstile stops bots from
+hammering it, invisibly for people. Free, no request cap, DNS can stay on Vercel.
 
-   Google does not accept wildcards here, which is why sign-in lives on the root and
-   the app hops to the school's subdomain afterwards with the cookie already set.
-3. Copy the two values → Vercel: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Redeploy.
+1. dash.cloudflare.com → **Turnstile → Add widget**. Name "SchoolSpec".
+2. Hostnames: `schoolspec.com` (covers every school subdomain) and `localhost`.
+3. Widget mode: **Managed**. Pre-clearance: off. Create.
+4. Copy the two keys → Vercel (Production + Preview):
+   `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = Site Key, `TURNSTILE_SECRET_KEY` = Secret Key. Redeploy.
 
-**Check:** the sign-in page shows "Continue with Google".
+Server side, Better Auth's captcha plugin verifies the token on `/sign-in/email`,
+`/sign-in/username`, `/sign-up/email` and password-reset requests; per-IP rate limits
+(30 sign-in attempts a minute per IP) sit underneath it in the `rate_limit` table.
+
+**Check:** sign in on production. A small Cloudflare mark flashes under the password
+box; a wrong password now says "Check the email or username and the password" as before.
+Without the keys the doors work with no check (how local dev runs).
 
 ---
 

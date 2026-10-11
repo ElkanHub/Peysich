@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, integer, bigint } from "drizzle-orm/pg-core";
 import { schools } from "./platform";
 
 // Better Auth core tables (field names per better-auth drizzle adapter),
@@ -82,3 +82,12 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [index("push_subs_user_idx").on(t.userId), index("push_subs_school_idx").on(t.schoolId)]);
 
+
+/** Better Auth's rate-limit counters (rateLimit.storage = "database"): one
+ *  row per IP + path window. Expired rows are swept by the limiter itself. */
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
