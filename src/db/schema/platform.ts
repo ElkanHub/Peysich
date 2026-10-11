@@ -150,6 +150,7 @@ export const leads = pgTable("leads", {
   source: text("source").notNull().default("landing"),
   status: text("status").notNull().default("new"), // new|contacted|converted|lost
   note: text("note"),
+  schoolId: text("school_id"), // the school this lead became, once converted
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [index("leads_status_idx").on(t.status, t.createdAt)]);
 
@@ -160,5 +161,20 @@ export const platformBroadcasts = pgTable("platform_broadcasts", {
   body: text("body").notNull(),
   sentBy: text("sent_by").notNull(),
   schoolsReached: integer("schools_reached").notNull().default(0),
+  /** notice: lands in the feed and pings through the one door. promo: takes the screen on a fresh open. */
+  kind: text("kind").notNull().default("notice"),
+  roles: jsonb("roles").$type<string[]>().notNull().default(["admin"]),
+  schoolIds: jsonb("school_ids").$type<string[] | null>(), // null = every live school
+  ctaLabel: text("cta_label"), ctaUrl: text("cta_url"), imageUrl: text("image_url"),
+  startsAt: timestamp("starts_at"), endsAt: timestamp("ends_at"),
+  everyHours: integer("every_hours").notNull().default(24), // a promo shows again after this long
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Console team & access (docs/12 §3.1): a row makes a console login a limited
+ *  member who may open only `tabs`; no row = owner, everything. */
+export const platformAccess = pgTable("platform_access", {
+  userId: text("user_id").primaryKey(),
+  tabs: jsonb("tabs").$type<string[]>().notNull().default([]),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

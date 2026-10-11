@@ -11,6 +11,7 @@ import { isValidSlug, invalidateSchool } from "@/core/tenant";
 import { uid } from "@/lib/utils";
 import { yearFromTerm } from "@/core/plan-const";
 import { grantStartingCredit } from "@/messaging/wallet";
+import { withFlash } from "@/lib/flash";
 
 async function requirePlatformAdmin() {
   const session = await getSession();
@@ -126,25 +127,75 @@ export async function setLeadStatus(id: string, status: string, f?: FormData) {
   await db.update(leads).set({ status, note: f ? String(f.get("note") || "") || null : undefined })
     .where(eq(leads.id, id));
   await audit(u.id, "lead.status", null, { id, status });
-  revalidatePath("/platform/leads");
+  revalidatePath("/platform/schools");
 }
 
-/** Broadcast to every active school: lands as a school-wide announcement. */
+/** Tie a lead to the school it became (or clear the tie). */
+export async function linkLeadToSchool(id: string, f: FormData) {
+  const u = await requirePlatformAdmin();
+  const { leads } = await import("@/db/schema");
+  const schoolId = String(f.get("schoolId") || "") || null;
+  await db.update(leads).set({ schoolId, ...(schoolId ? { status: "converted" } : {}) }).where(eq(leads.id, id));
+  await audit(u.id, "lead.link", schoolId, { id });
+  revalidatePath("/platform/schools");
+}
+
+/** Broadcast (docs/12 §3.8). A notice lands as an announcement in each
+ *  chosen school and pings the chosen roles through the one door; a promo is
+ *  stored and takes the screen on the next open (ui/promo-gate.tsx). */
 export async function sendBroadcast(f: FormData) {
   const u = await requirePlatformAdmin();
-  const { announcements, platformBroadcasts } = await import("@/db/schema");
-  const title = String(f.get("title")), body = String(f.get("body"));
+  const { announcements, platformBroadcasts, staff, studentGuardians, guardians, students } = await import("@/db/schema");
+  const title = String(f.get("title") ?? "").trim(), body = String(f.get("body") ?? "").trim();
   if (!title || !body) return;
-  const targets = await db.select().from(schools);
-  const active = targets.filter((s) => ["active", "trial", "past_due"].includes(s.status));
-  await db.insert(announcements).values(active.map((s) => ({
-    id: uid(), schoolId: s.id, title, body, classId: null, createdBy: u.id,
-  })));
+  const kind = f.get("kind") === "promo" ? "promo" : "notice";
+  const roles = (f.getAll("roles") as string[]).filter((r) => ["admin", "teacher", "parent", "student"].includes(r));
+  const chosen = f.get("scope") === "some" ? (f.getAll("schoolIds") as string[]) : null;
+  const all = await db.select().from(schools);
+  const targets = all.filter((s) => ["active", "trial", "past_due"].includes(s.status) && (!chosen || chosen.includes(s.id)));
+  const day = (v: FormDataEntryValue | null) => v && /^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? new Date(String(v) + "T00:00:00Z") : null;
   await db.insert(platformBroadcasts).values({
-    id: uid(), title, body, sentBy: u.id, schoolsReached: active.length,
+    id: uid(), title, body, sentBy: u.id, schoolsReached: targets.length, kind, roles: roles.length ? roles : ["admin"], schoolIds: chosen,
+    ctaLabel: String(f.get("ctaLabel") ?? "") || null, ctaUrl: String(f.get("ctaUrl") ?? "") || null, imageUrl: String(f.get("imageUrl") ?? "") || null,
+    startsAt: day(f.get("startsAt")), endsAt: day(f.get("endsAt")), everyHours: Math.max(1, Number(f.get("everyHours")) || 24),
   });
-  await audit(u.id, "broadcast.send", null, { title, reached: active.length });
+  if (kind === "notice") {
+    // the feed, in every chosen school
+    await db.insert(announcements).values(targets.map((s) => ({ id: uid(), schoolId: s.id, title, body, classId: null, createdBy: u.id })));
+    // the pings: staff rows for admins and teachers, guardians for parents (students get the feed and the app badge)
+    const { notifyMany } = await import("@/messaging/notify");
+    const { eq: eqq, inArray: inn } = await import("drizzle-orm");
+    for (const s of targets) {
+      const rows: Parameters<typeof notifyMany>[1] = [];
+      if (roles.includes("admin") || roles.includes("teacher")) {
+        const st = await db.select({ id: staff.id, role: staff.staffRole }).from(staff).where(eqq(staff.schoolId, s.id));
+        for (const x of st) if ((roles.includes("teacher") && x.role === "teacher") || (roles.includes("admin") && x.role !== "teacher"))
+          rows.push({ to: { kind: "staff", id: x.id }, kind: "announcement_ping", vars: { title }, url: "/comms", fullText: body });
+      }
+      if (roles.includes("parent")) {
+        const kids = await db.select({ id: students.id }).from(students).where(eqq(students.schoolId, s.id));
+        const gs = kids.length ? await db.selectDistinct({ id: studentGuardians.guardianId }).from(studentGuardians).where(inn(studentGuardians.studentId, kids.map((k) => k.id))) : [];
+        for (const g of gs) rows.push({ to: { kind: "guardian", id: g.id }, kind: "announcement_ping", vars: { title }, url: "/comms", fullText: body });
+      }
+      if (rows.length) await notifyMany({ id: s.id, name: s.name, branding: s.branding }, rows).catch(() => {});
+    }
+    void guardians;
+  }
+  await audit(u.id, "broadcast.send", null, { title, kind, roles, reached: targets.length });
   revalidatePath("/platform/broadcast");
+  redirect(withFlash("/platform/broadcast", kind === "promo" ? `Promo is live for ${targets.length} schools.` : `Notice sent to ${targets.length} schools.`));
+}
+
+/** The promos a person should see now: running, for their role, in their school. */
+export async function activePromos(schoolId: string, role: string) {
+  const { platformBroadcasts } = await import("@/db/schema");
+  const { and: andd, eq: eqq } = await import("drizzle-orm");
+  const now = new Date();
+  const rows = await db.select().from(platformBroadcasts).where(andd(eqq(platformBroadcasts.kind, "promo")));
+  return rows.filter((b) => (b.roles ?? []).includes(role) && (!b.schoolIds || b.schoolIds.includes(schoolId))
+    && (!b.startsAt || b.startsAt <= now) && (!b.endsAt || b.endsAt > now))
+    .sort((a, b) => +b.createdAt - +a.createdAt)
+    .map((b) => ({ id: b.id, title: b.title, body: b.body, ctaLabel: b.ctaLabel, ctaUrl: b.ctaUrl, imageUrl: b.imageUrl, everyHours: b.everyHours }));
 }
 
 /** Invite another platform admin (login shown once). */

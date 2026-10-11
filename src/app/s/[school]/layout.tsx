@@ -5,6 +5,8 @@ import { r2Enabled, presignDownload } from "@/lib/r2";
 import { Flash } from "@/ui/feedback";
 import { LiveSync } from "@/ui/live-sync";
 import { AnnouncementGate } from "@/ui/announcement-gate";
+import { PromoGate } from "@/ui/promo-gate";
+import { activePromos } from "@/app/platform/actions";
 import { Shell } from "@/ui/shell";
 import { cn } from "@/lib/utils";
 import { getBalance, ghs, LOW_BALANCE_PESEWAS } from "@/messaging/wallet";
@@ -44,6 +46,7 @@ export default async function SchoolLayout({ children, params }: {
   const term = await getWorkingTerm(school.id);
   const frozen = lapsed || (term !== null && !term.writable);
   const until = lapsed ? await deleteAfter(school) : null;
+  const promos = await activePromos(school.id, user.role).catch(() => []);
   if (unacked.length) badges["/comms"] = unacked.length;
 
   // school logo (top bar) + the user's own avatar (sidebar) — both optional
@@ -109,6 +112,7 @@ export default async function SchoolLayout({ children, params }: {
       <Flash />
       <LiveSync slug={slug} />
       <AnnouncementGate slug={slug} items={unacked} />
+      <PromoGate promos={promos} />
     </Shell>
   );
 }

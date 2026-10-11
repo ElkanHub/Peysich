@@ -1,38 +1,21 @@
 import { Flash } from "@/ui/feedback";
-import { redirect } from "next/navigation";
-import { getSession } from "@/core/session";
 import { AppNav } from "@/ui/nav";
 import { Breadcrumbs } from "@/ui/breadcrumbs";
-
-const NAV = [
-  { label: "Overview", href: "/platform" },
-  { label: "Schools", href: "/platform/schools" },
-  { label: "Onboarding", href: "/platform/onboarding" },
-  { label: "Leads", href: "/platform/leads" },
-  { label: "Plans", href: "/platform/plans" },
-  { label: "Requests", href: "/platform/requests" },
-  { label: "Subscriptions", href: "/platform/subscriptions" },
-  { label: "Financials", href: "/platform/financials" },
-  { label: "Messaging", href: "/platform/messaging" },
-  { label: "Broadcast", href: "/platform/broadcast" },
-  { label: "All users", href: "/platform/users" },
-  { label: "Audit log", href: "/platform/audit" },
-  { label: "Settings", href: "/platform/settings" },
-];
+import { CONSOLE_TABS, getConsoleGrants, requireConsoleUser } from "@/core/console";
 
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Console", robots: { index: false, follow: false } };
 
-/** Platform plane: the operations console. platform_admin only. */
+/** Platform plane: the operations console. platform_admin only; a member
+ *  sees the tabs they were granted (docs/12 §3.1), an owner sees them all. */
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-  const u = session.user as { role: string; name: string };
-  if (u.role !== "platform_admin") redirect("/sign-in");
+  const u = await requireConsoleUser();
+  const grants = await getConsoleGrants(u.id);
+  const nav = CONSOLE_TABS.filter((t) => !grants || grants.has(t.key)).map((t) => ({ label: t.label, href: t.href }));
   return (
     <div className="flex min-h-screen">
-      <AppNav schoolName="SchoolSpec Console" subtitle="Platform" role="platform admin"
-        userName={u.name} items={NAV} accountHref="/platform/account" />
+      <AppNav schoolName="SchoolSpec Console" subtitle="Platform" role={grants ? "console member" : "platform admin"}
+        userName={u.name} items={nav} accountHref="/platform/account" />
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 mt-[calc(3.25rem+var(--sat))] flex h-12 items-center border-b border-border bg-card/85 px-4 backdrop-blur lg:mt-0 lg:px-8">
           <Breadcrumbs root="Console" />

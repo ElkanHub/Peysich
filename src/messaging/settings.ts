@@ -7,6 +7,7 @@ import { messagingSettings } from "@/db/schema";
 export const SETTING_DEFAULTS = {
   overdraft_pesewas: "2000",        // urgent and absence may go this far below zero
   starting_credit_pesewas: "2000",  // every new school
+  revenue_target_pesewas: "0",      // the monthly line on the financials trend; 0 = none
   wa_daily_cap: "250",              // distinct WhatsApp recipients a day (Meta's limit before verification)
   ops_phone: process.env.OPS_PHONE ?? "",
   wa_number_school: process.env.WHATSAPP_PHONE_NUMBER_ID ?? "",   // phone_number_id per plane:
@@ -21,6 +22,7 @@ export type SettingKey = keyof typeof SETTING_DEFAULTS;
 export const EDITABLE_SETTINGS: [SettingKey, string][] = [
   ["overdraft_pesewas", "Overdraft limit (pesewas)"],
   ["starting_credit_pesewas", "Starting credit (pesewas)"],
+  ["revenue_target_pesewas", "Monthly revenue target (pesewas)"],
   ["ops_phone", "Ops phone number (shown in platform messages)"],
   ["wa_number_school", "WhatsApp phone number id — schools to parents"],
   ["wa_number_platform", "WhatsApp phone number id — SchoolSpec to schools"],

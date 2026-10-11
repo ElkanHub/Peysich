@@ -1,3 +1,4 @@
+import { requireConsole } from "@/core/console";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { plans, schools } from "@/db/schema";
@@ -13,6 +14,7 @@ import { savePlan } from "../plan-admin-actions";
    tag regenerates it — no redeploy, no dynamic rendering).               */
 
 export default async function PlatformPlans() {
+  await requireConsole("plans");
   const allPlans = await db.select().from(plans).orderBy(asc(plans.pricePerTermPesewas));
   const customSchoolIds = allPlans.map((p) => p.schoolId).filter((x): x is string => !!x);
   const schoolNames = new Map<string, string>();

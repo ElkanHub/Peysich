@@ -1,97 +1,102 @@
-import { desc, eq, sql } from "drizzle-orm";
+import Link from "next/link";
 import { db } from "@/db";
-import { subscriptions, schools, plans, feePayments, outbox } from "@/db/schema";
-import { Card, DataTable, PageHeader, Stat, Tr, Td } from "@/ui/kit";
+import { schools } from "@/db/schema";
+import { requireConsole } from "@/core/console";
+import { STREAM_COLORS, STREAM_WORDS, ghs, lastMonths, monthKey, monthLabel, mrrSeries, revenueEvents, revenueTarget, type Stream } from "@/core/finance";
+import { PILLAR, SegBar, TrendLine, HBars } from "@/modules/analytics/charts";
+import { Card, DataTable, PageHeader, Stat, Tabs, Tr, Td, btnGhostCls } from "@/ui/kit";
+import { FilterSelect, Pagination } from "@/ui/list-controls";
 
-const ghs = (p: number) => `GHS ${(p / 100).toLocaleString()}`;
+const PER = 25;
 
-/** Financials: subscription revenue, per-plan mix, monthly trend, platform GMV. */
-export default async function Financials() {
-  const [subs, allPlans, allSchools, [gmv], [smsCost]] = await Promise.all([
-    db.select({
-      amount: subscriptions.amountPesewas, planKey: subscriptions.planKey,
-      createdAt: subscriptions.createdAt, name: schools.name,
-    }).from(subscriptions)
-      .innerJoin(schools, eq(subscriptions.schoolId, schools.id))
-      .orderBy(desc(subscriptions.createdAt)),
-    db.select().from(plans),
-    db.select().from(schools),
-    db.select({ n: sql<number>`coalesce(sum(amount_pesewas),0)` }).from(feePayments),
-    db.select({ n: sql<number>`coalesce(sum(price_pesewas),0)` }).from(outbox),
-  ]);
-  const price = new Map(allPlans.map((p) => [p.key, p.pricePerTermPesewas]));
-  const active = allSchools.filter((s) => s.status === "active");
-  const mrr = Math.round(active.reduce((a, s) => a + (price.get(s.planKey) ?? 0), 0) / 4); // a term is four months
-  const collected = subs.reduce((a, s) => a + s.amount, 0);
-
-  const byPlan = new Map<string, { n: number; amount: number }>();
-  for (const s of subs) {
-    const e = byPlan.get(s.planKey) ?? { n: 0, amount: 0 };
-    e.n++; e.amount += s.amount; byPlan.set(s.planKey, e);
-  }
-  const byMonth = new Map<string, number>();
-  for (const s of subs) {
-    const m = s.createdAt.toISOString().slice(0, 7);
-    byMonth.set(m, (byMonth.get(m) ?? 0) + s.amount);
-  }
-  const months = [...byMonth.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 12);
-  const maxMonth = Math.max(1, ...months.map(([, v]) => v));
+/** Financials (docs/12 §2): what came in and from where, the recurring base,
+ *  the trend against the target, and every transaction with its reference. */
+export default async function Financials({ searchParams }: {
+  searchParams: Promise<{ page?: string; school?: string; stream?: string }>;
+}) {
+  await requireConsole("financials");
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+  const months = lastMonths(12);
+  const [events, mrr, target, allSchools] = await Promise.all([revenueEvents(), mrrSeries(months), revenueTarget(),
+    db.select({ id: schools.id, name: schools.name }).from(schools).orderBy(schools.name)]);
+  const name = new Map(allSchools.map((s) => [s.id, s.name]));
+  const thisMonth = monthKey(new Date()), thisYear = thisMonth.slice(0, 4);
+  const sum = (xs: { pesewas: number }[]) => xs.reduce((a, e) => a + e.pesewas, 0);
+  const inMonth = events.filter((e) => monthKey(e.at) === thisMonth);
+  const lastMonth = events.filter((e) => monthKey(e.at) === months[months.length - 2]);
+  const ytd = events.filter((e) => e.at.toISOString().startsWith(thisYear));
+  const byMonth = months.map((m) => ({ label: monthLabel(m), v: sum(events.filter((e) => monthKey(e.at) === m)) }));
+  const streams = (["plan", "messaging", "installation"] as Stream[]).map((s) => ({
+    label: STREAM_WORDS[s], v: sum(ytd.filter((e) => e.stream === s)), color: STREAM_COLORS[s], display: ghs(sum(ytd.filter((e) => e.stream === s))),
+  }));
+  const topSchools = [...events.reduce((m, e) => m.set(e.schoolId, (m.get(e.schoolId) ?? 0) + e.pesewas), new Map<string, number>())]
+    .sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const filtered = events.filter((e) => (!sp.school || e.schoolId === sp.school) && (!sp.stream || e.stream === sp.stream));
+  const slice = filtered.slice((page - 1) * PER, page * PER);
+  const change = lastMonth.length ? Math.round(((sum(inMonth) - sum(lastMonth)) / Math.max(1, sum(lastMonth))) * 100) : null;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Financials" sub="Subscription revenue and platform money flow" />
+      <PageHeader title="Financials" sub="What came in, from where, and the recurring base"
+        action={<a href="/api/export/finance" className={btnGhostCls} download>Export all transactions (CSV)</a>} />
+      <Tabs active="overview" tabs={[
+        { key: "overview", label: "Overview", href: "/platform/financials" },
+        { key: "analytics", label: "Analytics", href: "/platform/financials/analytics" },
+        { key: "schools", label: "By school", href: "/platform/financials/schools" },
+      ]} />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="MRR" value={ghs(mrr)} tone="success" />
-        <Stat label="Collected all-time" value={ghs(collected)} />
-        <Stat label="School fees processed" value={ghs(Number(gmv.n))} />
-        <Stat label="Messaging charged to schools" value={ghs(Number(smsCost.n))} />
+        <Stat label="This month" value={ghs(sum(inMonth))} tone="success"
+          hint={change === null ? `${inMonth.length} transactions` : `${change >= 0 ? "+" : ""}${change}% on last month`} />
+        <Stat label="MRR" value={ghs(mrr.nowMrr)} hint={`${mrr.paying} paying school${mrr.paying === 1 ? "" : "s"} · ARPU ${ghs(mrr.arpu)}`} />
+        <Stat label="ARR run-rate" value={ghs(mrr.nowMrr * 12)} hint="MRR × 12" />
+        <Stat label="This year" value={ghs(sum(ytd))} hint={`all time ${ghs(sum(events))}`} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <h2 className="font-semibold">Revenue by month</h2>
-          <div className="mt-4 space-y-2.5">
-            {months.map(([m, v]) => (
-              <div key={m} className="flex items-center gap-3">
-                <span className="w-16 shrink-0 text-[13px] text-muted-foreground" data-nums="">{m}</span>
-                <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <span className="block h-full rounded-full bg-primary/80" style={{ width: `${(v / maxMonth) * 100}%` }} />
-                </span>
-                <span className="w-24 shrink-0 text-right text-[13px]" data-nums="">{ghs(v)}</span>
-              </div>
-            ))}
-            {months.length === 0 && <p className="text-sm text-muted-foreground">No payments yet.</p>}
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-semibold">Revenue by month</h2>
+            {target > 0 && <span className="text-[12.5px] text-muted-foreground">target {ghs(target)} a month · <Link href="/platform/settings" className="text-primary">change</Link></span>}
           </div>
-        </Card>
-        <Card>
-          <h2 className="font-semibold">Mix by plan</h2>
           <div className="mt-3">
-            <DataTable head={["Plan", "Payments", "Collected"]}>
-              {[...byPlan.entries()].sort((a, b) => b[1].amount - a[1].amount).map(([k, v]) => (
-                <Tr key={k}>
-                  <Td className="font-medium capitalize">{k}</Td>
-                  <Td data-nums="">{v.n}</Td>
-                  <Td data-nums="">{ghs(v.amount)}</Td>
-                </Tr>
-              ))}
-            </DataTable>
+            <TrendLine points={byMonth} color={PILLAR.money} fmt={ghs} target={target > 0 ? { v: target, label: "target" } : undefined} />
+          </div>
+          {target === 0 && <p className="mt-2 text-[12.5px] text-muted-foreground">Set a monthly target under <Link href="/platform/settings" className="text-primary">Settings</Link> and it draws here.</p>}
+        </Card>
+        <Card className="lg:col-span-2">
+          <h2 className="font-semibold">By stream, this year</h2>
+          <div className="mt-3"><SegBar parts={streams} /></div>
+          <h3 className="mt-5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Top schools, all time</h3>
+          <div className="mt-2">
+            <HBars color={PILLAR.money} rows={topSchools.map(([id, v]) => ({ label: name.get(id) ?? "—", v, display: ghs(v) }))} />
           </div>
         </Card>
       </div>
 
       <Card>
-        <h2 className="font-semibold">Latest payments</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Transactions</h2>
+          <div className="flex gap-2">
+            <FilterSelect name="school" allLabel="Every school" options={allSchools.map((s) => ({ value: s.id, label: s.name }))} />
+            <FilterSelect name="stream" allLabel="Every stream" options={(Object.keys(STREAM_WORDS) as Stream[]).map((s) => ({ value: s, label: STREAM_WORDS[s] }))} />
+          </div>
+        </div>
         <div className="mt-3">
-          <DataTable head={["Date", "School", "Plan", "Amount"]}>
-            {subs.slice(0, 12).map((s, i) => (
-              <Tr key={i}>
-                <Td className="text-muted-foreground">{s.createdAt.toISOString().slice(0, 10)}</Td>
-                <Td className="font-medium">{s.name}</Td>
-                <Td className="capitalize">{s.planKey}</Td>
-                <Td data-nums="">{ghs(s.amount)}</Td>
+          <DataTable head={["Date", "School", "Stream", "Detail", "Reference", "Amount"]}>
+            {slice.map((e) => (
+              <Tr key={e.reference + e.at.toISOString()}>
+                <Td className="whitespace-nowrap text-muted-foreground" data-nums="">{e.at.toISOString().slice(0, 10)}</Td>
+                <Td><Link href={`/platform/financials/schools/${e.schoolId}`} className="font-medium text-primary hover:underline">{name.get(e.schoolId) ?? "—"}</Link></Td>
+                <Td><span className="inline-flex items-center gap-1.5 text-[13px]"><i className="h-2.5 w-2.5 rounded-[3px]" style={{ background: STREAM_COLORS[e.stream] }} />{STREAM_WORDS[e.stream]}</span></Td>
+                <Td className="max-w-[22rem] truncate text-[13px] text-muted-foreground">{e.detail}</Td>
+                <Td className="font-mono text-[12px] text-muted-foreground">{e.reference.slice(0, 28)}</Td>
+                <Td className="whitespace-nowrap font-semibold" data-nums="">{ghs(e.pesewas)}</Td>
               </Tr>
             ))}
           </DataTable>
+          {filtered.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No transactions match.</p>}
+          <Pagination page={page} count={filtered.length} perPage={PER} />
         </div>
       </Card>
     </div>

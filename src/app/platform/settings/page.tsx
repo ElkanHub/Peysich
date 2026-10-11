@@ -1,9 +1,8 @@
-import { eq } from "drizzle-orm";
+import { requireConsole } from "@/core/console";
 import { db } from "@/db";
-import { messageTemplates, plans, user } from "@/db/schema";
+import { messageTemplates, plans } from "@/db/schema";
 import { updatePlan } from "../actions";
 import { Card, DataTable, PageHeader, Tr, Td, btnGhostCls } from "@/ui/kit";
-import { InviteAdmin } from "./invite";
 import { connectTelegram, saveMessagingSettings, syncTemplatesNow, updatePriceSetting } from "@/messaging/actions";
 import { EDITABLE_SETTINGS, getSettings } from "@/messaging/settings";
 import { PLATFORM_TEMPLATES, TEMPLATES } from "@/messaging/templates";
@@ -13,9 +12,9 @@ const STANDARD = ["trial", "starter", "standard", "premium"];
 
 /** Platform settings: plan pricing (live for new signups) + platform staff. */
 export default async function PlatformSettings() {
-  const [allPlans, staff, prices, settings, verdicts] = await Promise.all([
+  await requireConsole("settings");
+  const [allPlans, prices, settings, verdicts] = await Promise.all([
     db.select().from(plans),
-    db.select().from(user).where(eq(user.role, "platform_admin")),
     getPrices(),
     getSettings(),
     db.select().from(messageTemplates),
@@ -29,7 +28,7 @@ export default async function PlatformSettings() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <PageHeader title="Platform settings" sub="Plan pricing and platform staff" />
+      <PageHeader title="Platform settings" sub="Plan pricing, messaging prices and settings" />
 
       <Card>
         <h2 className="font-semibold">Plan pricing</h2>
@@ -140,20 +139,7 @@ export default async function PlatformSettings() {
         </ul>
       </Card>
 
-      <Card>
-        <h2 className="font-semibold">Platform staff</h2>
-        <ul className="mt-2 space-y-1.5 text-sm">
-          {staff.map((s) => (
-            <li key={s.id} className="flex justify-between">
-              <span className="font-medium">{s.name}</span>
-              <span className="text-muted-foreground">{s.email}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 border-t border-border pt-4">
-          <InviteAdmin />
-        </div>
-      </Card>
+      <p className="text-[13.5px] text-muted-foreground">Who may open the console, and which tabs: <a href="/platform/team" className="font-medium text-primary">Team</a>.</p>
     </div>
   );
 }

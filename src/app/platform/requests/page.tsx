@@ -1,3 +1,4 @@
+import { requireConsole } from "@/core/console";
 import { desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { planRequests, schools } from "@/db/schema";
@@ -25,6 +26,7 @@ const NEXT: Record<string, string[]> = {
 };
 
 export default async function PlatformRequests() {
+  await requireConsole("requests");
   const rows = await db.select().from(planRequests).orderBy(desc(planRequests.createdAt)).limit(200);
   const schoolIds = [...new Set(rows.map((r) => r.schoolId).filter((x): x is string => !!x))];
   const schoolRows = schoolIds.length

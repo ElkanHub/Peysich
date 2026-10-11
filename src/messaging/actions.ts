@@ -28,11 +28,19 @@ export async function startWalletTopUp(slug: string, f: FormData) {
     redirect(withFlash("/billing", "Online payment is not switched on yet, so top-ups are added by SchoolSpec for now. Call us.", { error: true }));
   const reference = topUpReference(pesewas);
   const email = (user as { email?: string }).email ?? `${slug}@schoolspec.com`;
-  const { checkoutUrl } = await initCheckout({
-    email, amountPesewas: pesewas, reference,
-    callbackUrl: `/billing?topup=${reference}`,
-    metadata: { kind: "wallet", schoolId: school.id },
-  });
+  // Paystack's refusal comes back as its own sentence on Billing, never the error screen
+  let checkoutUrl: string;
+  try {
+    ({ checkoutUrl } = await initCheckout({
+      email, amountPesewas: pesewas, reference,
+      callbackUrl: `/billing?topup=${reference}`,
+      metadata: { kind: "wallet", schoolId: school.id },
+    }));
+  } catch (e) {
+    const { opsAlert } = await import("./outbox");
+    await opsAlert(`Top-up could not start for ${school.name}: ${(e as Error).message}`).catch(() => {});
+    redirect(withFlash("/billing", `The payment page could not open: ${(e as Error).message}. Nothing was charged — try again, or call us and we add the credit.`, { error: true }));
+  }
   redirect(checkoutUrl);
 }
 

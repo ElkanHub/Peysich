@@ -1,3 +1,4 @@
+import { requireConsole } from "@/core/console";
 import Link from "next/link";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -10,6 +11,7 @@ const ghs = (p: number) => `GHS ${(p / 100).toLocaleString()}`;
 
 /** Overview: the business at a glance — money, funnel, movement. */
 export default async function Overview() {
+  await requireConsole("overview");
   const [allSchools, allPlans, subs, newLeads, [stu], [gmv]] = await Promise.all([
     db.select().from(schools).orderBy(desc(schools.createdAt)),
     db.select().from(plans),

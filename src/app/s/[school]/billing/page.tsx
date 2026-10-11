@@ -39,7 +39,7 @@ export default async function Billing({ params, searchParams }: {
   const { school, user } = await requireSchool(slug, ["admin"]);
 
   // back from Paystack: credit the wallet (the webhook may already have — idempotent) and say so
-  if (topup?.startsWith("wal_")) {
+  if (topup && /^wal[-_]/.test(topup)) {
     const pesewas = topUpAmountFromReference(topup);
     if (pesewas > 0 && await verifyTransaction(topup)) {
       await creditTopUp(school.id, pesewas, topup);

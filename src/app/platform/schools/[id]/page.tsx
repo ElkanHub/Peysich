@@ -1,3 +1,4 @@
+import { requireConsole } from "@/core/console";
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
@@ -15,6 +16,7 @@ import { STAGE_WORDS, nextDue } from "@/messaging/platform";
 import { getBalance, ghs } from "@/messaging/wallet";
 
 export default async function SchoolDetail({ params }: { params: Promise<{ id: string }> }) {
+  await requireConsole("schools");
   const { id } = await params;
   const [school] = await db.select().from(schools).where(eq(schools.id, id));
   if (!school) notFound();

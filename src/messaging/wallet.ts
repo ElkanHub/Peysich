@@ -90,9 +90,9 @@ export async function addManualCredit(schoolId: string, pesewas: number, note: s
 
 /** The wallet reference prefix on Paystack: `wal_<pesewas>_<id>` — the amount
  *  rides in the reference so the callback page can credit without a lookup. */
-export const topUpReference = (pesewas: number) => `wal_${pesewas}_${uid()}`;
+export const topUpReference = (pesewas: number) => `wal-${pesewas}-${uid()}`; // Paystack allows letters, digits, - . =
 export const topUpAmountFromReference = (ref: string) => {
-  const m = /^wal_(\d+)_/.exec(ref);
+  const m = /^wal[-_](\d+)[-_]/.exec(ref); // both spellings: references from before the dash
   return m ? Number(m[1]) : 0;
 };
 

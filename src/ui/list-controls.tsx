@@ -67,10 +67,10 @@ export function FilterSelect({ name, options, allLabel }: {
 
 export { PER_PAGE };
 
-export function Pagination({ page, count }: { page: number; count: number }) {
+export function Pagination({ page, count, perPage = PER_PAGE }: { page: number; count: number; perPage?: number }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const pages = Math.max(1, Math.ceil(count / PER_PAGE));
+  const pages = Math.max(1, Math.ceil(count / perPage));
   const go = (p: number) => {
     const sp = new URLSearchParams(window.location.search);
     sp.set("page", String(p));
