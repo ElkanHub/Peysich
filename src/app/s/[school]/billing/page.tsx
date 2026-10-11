@@ -100,8 +100,10 @@ export default async function Billing({ params, searchParams }: {
               {latestSub
                 ? <>Paid until {day(latestSub.periodEnd)} · by the {CYCLE_WORDS[asCycle(latestSub.cycle)]}</>
                 : school.trialEndsAt && school.status === "trial"
-                  ? <>Trial ends {school.trialEndsAt.toISOString().slice(0, 10)} — pick a plan below before then.</>
-                  : <>No payment on file yet.</>}
+                  ? <>Trial ends {day(school.trialEndsAt)} — pick a plan below before then.</>
+                  : school.trialEndsAt && school.status === "expired"
+                    ? <>Your trial ended {day(school.trialEndsAt)}. Pick a plan below to carry on — everything is kept.</>
+                    : <>No payment on file yet.</>}
             </p>
             {cancelPending && (
               <p className="mt-1 text-sm text-warning">

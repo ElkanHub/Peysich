@@ -20,8 +20,8 @@ export function SiteNav({ current }: { current?: Current }) {
   return (
     <div className="sticky top-3 z-30 px-3 sm:px-4">
       <nav aria-label="Main" className="lp-wrap relative flex items-center justify-between gap-4 rounded-full border border-border bg-card/90 py-2 pl-4 pr-2 shadow-[var(--shadow-md)] backdrop-blur">
-        <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-          <LogoMark size={24} /> SchoolSpec
+        <Link href="/" className="flex items-center gap-2.5 text-[18px] font-semibold tracking-tight">
+          <LogoMark size={32} /> SchoolSpec
         </Link>
         <div className="hidden items-center gap-7 text-[14px] font-medium text-muted-foreground md:flex">
           {NAV.map(([href, label]) => <Link key={href} href={href} className={cls(href, "hover:text-foreground")}>{label}</Link>)}
@@ -61,7 +61,7 @@ export function SiteFooter() {
           <span aria-hidden className="pointer-events-none absolute -bottom-10 left-[30px] text-[clamp(120px,22vw,300px)] font-semibold leading-none tracking-[-.05em] text-white/[.06]">SchoolSpec</span>
           <div className="relative grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]">
             <div>
-              <span className="flex items-center gap-2 font-semibold"><LogoMark size={22} variant="light" /> SchoolSpec</span>
+              <span className="flex items-center gap-2.5 text-[17px] font-semibold"><LogoMark size={28} variant="light" /> SchoolSpec</span>
               <p className="mt-4 max-w-[18ch] text-[clamp(22px,2.6vw,30px)] font-medium leading-tight tracking-[-.02em]">
                 Run the school at the speed of the morning, not the paperwork.
               </p>

@@ -76,7 +76,7 @@ export default async function SchoolLayout({ children, params }: {
           <span>
             {lapsed
               ? user.role === "admin"
-                ? <><b>Your subscription has ended.</b> Everything is kept and readable{until ? ` until ${fmtDay(until)}` : ""}. Renew to open the next term.</>
+                ? <><b>{school.status === "expired" ? "Your free trial has ended." : "Your subscription has ended."}</b> Everything is kept and readable{until ? ` until ${fmtDay(until)}` : ""}. {school.status === "expired" ? "Choose a plan to carry on." : "Renew to open the next term."}</>
                 : <><b>The school&apos;s account is paused.</b> Records are kept and readable.</>
               : term?.state === "closed"
                 ? <><b>{term.year.name} is closed.</b> {user.role === "admin" ? "Open the next term when school resumes." : "Records stay readable until the next term opens."}</>

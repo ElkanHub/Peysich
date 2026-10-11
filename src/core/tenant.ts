@@ -26,16 +26,24 @@ export function slugFromHost(host: string, rootDomain: string): string | null {
   return sub;
 }
 
-/** Cached slug → school lookup (tag: school:{slug}). */
-export const getSchoolBySlug = (slug: string) =>
-  unstable_cache(
+const SCHOOL_DATES = ["trialEndsAt", "stageSince", "createdAt", "updatedAt"] as const;
+
+/** Cached slug → school lookup (tag: school:{slug}). The cache stores JSON,
+ *  so every timestamp comes back a string: revive them here, once, or a
+ *  "NaN days left" banner and a crashing billing page follow. */
+export const getSchoolBySlug = async (slug: string) => {
+  const school = await unstable_cache(
     async () => {
-      const [school] = await db.select().from(schools).where(eq(schools.slug, slug));
-      return school ?? null;
+      const [row] = await db.select().from(schools).where(eq(schools.slug, slug));
+      return row ?? null;
     },
     [`school-${slug}`],
     { tags: [`school:${slug}`], revalidate: 300 },
   )();
+  if (!school) return null;
+  for (const k of SCHOOL_DATES) if (school[k]) (school as Record<string, unknown>)[k] = new Date(school[k] as unknown as string);
+  return school;
+};
 
 export const invalidateSchool = (slug: string) => {
   try { revalidateTag(`school:${slug}`, "max"); } catch { /* outside request context */ }

@@ -48,7 +48,8 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
             {logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt="" title={schoolName}
-                className="hidden h-8 w-8 shrink-0 rounded-md object-contain sm:block" />
+                // a crest is square, a wordmark is wide: fixed height, width follows
+                className="hidden h-10 w-auto max-w-[10rem] shrink-0 rounded-md object-contain sm:block" />
             )}
           </div>
         </header>

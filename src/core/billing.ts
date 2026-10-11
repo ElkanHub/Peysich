@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
+import { invalidateSchool } from "@/core/tenant";
 import { plans, schools, subscriptions, feeCheckouts, feePayments } from "@/db/schema";
 import { invalidateModules } from "./entitlements";
 import { CYCLE_MONTHS, type Cycle } from "./plan-const";
@@ -99,6 +100,7 @@ export async function dunningSweep() {
   for (const s of all) {
     if (s.status === "trial" && s.trialEndsAt && s.trialEndsAt < now) {
       await db.update(schools).set({ status: "expired" }).where(eq(schools.id, s.id));
+      invalidateSchool(s.slug); // the cached row would say "trial" for up to 5 more minutes
       continue;
     }
     if (s.status !== "active") continue;
@@ -108,6 +110,8 @@ export async function dunningSweep() {
     const grace = new Date(latest.periodEnd); grace.setDate(grace.getDate() + GRACE_DAYS);
     if (now > grace) await db.update(schools).set({ status: "suspended" }).where(eq(schools.id, s.id));
     else if (now > latest.periodEnd) await db.update(schools).set({ status: "past_due" }).where(eq(schools.id, s.id));
+    else continue;
+    invalidateSchool(s.slug);
   }
 }
 
