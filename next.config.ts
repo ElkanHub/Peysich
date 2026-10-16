@@ -12,7 +12,7 @@ const CSP = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src 'self' https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com", // photos go to R2 straight from the phone
-  "frame-src https://challenges.cloudflare.com",
+  "frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",

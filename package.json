@@ -13,6 +13,7 @@
     "check:messaging": "tsx src/messaging/route.check.mts",
     "check:billing": "tsx src/core/billing.check.mts",
     "check:terms": "tsx src/core/terms.check.mts",
+    "check:books": "tsx src/lib/books.check.mts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",

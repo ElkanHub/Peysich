@@ -252,3 +252,38 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
   }
   .data-table td:empty { display: none; }
 }
+
+/* ── Textbook reader ───────────────────────────────────────────────────────
+   Read-only: nothing on a page can be selected, dragged or long-pressed,
+   and the whole reader disappears from print. The page turn is one 3D
+   rotation around the sheet's left edge. */
+.book-reader { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.book-reader img { -webkit-user-drag: none; }
+.book-page { font-size: var(--page-font, 18px); line-height: 1.6; }
+.book-prose h2 { font-size: 1.5em; font-weight: 600; letter-spacing: -.025em; line-height: 1.15; margin: 0 0 .6em; text-wrap: balance; }
+.book-prose h3 { font-size: 1.15em; font-weight: 600; margin: 1.2em 0 .4em; }
+.book-prose p { margin: 0 0 .9em; }
+.book-prose ul { list-style: disc; margin: 0 0 1em; padding-left: 1.3em; }
+.book-prose ol { list-style: decimal; margin: 0 0 1em; padding-left: 1.3em; }
+.book-prose li { margin: .3em 0; }
+.book-prose blockquote { margin: 1em 0; border-left: 4px solid var(--primary); background: var(--brand-soft); border-radius: 0 14px 14px 0; padding: .7em 1em; }
+.book-prose blockquote p { margin: 0; }
+.book-prose strong { font-weight: 650; }
+.book-prose a { color: var(--primary); text-decoration: underline; text-underline-offset: 4px; }
+.book-prose pre { margin: 0 0 1em; overflow-x: auto; border-radius: 12px; background: var(--ink); color: var(--ink-text-strong); padding: .9em 1em; font-size: .85em; line-height: 1.5; }
+.book-prose code { font-family: var(--font-geist-mono), monospace; font-size: .9em; }
+.book-prose :not(pre) > code { background: var(--muted); border-radius: 5px; padding: .1em .35em; }
+.book-prose table { width: 100%; border-collapse: collapse; margin: 0 0 1em; font-size: .92em; }
+.book-prose th, .book-prose td { border: 1px solid var(--border); padding: .4em .6em; text-align: left; }
+.book-prose th { background: var(--muted); font-weight: 600; }
+.book-prose hr { border: 0; border-top: 1px solid var(--border); margin: 1.4em 0; }
+.flip-stage { min-height: min(78dvh, 820px); }
+.flip-fwd { transform-origin: left center; animation: flip-fwd .62s cubic-bezier(.4, 0, .2, 1) forwards; backface-visibility: hidden; }
+.flip-back { transform-origin: left center; animation: flip-back .62s cubic-bezier(.4, 0, .2, 1) forwards; backface-visibility: hidden; }
+.flip-shade { background: linear-gradient(90deg, rgb(0 0 0 / 0), rgb(0 0 0 / .18)); animation: flip-shade .62s ease forwards; }
+@keyframes flip-fwd { from { transform: rotateY(0deg); } to { transform: rotateY(-180deg); } }
+@keyframes flip-back { from { transform: rotateY(-180deg); } to { transform: rotateY(0deg); } }
+@keyframes flip-shade { from { opacity: 0; } 50% { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .flip-fwd, .flip-back { animation-duration: .01s; } }
+.print-only { display: none; }
+@media print { .book-reader > * { display: none !important; } .book-reader .print-only { display: block !important; } }
