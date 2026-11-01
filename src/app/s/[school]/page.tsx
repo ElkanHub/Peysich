@@ -11,11 +11,11 @@ import { requireSchool, getCurrentTerm, getTeacherScope } from "@/core/school-co
 import { getStructure } from "@/core/academics";
 import { getParentChildren, getStudentSelf } from "@/core/portal";
 import { getUnackedAnnouncements } from "@/modules/comms/unacked";
-import { Card, Stat } from "@/ui/kit";
+import { Card, Stat, StatStrip, Tile, Row, RowList, SectionHead, Spot, btnCls } from "@/ui/kit";
 import { ChildAvatar } from "@/ui/child-avatar";
 import { TermPulseBar } from "@/ui/term-pulse-bar";
 import { WelcomeHero } from "@/ui/welcome-hero";
-import { BookOpenCheck, CircleAlert, ClipboardCheck, Megaphone, Upload, UserPlus, Users, Wallet, WalletCards } from "lucide-react";
+import { CircleAlert, ClipboardCheck, Upload, Users, Wallet, WalletCards } from "lucide-react";
 import { r2Enabled, presignDownload } from "@/lib/r2";
 import { uid } from "@/lib/utils";
 import { withFlash } from "@/lib/flash";
@@ -71,9 +71,11 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
           line={`Attendance, fees and report cards from ${school.name}, in one place.`} />
         <TermPulseBar school={school} slug={slug} />
         {kids.length === 0 && (
-          <p className="text-[16px] text-muted-foreground">
-            No children linked to your account yet — please contact the school office.
-          </p>
+          <div className="rounded-lg bg-kraft px-6 py-7 text-center text-on-kraft shadow-[var(--shadow-sm)]">
+            <Spot name="empty-students" size={160} className="mx-auto mb-3 h-24 w-40" />
+            <p className="text-[17px] font-semibold">No children linked yet</p>
+            <p className="mt-1 text-[14px] opacity-80">Please contact the school office and they will link your children to this account.</p>
+          </div>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           {kids.map((k) => {
@@ -81,6 +83,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
             const due = inv?.dueDate
               ? new Date(inv.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : null;
             const reportTerm = k.reportTermIds.at(-1);
+            const pill = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12.5px] font-semibold";
             return (
               <Card key={k.id} className="p-5">
                 <div className="flex items-center gap-4">
@@ -91,14 +94,16 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
                     <p className="text-[15px] text-muted-foreground">{k.className ?? "No class yet"}</p>
                   </div>
                 </div>
-                <p className={`mt-4 text-[16px] font-medium ${
-                  k.today === "absent" ? "text-danger" : k.today ? "text-success" : "text-muted-foreground"}`}>
-                  {k.today === "absent" ? "Absent today" : k.today ? "✓ In school today" : "Not marked yet"}
-                </p>
-                <p className={`mt-1 text-[16px] font-medium ${k.owingPesewas > 0 ? "text-danger" : "text-success"}`} data-nums="">
-                  {k.owingPesewas > 0
-                    ? <>Owing {ghs(k.owingPesewas)}{due ? ` · due ${due}` : ""}</>
-                    : "Fees cleared ✓"}
+                {/* the two facts a parent checks, as pills — the same two, in the same place, every day */}
+                <p className="mt-4 flex flex-wrap gap-2">
+                  <span className={`${pill} ${k.today === "absent" ? "bg-danger-soft text-danger" : k.today ? "bg-success-soft text-success" : "bg-muted text-muted-foreground"}`}>
+                    {k.today === "absent" ? "Absent today" : k.today ? "✓ In school today" : "Not marked yet"}
+                  </span>
+                  <span className={`${pill} ${k.owingPesewas > 0 ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`} data-nums="">
+                    {k.owingPesewas > 0
+                      ? <>Owing {ghs(k.owingPesewas)}{due ? ` · due ${due}` : ""}</>
+                      : "Fees cleared ✓"}
+                  </span>
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   {k.owingPesewas > 0 && (
@@ -181,11 +186,11 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
     return (
       <div className="max-w-2xl">
         <WelcomeHero role="student" name={me.firstName} schoolId={school.id} title={`Ready for today, ${me.firstName}?`}
-          line="Your lessons, your homework and your results are below." />
+          line={`${cls2[0]?.name ?? "No class"}${me.admissionNo ? ` · Admission No ${me.admissionNo}` : ""} · lessons, homework and results below.`} />
         <TermPulseBar school={school} slug={slug} />
 
-        {/* the student's own file card — personal AND official */}
-        <Card className="mb-5">
+        {/* the student's own file card — personal AND official (the phone hero already carries it) */}
+        <Card className="mb-5 max-sm:hidden">
           <div className="flex items-center gap-4">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-lg font-semibold uppercase text-primary ring-2 ring-primary/25">
               {avatarUrl
@@ -203,7 +208,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
           </div>
         </Card>
 
-        <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatStrip className="mb-5">
           <Stat label="My attendance" value={attPct === null ? "—" : `${attPct}%`}
             tone={attPct !== null && attPct < 85 ? "danger" : "success"} />
           <Stat label="Homework waiting" value={String(overdue.length + pending.length)}
@@ -211,7 +216,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
           <Stat label="Results released" value={String(released.length)} />
           <Stat label="To acknowledge" value={String(unacked.length)}
             tone={unacked.length > 0 ? "danger" : "success"} />
-        </div>
+        </StatStrip>
 
         {/* what actually needs doing — the reason to open the app daily */}
         <Card className="mb-5 border-primary/25">
@@ -240,7 +245,12 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
                 </Link>
               </li>
             )}
-            {nothingWaiting && <li className="text-success">All caught up ✓ — nothing waiting on you.</li>}
+            {nothingWaiting && (
+              <li className="flex items-center gap-3 text-success">
+                <Spot name="empty-caught-up" size={56} />
+                All caught up ✓ — nothing waiting on you.
+              </li>
+            )}
           </ul>
         </Card>
 
@@ -368,15 +378,18 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
         {homerooms.length > 0 && (
           <>
             <h2 className="mb-2.5 text-sm font-semibold">My register{homerooms.length === 1 ? "" : "s"}</h2>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {/* the teacher's one job at 7:30 — the tinted card with the register book */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
               {homerooms.map((c) => (
-                <Link key={c.id} href={`/attendance/${c.id}`}>
-                  <Card className={marked.has(c.id) ? "border-success/40" : "border-warning/50"}>
-                    <p className="font-medium">{c.name}</p>
-                    <p className={`mt-1 text-sm ${marked.has(c.id) ? "text-success" : "font-medium text-warning"}`}>
-                      {marked.has(c.id) ? "Register saved ✓" : "Mark register →"}
-                    </p>
-                  </Card>
+                <Link key={c.id} href={`/attendance/${c.id}`}
+                  className={`relative flex min-h-[96px] flex-col justify-end overflow-hidden rounded-lg p-4 pr-24 shadow-[var(--shadow-sm)] transition-transform hover:-translate-y-0.5 ${
+                    marked.has(c.id) ? "bg-success-soft text-success" : "bg-brand-container text-on-brand-container"}`}>
+                  <Spot name="spot-register" size={88} className="absolute -right-3 -top-3 opacity-95" />
+                  <span className="relative font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] opacity-75">Register</span>
+                  <span className="relative text-[17px] font-semibold leading-tight">{c.name}</span>
+                  <span className="relative mt-0.5 text-[13.5px] font-medium">
+                    {marked.has(c.id) ? "Saved ✓" : "Not marked yet — tap to mark →"}
+                  </span>
                 </Link>
               ))}
             </div>
@@ -520,7 +533,7 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
       <SetupChecklist schoolName={school.name} items={setupItems}
         installation={school.installation === "none" ? "offer" : installing(school) ? "arranged" : null} />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatStrip className="mb-0">
         <Stat label="Active students" value={String(st.n)} icon={<Users size={18} />}
           hint={`in ${allCls.length} class${allCls.length === 1 ? "" : "es"}`} />
         <Stat label="Present today" value={totalToday ? `${presentToday}/${totalToday}` : "—"} icon={<ClipboardCheck size={18} />}
@@ -531,40 +544,32 @@ export default async function Dashboard({ params }: { params: Promise<{ school: 
         <Stat label="Outstanding" value={`GHS ${(outstanding / 100).toLocaleString()}`} icon={<WalletCards size={18} />}
           hint={outstanding > 0 ? `${Math.round((outstanding / billed) * 100)}% still to collect` : "Nothing owed"}
           tone={outstanding > 0 ? "danger" : "success"} />
-      </div>
+      </StatStrip>
 
       {/* what needs a decision today, most urgent first; each one goes straight to where it is fixed */}
       {needs.length > 0 && (
-        <Card className="mt-4 border-l-4 border-warning">
-          <h2 className="flex items-center gap-2 font-semibold"><CircleAlert size={17} className="text-warning" /> Needs you today</h2>
-          <ul className="mt-2 grid gap-2 md:grid-cols-3">
-            {needs.map((n) => (
-              <li key={n.href}>
-                <Link href={n.href} className="block h-full rounded-md border border-border px-3 py-2.5 transition-colors hover:border-border-strong hover:bg-muted">
-                  <span className="block text-[15px] font-semibold">{n.what}</span>
-                  <span className="block text-[13.5px] text-muted-foreground">{n.why}</span>
-                  <span className="mt-1 block text-[13.5px] font-semibold text-primary">{n.go} →</span>
-                </Link>
-              </li>
+        <>
+          <SectionHead title={<span className="flex items-center gap-2"><CircleAlert size={17} className="text-warning" /> Needs you today</span>}
+            sub={`${needs.length} thing${needs.length === 1 ? "" : "s"}`} className="mt-5" />
+          <RowList>
+            {needs.map((n, i) => (
+              <Row key={n.href} href={n.href}
+                lead={<span className="flex h-10 w-10 items-center justify-center rounded-full bg-warning-soft text-[15px] font-bold text-warning" data-nums="">{i + 1}</span>}
+                title={n.what} sub={n.why}
+                trailing={<span className={btnCls + " h-8 px-3 text-[13px] max-sm:hidden"}>{n.go}</span>} />
             ))}
-          </ul>
-        </Card>
+          </RowList>
+        </>
       )}
 
-      {/* quick actions: big, coloured, and where the eye lands */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {([
-          ["/students/new", "Add a student", UserPlus, "bg-brand-container text-on-brand-container"],
-          ["/attendance", "Mark attendance", ClipboardCheck, "bg-success-soft text-success"],
-          ["/comms", "Message parents", Megaphone, "bg-warning-soft text-warning"],
-          ["/fees", "Take a payment", Wallet, "bg-brand-soft text-primary"],
-          ["/assessment/matrix", "Check scores", BookOpenCheck, "bg-danger-soft text-danger"],
-        ] as const).map(([href, label, Icon, tone]) => (
-          <Link key={href} href={href}
-            className={`flex items-center gap-3 rounded-lg px-4 py-3.5 text-[15px] font-semibold shadow-[var(--shadow-sm)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${tone}`}>
-            <Icon size={20} className="shrink-0" /> {label}
-          </Link>
-        ))}
+      {/* quick actions: big, coloured, with the art — where the eye lands */}
+      <SectionHead title="Quick actions" className="mt-5" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <Tile href="/students/new" label="Add a student" hint="Admission in two minutes" spot="spot-add-student" tone="brand" />
+        <Tile href="/attendance" label="Mark attendance" hint={`${markedCount} of ${allCls.length} registers in`} spot="spot-register" tone="success" />
+        <Tile href="/comms" label="Message parents" hint="Notice, SMS or WhatsApp" spot="spot-megaphone" tone="warning" />
+        <Tile href="/fees" label="Take a payment" hint="Cash, MoMo or bank" spot="spot-receipt" tone="soft" />
+        <Tile href="/assessment/matrix" label="Check scores" hint={missing.length ? `${missing.length} sheet${missing.length === 1 ? "" : "s"} missing` : "Every sheet is in"} spot="spot-report-card" tone="danger" className="max-sm:col-span-2" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">

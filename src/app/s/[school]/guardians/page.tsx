@@ -4,8 +4,8 @@ import { Phone, MessageSquare, MonitorSmartphone } from "lucide-react";
 import { db } from "@/db";
 import { guardians, students, studentGuardians, classes } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
-import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge } from "@/ui/kit";
-import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
+import { DataTable, Empty, PageHeader, Stat, StatStrip, Tr, Td, Badge, Row, RowList } from "@/ui/kit";
+import { Pagination, SearchBox, Filters } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
 
 const PREF_ICON = { phone: Phone, sms: MessageSquare, portal: MonitorSmartphone } as const;
@@ -68,24 +68,41 @@ export default async function Guardians({ params, searchParams }: {
     <div className="max-w-4xl">
       <PageHeader title="Parents" sub={`${n} shown`} />
 
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <StatStrip cols={3}>
         <Stat label="Portal users" value={String(tally("portal"))} tone="success" />
         <Stat label="Phone-only" value={String(tally("phone"))} tone={tally("phone") ? "warning" : undefined} />
         <Stat label="SMS" value={String(tally("sms"))} />
-      </div>
+      </StatStrip>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBox placeholder="Name or phone…" />
-        <FilterSelect name="show" allLabel="With active children"
-          options={[{ value: "all", label: "All parents" }, { value: "inactive", label: "No active children" }]} />
-        <FilterSelect name="reach" allLabel="Any contact method"
-          options={[{ value: "phone", label: "Phone-only" }, { value: "sms", label: "SMS" }, { value: "portal", label: "Portal" }]} />
+        <Filters current={{ show: sp.show, reach: sp.reach }} filters={[
+          { name: "show", allLabel: "With active children", options: [{ value: "all", label: "All parents" }, { value: "inactive", label: "No active children" }] },
+          { name: "reach", allLabel: "Any contact method", options: [{ value: "phone", label: "Phone-only" }, { value: "sms", label: "SMS" }, { value: "portal", label: "Portal" }] },
+        ]} />
       </div>
 
       {rows.length === 0 ? (
-        <Empty title="No guardians found"
+        <Empty art="empty-search" title="No guardians found"
           hint="Guardians are created during admission and stay linked to every child of theirs." />
-      ) : (
+      ) : (<>
+        <RowList className="md:hidden">
+          {rows.map((g) => {
+            const kids = kidsOf.get(g.id) ?? [];
+            const active = kids.filter((k) => k.status === "active");
+            return (
+              <Row key={g.id} href={`/guardians/${g.id}`}
+                lead={g.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                title={g.name}
+                sub={<>{active.map((k) => `${k.firstName} (${k.className ?? "—"})`).join(", ") || <span className="capitalize">{g.relation}</span>} · <span data-nums="">{g.phone}</span></>}
+                trailing={<>
+                  {g.userId ? <Badge tone="success">portal</Badge> : <Badge tone={g.contactPref === "sms" ? "default" : "warning"}>{g.contactPref === "sms" ? "SMS" : "phone"}</Badge>}
+                  <span className="text-faint">›</span>
+                </>} />
+            );
+          })}
+        </RowList>
+        <div className="max-md:hidden">
         <DataTable head={["Guardian", "Reach them", "Children", "Portal", ""]}>
           {rows.map((g) => {
             const kids = kidsOf.get(g.id) ?? [];
@@ -124,7 +141,8 @@ export default async function Guardians({ params, searchParams }: {
             );
           })}
         </DataTable>
-      )}
+        </div>
+      </>)}
       <Pagination page={page} count={Number(n)} />
     </div>
   );

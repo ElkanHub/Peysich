@@ -5,7 +5,7 @@ import { levels, students, scoreSheets, componentScores } from "@/db/schema";
 import { requireModule, getCurrentTerm, getTeacherScope } from "@/core/school-context";
 import { getStructure } from "@/core/academics";
 import { PerformanceTable } from "@/modules/assessment/performance-table";
-import { Card, PageHeader, Empty } from "@/ui/kit";
+import { Card, PageHeader, Empty, Tabs } from "@/ui/kit";
 
 /** Assessment home. Teachers: their classes → subject sheets (entry).
  *  Admin: everything revolves around the STUDENT — a Students view (class →
@@ -102,7 +102,7 @@ export default async function Assessment({ params, searchParams }: {
         sub={`${term.name}${term.scoresLocked ? " · closed" : ""} · everything here revolves around the student`} />
 
       {/* releasing to families lives on Reports — this page is for the marks */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-[14px]">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-[14px] max-md:hidden">
         <span className="text-muted-foreground">
           Releasing results to families — per test, with readiness — happens on the <b className="text-foreground">Report cards</b> tab.
         </span>
@@ -112,25 +112,21 @@ export default async function Assessment({ params, searchParams }: {
         </span>
       </div>
 
-      {/* ── view tabs ── */}
-      <div className="mb-4 flex gap-2">
-        {(["students", "subjects"] as const).map((v) => (
-          <Link key={v} href={`?view=${v}${activeClass ? `&c=${activeClass.id}` : ""}`}
-            className={`rounded-md border px-3.5 py-1.5 text-sm font-medium capitalize ${v === view
-              ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
-            By {v}
-          </Link>
-        ))}
-      </div>
+      {/* ── view tabs: a segmented switch on a phone, the underlined pair on a desktop ── */}
+      <Tabs active={view} tabs={(["students", "subjects"] as const).map((v) => ({
+        key: v, label: `By ${v}`, href: `?view=${v}${activeClass ? `&c=${activeClass.id}` : ""}`,
+      }))} />
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      {/* one row of classes — it scrolls on a phone, never clusters */}
+      <div className="chip-row mb-4 flex flex-wrap gap-1.5">
         {testClasses.map((c) => (
           <Link key={c.id} href={`?view=${view}&c=${c.id}`}
-            className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium ${c.id === activeClass?.id
-              ? "border-primary/40 bg-brand-container text-on-brand-container" : "border-border hover:bg-muted"}`}>
+            className={`rounded-md border px-2.5 py-1 text-[13.5px] font-medium max-md:min-h-9 max-md:px-3.5 max-md:py-1.5 max-md:text-[14px] ${c.id === activeClass?.id
+              ? "border-primary/40 bg-brand-container text-on-brand-container max-md:border-ink max-md:bg-ink max-md:text-ink-text-strong" : "border-border bg-card hover:bg-muted"}`}>
             {c.name}
           </Link>
         ))}
+        <Link href="/reports" className="rounded-md border border-border px-2.5 py-1 text-[13.5px] font-medium text-primary max-md:min-h-9 max-md:px-3.5 max-md:py-1.5 max-md:text-[14px] md:hidden">Reports →</Link>
       </div>
 
       {!activeClass ? (

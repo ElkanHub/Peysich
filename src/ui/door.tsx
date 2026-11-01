@@ -40,13 +40,33 @@ const SCENES: { key: string; file: string; top?: string; title: React.ReactNode;
     title: <>One school. One system. <em className="not-italic text-[#e9a9c9]">Every role.</em></>,
     line: "Head, teachers, parents and students — one sign-in, each their own view.",
   },
+  {
+    key: "parent", file: "door-parent.webp", top: "30%",
+    title: <>Her day at school, <em className="not-italic text-[#e9a9c9]">on your phone.</em></>,
+    line: "Attendance, fees and the report card, the moment the school records them.",
+  },
+  {
+    key: "head", file: "door-head.webp", top: "30%",
+    title: <>Run the school <em className="not-italic text-[#e9a9c9]">from one place.</em></>,
+    line: "Registers, scores, fees and messages — the whole morning in ninety seconds.",
+  },
+  {
+    key: "kids", file: "door-kids.webp", top: "30%",
+    title: <>Every child, <em className="not-italic text-[#e9a9c9]">counted in.</em></>,
+    line: "Register, scores, report cards and fees — one calm place, any phone.",
+  },
 ];
 
-/** Show only the chosen scene; with no script at all, the first one. */
+/** Show only the chosen scene; with no script at all, the first one. The
+ *  attribute sits on <main>, so the desktop rail and the phone scene pick
+ *  the same one. */
 const SCENE_CSS =
   ".door-scene{display:none}" +
   SCENES.map((s) => `[data-scene="${s.key}"] .door-scene[data-k="${s.key}"]{display:block}`).join("") +
-  `aside:not([data-scene]) .door-scene[data-k="${SCENES[0].key}"]{display:block}`;
+  `main:not([data-scene]) .door-scene[data-k="${SCENES[0].key}"]{display:block}`;
+/** The phone cut-out fades at its foot into the ink, so the sheet can rise over it. */
+const PHONE_MASK_IMG = "linear-gradient(to bottom, #000 72%, transparent 100%)";
+const PHONE_MASK: React.CSSProperties = { maskImage: PHONE_MASK_IMG, WebkitMaskImage: PHONE_MASK_IMG };
 /** Feather the cut-out's sides: the generated PNGs carry a soft halo whose
  *  edge would otherwise read as a faint rectangle on the ink. */
 const MASK_IMG = "linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 10%)";
@@ -62,11 +82,11 @@ export function Door({ children, footer }: {
   footer?: React.ReactNode;
 }) {
   return (
-    <main className="light-scope min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+    <main suppressHydrationWarning className="light-scope min-h-dvh bg-ink text-foreground lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:bg-background">
+      <style dangerouslySetInnerHTML={{ __html: SCENE_CSS }} />
       {/* ink rail — the statement */}
-      <aside suppressHydrationWarning style={SLANT}
+      <aside style={SLANT}
         className="relative hidden overflow-hidden bg-ink text-ink-text lg:flex lg:flex-col">
-        <style dangerouslySetInnerHTML={{ __html: SCENE_CSS }} />
         <div className="relative z-[2] p-10 pb-0"><LogoLockup size={30} dark /></div>
 
         {SCENES.map((s) => (
@@ -88,17 +108,32 @@ export function Door({ children, footer }: {
             </div>
           </div>
         ))}
-        <script dangerouslySetInnerHTML={{ __html: PICK_JS }} />
 
         <p className="relative z-[4] mt-auto p-10 pt-0 text-[12.5px] text-ink-text/55">© {new Date().getFullYear()} SchoolSpec · Made for schools in Ghana</p>
       </aside>
 
-      {/* phone: a slim ink band carries the brand under the status bar */}
-      <div className="flex items-center bg-ink px-5 pb-4 pt-[calc(var(--sat)+1.1rem)] lg:hidden">
-        <LogoLockup size={26} dark />
+      {/* phone: the same scene, on top — the people, the line, and the sheet
+          rising over their feet. The scene is the top 46% of the screen. */}
+      <div className="relative h-[min(46dvh,440px)] min-h-[300px] overflow-hidden bg-ink text-ink-text lg:hidden">
+        <div className="relative z-[2] px-5 pt-[calc(var(--sat)+1rem)]"><LogoLockup size={24} dark /></div>
+        {SCENES.map((s) => (
+          <div key={s.key} data-k={s.key} className="door-scene">
+            <div className="relative z-[2] max-w-[330px] px-5 pt-4">
+              <h1 className="text-[26px] font-semibold leading-[1.05] tracking-[-0.025em] text-ink-text-strong">{s.title}</h1>
+              <p className="mt-2 max-w-[26ch] text-[13.5px] leading-snug text-ink-text/80">{s.line}</p>
+            </div>
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
+              style={{ background: "radial-gradient(ellipse 70% 60% at 50% 95%, color-mix(in srgb, var(--primary) 55%, transparent), transparent 70%)" }} />
+            {/* eslint-disable-next-line @next/next/no-img-element -- decorative cut-out, one of six */}
+            <img src={`/door/${s.file}`} alt="" loading="lazy" decoding="async"
+              className="pointer-events-none absolute bottom-0 left-1/2 h-[66%] w-auto max-w-none -translate-x-1/2 object-contain object-bottom"
+              style={PHONE_MASK} />
+          </div>
+        ))}
       </div>
+      <script dangerouslySetInnerHTML={{ __html: PICK_JS }} />
 
-      <section className="flex flex-col px-5 pb-[calc(var(--sab)+2rem)] pt-8 sm:px-10 lg:justify-center lg:py-12">
+      <section className="relative z-[4] -mt-6 flex flex-col rounded-t-[26px] bg-background px-5 pb-[calc(var(--sab)+2rem)] pt-7 sm:px-10 lg:mt-0 lg:justify-center lg:rounded-none lg:py-12">
         <div className="mx-auto w-full max-w-[400px]">{children}</div>
         {footer && <div className="mx-auto mt-10 w-full max-w-[400px] text-[13px] text-muted-foreground">{footer}</div>}
       </section>

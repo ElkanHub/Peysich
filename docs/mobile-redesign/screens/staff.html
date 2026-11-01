@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff</title><link rel="stylesheet" href="../mobile.css"></head><body>
+<header class="top light"><a class="back">‹</a><h1>Staff</h1><a class="act">+ Add</a></header>
+
+<div class="wrap">
+  <div class="search"><div class="in">Name or employee ID…</div><a class="btn"></a></div>
+  <div class="seg"><a class="on">Everyone · 31</a><a>Teachers · 22</a><a>Office · 4</a><a>Support · 5</a></div>
+
+  <div class="tiles" style="margin-bottom:6px">
+    <a class="tile soft" style="min-height:84px"><span class="spot ph kraft" data-img="spot-staff-room"></span><b>Who teaches what</b><small>Allocations</small></a>
+    <a class="tile" style="min-height:84px"><span class="spot ph kraft" data-img="spot-leave"></span><b>Leave requests</b><small>2 waiting</small></a>
+  </div>
+
+  <div class="card tint" style="padding:12px 14px;margin-bottom:6px"><b style="font-size:14.5px">1 started but not yet saved</b>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:14px"><span>Joseph Lartey</span><span><a style="font-weight:600;margin-right:12px">Finish →</a><a style="color:var(--danger);font-size:13px">Discard</a></span></div></div>
+  <div class="sec"><h2>31 active</h2><a>Former staff</a></div>
+  <div class="list">
+    <div class="row"><span class="av"><img src="../../../public/hero/teacher.jpg" alt=""></span><span class="m"><b>Adwoa Mensah</b><span>Teacher · JHS 2 class teacher · Maths</span></span><span class="e"><span class="pill ok plain">login</span><i class="chev"></i></span></div>
+    <div class="row"><span class="av">KB</span><span class="m"><b>Kwabena Boateng</b><span>Teacher · P5 class teacher</span></span><span class="e"><span class="pill ok plain">login</span><i class="chev"></i></span></div>
+    <div class="row"><span class="av" style="background:var(--muted);color:var(--muted-foreground)">GA</span><span class="m"><b>Grace Addo</b><span>Office · Bursar</span></span><span class="e"><span class="pill ok plain">login</span><i class="chev"></i></span></div>
+    <div class="row"><span class="av">SO</span><span class="m"><b>Samuel Ofori</b><span>Teacher · Science · 3 classes</span></span><span class="e"><span class="pill warn plain">no login</span><i class="chev"></i></span></div>
+    <div class="row"><span class="av" style="background:var(--muted);color:var(--muted-foreground)">AT</span><span class="m"><b>Ama Tetteh</b><span>Support · Kitchen</span></span><span class="e"><i class="chev"></i></span></div>
+    <div class="row"><span class="av">EQ</span><span class="m"><b>Emmanuel Quaye</b><span>Teacher · ICT</span></span><span class="e"><span class="pill ok plain">login</span><i class="chev"></i></span></div>
+  </div>
+</div>
+
+<nav class="tabs"><a><span class="i"></span>Home</a><a><span class="i"></span>Attendance</a><a><span class="i"></span>Fees</a><a class="on"><span class="i"></span>Menu</a></nav>
+<div class="note"><b>What changed:</b> the Everyone/Teacher/Office/Support dropdown becomes a segmented control that also carries the counts — which lets the four stat tiles go. "What they do" and "Contact" columns (that collapsed into labelled lines) fold into the row's subtitle; the login state is a small pill. Two grey link buttons become two tiles with spot art.</div>
+</body></html>

@@ -4,8 +4,8 @@ import { db } from "@/db";
 import { staff } from "@/db/schema";
 import { requireSchool } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
-import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "@/ui/kit";
-import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
+import { DataTable, Empty, PageHeader, Stat, StatStrip, Tr, Td, Badge, Row, RowList, Tile, btnGhostCls, btnCls } from "@/ui/kit";
+import { Pagination, SearchBox, Filters } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
 import { discardOnboarding } from "./staff-actions";
 import { SubmitButton } from "@/ui/feedback";
@@ -53,13 +53,17 @@ export default async function Staff({ params, searchParams }: {
       <PageHeader title="Staff" sub={`${n} ${status === "left" ? "former" : "active"}`}
         action={{ href: "/staff/new", label: "Add staff" }} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatStrip>
         <Stat label="All staff" value={String(total)} />
         <Stat label="Teachers" value={String(tally("teaching"))} tone="success" />
         <Stat label="Office / support" value={`${tally("admin")} / ${tally("support")}`} />
         <Stat label="Not yet saved" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
+      </StatStrip>
+      <div className="mb-4 grid grid-cols-2 gap-3 md:hidden">
+        <Tile href="/staff/allocations" label="Who teaches what" hint="Teaching & allocations" spot="spot-staff-room" tone="soft" />
+        <Tile href="/hr" label="Leave requests" spot="spot-leave" />
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 hidden flex-wrap gap-2 md:flex">
         <Link href="/staff/allocations" className={btnGhostCls}>Who teaches which class</Link>
         <Link href="/hr" className={btnGhostCls}>Leave requests</Link>
       </div>
@@ -85,16 +89,34 @@ export default async function Staff({ params, searchParams }: {
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBox placeholder="Name or employee ID…" />
-        <FilterSelect name="type" allLabel="Everyone"
-          options={[{ value: "teaching", label: "Teacher" },
-            { value: "admin", label: "Office" }, { value: "support", label: "Support" }]} />
-        <FilterSelect name="status" allLabel="Active"
-          options={[{ value: "left", label: "Former staff" }]} />
+        <Filters current={{ type: sp.type, status: sp.status }} filters={[
+          { name: "type", allLabel: "Everyone", options: [{ value: "teaching", label: "Teacher" }, { value: "admin", label: "Office" }, { value: "support", label: "Support" }] },
+          { name: "status", allLabel: "Active", options: [{ value: "left", label: "Former staff" }] },
+        ]} />
       </div>
 
       {rows.length === 0 ? (
-        <Empty title="No staff found" hint="Adjust the filters or add your first staff member." />
-      ) : (
+        <Empty art={sp.search || sp.type || sp.status ? "empty-search" : "empty-staff"}
+          title={sp.search || sp.type || sp.status ? "No staff match" : "No staff yet"}
+          hint={sp.search || sp.type || sp.status ? "Try another name, or clear the filters." : "Add your first teacher and they can sign in on their own phone."}
+          action={!(sp.search || sp.type || sp.status) ? <Link href="/staff/new" className={btnCls}>Add staff</Link> : undefined} />
+      ) : (<>
+        <RowList className="md:hidden">
+          {rows.map((s) => (
+            <Row key={s.id} href={`/staff/${s.id}`}
+              lead={photo.has(s.id)
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={photo.get(s.id)} alt="" width={40} height={40} loading="lazy" className="h-10 w-10 rounded-full object-cover" />
+                : s.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+              title={s.name}
+              sub={[TYPE_LABEL[s.staffType], s.designation, s.phone].filter(Boolean).join(" · ")}
+              trailing={<>
+                {s.userId ? <Badge tone="success">{s.staffRole}</Badge> : <span className="text-[12px] text-muted-foreground">no login</span>}
+                <span className="h-4 w-4 text-faint">›</span>
+              </>} />
+          ))}
+        </RowList>
+        <div className="max-md:hidden">
         <DataTable head={["Staff member", "What they do", "Contact", "Login", ""]}>
           {rows.map((s) => (
             <Tr key={s.id}>
@@ -125,7 +147,8 @@ export default async function Staff({ params, searchParams }: {
             </Tr>
           ))}
         </DataTable>
-      )}
+        </div>
+      </>)}
       <Pagination page={page} count={Number(n)} />
     </div>
   );

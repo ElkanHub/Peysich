@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Students</title><link rel="stylesheet" href="../mobile.css"></head><body>
+<header class="top light"><a class="back">‹</a><h1>Students</h1><a class="act">+ Add</a><a class="act" style="font-size:20px;line-height:1" title="Import from a sheet · Admissions · Year-end promotion · Classes &amp; rooms">⋯</a></header>
+
+<div class="wrap">
+  <div class="search"><div class="in">Name or admission no…</div><a class="btn"><span class="n">1</span></a></div>
+  <div class="chips plain"><span class="chip on">All <span class="n">412</span></span><span class="chip">KG 1</span><span class="chip">KG 2</span><span class="chip">P1</span><span class="chip">P2</span><span class="chip">P3</span><span class="chip">P4</span><span class="chip">P5</span><span class="chip">P6</span><span class="chip">JHS 1</span><span class="chip">JHS 2</span><span class="chip">JHS 3</span></div>
+
+  <div class="card tint" style="margin-top:14px;padding:12px 14px"><span class="spot ph kraft" data-img="spot-admissions-gate" style="width:70px;height:70px"></span>
+    <b style="font-size:14.5px">2 admissions not finished</b>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:14px"><span>Yaw Darko</span><span><a style="font-weight:600;margin-right:12px">Finish →</a><a style="color:var(--danger);font-size:13px">Discard</a></span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:14px"><span>Efua Asante</span><span><a style="font-weight:600;margin-right:12px">Finish →</a><a style="color:var(--danger);font-size:13px">Discard</a></span></div></div>
+
+  <div class="sec"><h2>412 active</h2><a>Import · Admissions</a></div>
+  <div class="list">
+    <div class="row"><span class="av"><img src="../../../public/door/students.webp" alt="" style="object-position:top"></span><span class="m"><b>Abban, Kwesi</b><span>JHS 2 · ADM 0188 · boarder</span></span><span class="e"><i class="chev"></i></span></div>
+    <div class="row"><span class="av">AA</span><span class="m"><b>Acheampong, Akosua</b><span>P5 · ADM 0231</span></span><span class="e"><i class="chev"></i></span></div>
+    <div class="row"><span class="av">BA</span><span class="m"><b>Addo, Bernice</b><span>KG 2 · ADM 0402</span></span><span class="e"><span class="pill bad">owing</span><i class="chev"></i></span></div>
+    <div class="row"><span class="av">YA</span><span class="m"><b>Adjei, Yaw</b><span>JHS 3 · ADM 0097 · boarder</span></span><span class="e"><i class="chev"></i></span></div>
+    <div class="row"><span class="av">EA</span><span class="m"><b>Agyeman, Esi</b><span>P1 · ADM 0388</span></span><span class="e"><i class="chev"></i></span></div>
+    <div class="row"><span class="av">KA</span><span class="m"><b>Amoah, Kofi</b><span>P6 · ADM 0201</span></span><span class="e"><span class="pill warn">absent today</span><i class="chev"></i></span></div>
+    <div class="row"><span class="av">NA</span><span class="m"><b>Ankrah, Nana</b><span>JHS 1 · ADM 0150</span></span><span class="e"><i class="chev"></i></span></div>
+    <div class="row"><span class="av">DA</span><span class="m"><b>Asare, Dede</b><span>P3 · ADM 0310</span></span><span class="e"><i class="chev"></i></span></div>
+  </div>
+  <p style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted-foreground);margin:14px 0"><a class="btn sm ghost">Prev</a><span>Page 1 of 17 · 412</span><a class="btn sm ghost">Next</a></p>
+</div>
+
+<div class="dim"></div>
+<div class="sheet"><div class="grip"></div><h3>Filter</h3>
+  <p class="eyebrow" style="margin-bottom:8px">Status</p><div class="opt"><span class="on">Active</span><span>Alumni</span><span>Left</span></div>
+  <p class="eyebrow" style="margin-bottom:8px">Sex</p><div class="opt"><span class="on">All</span><span>Male</span><span>Female</span></div>
+  <p class="eyebrow" style="margin-bottom:8px">Type</p><div class="opt"><span class="on">All</span><span>Boarders</span><span>Day</span></div>
+  <a class="btn">Show 412 students</a></div>
+
+<nav class="tabs"><a><span class="i"></span>Home</a><a><span class="i"></span>Attendance</a><a><span class="i"></span>Fees</a><a class="on"><span class="i"></span>Menu</a></nav>
+<div class="note"><b>What changed:</b> the table no longer collapses into "Student: … / Adm. No: … / Sex: … / Class: …" cards. Each student is one row: photo, name, "class · number · boarder", a status pill when it matters, chevron. Classes are a horizontal snap row (never wraps). Status, sex and type live behind one Filter button that opens a bottom sheet. The four stat tiles go; the four grey link buttons (Import, Admissions, Promotion, Classes &amp; rooms) live under the ⋯ in the top bar, with Import · Admissions also under the heading. Draft admissions become one tinted card with Finish and Discard per draft. Pagination stays Prev / Next. The "owing" and "absent today" pills are phase 2 (they need two extra joins).</div>
+</body></html>

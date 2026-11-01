@@ -4,8 +4,8 @@ import { db } from "@/db";
 import { students, classes } from "@/db/schema";
 import { requireSchool, getTeacherScope } from "@/core/school-context";
 import { r2Enabled, presignDownload } from "@/lib/r2";
-import { DataTable, Empty, PageHeader, Stat, Tr, Td, Badge, btnGhostCls } from "@/ui/kit";
-import { Pagination, SearchBox, FilterSelect } from "@/ui/list-controls";
+import { DataTable, Empty, PageHeader, Stat, StatStrip, Tr, Td, Badge, Row, RowList, btnGhostCls, btnCls } from "@/ui/kit";
+import { Pagination, SearchBox, Filters } from "@/ui/list-controls";
 import { PER_PAGE } from "@/lib/utils";
 import { discardAdmission } from "./new/actions";
 import { SubmitButton } from "@/ui/feedback";
@@ -100,15 +100,15 @@ export default async function Students({ params, searchParams }: {
 
       {/* data at a glance + the actions an office actually reaches for */}
       {isAdmin && (
-        <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatStrip>
           <Stat label="Active students" value={String(activeN)} />
           <Stat label="Boarders / day" value={`${boarderN} / ${activeN - boarderN}`} />
           <Stat label="Admissions in progress" value={String(drafts.length)} tone={drafts.length ? "warning" : undefined} />
           <Stat label="Alumni" value={String(tally("alumni"))} />
-        </div>
+        </StatStrip>
       )}
       {isAdmin && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="chip-row mb-4 flex flex-wrap gap-2">
           <Link href="/students/import" className={btnGhostCls}>Import from a sheet</Link>
           <Link href="/admissions" className={btnGhostCls}>Admissions</Link>
           <Link href="/settings/promotion" className={btnGhostCls}>Year-end promotion</Link>
@@ -138,20 +138,37 @@ export default async function Students({ params, searchParams }: {
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBox placeholder="Name or admission no…" />
-        <FilterSelect name="classId" allLabel="All classes"
-          options={cls.map((c) => ({ value: c.id, label: c.name }))} />
-        {isAdmin && (
-          <FilterSelect name="status" allLabel="Active"
-            options={[{ value: "alumni", label: "Alumni" }, { value: "left", label: "Left" }]} />
-        )}
-        <FilterSelect name="sex" allLabel="All"
-          options={[{ value: "male", label: "Male" }, { value: "female", label: "Female" }]} />
+        <Filters current={{ classId: classFilter, status: isAdmin ? sp.status : undefined, sex: sp.sex }} filters={[
+          { name: "classId", allLabel: "All classes", options: cls.map((c) => ({ value: c.id, label: c.name })) },
+          ...(isAdmin ? [{ name: "status", allLabel: "Active", options: [{ value: "alumni", label: "Alumni" }, { value: "left", label: "Left" }] }] : []),
+          { name: "sex", allLabel: "All", options: [{ value: "male", label: "Male" }, { value: "female", label: "Female" }] },
+        ]} />
       </div>
 
       {rows.length === 0 ? (
-        <Empty title="No students found"
-          hint="Adjust the filters, admit your first student, or import your roster from Excel." />
-      ) : (
+        <Empty art={sp.search || classFilter || sp.sex ? "empty-search" : "empty-students"}
+          title={sp.search || classFilter || sp.sex ? "No students match" : "No students yet"}
+          hint={sp.search || classFilter || sp.sex
+            ? "Try another name, or clear the filters."
+            : "Admit your first student, or bring your whole roster in from Excel in one go."}
+          action={isAdmin && !(sp.search || classFilter || sp.sex) ? <>
+            <Link href="/students/new" className={btnCls}>Add a student</Link>
+            <Link href="/students/import" className={btnGhostCls}>Import a sheet</Link>
+          </> : undefined} />
+      ) : (<>
+        {/* phone: one row per student — the table below is desktop-only */}
+        <RowList className="md:hidden">
+          {rows.map((s) => (
+            <Row key={s.id} href={`/students/${s.id}`}
+              lead={photo.has(s.id)
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={photo.get(s.id)} alt="" width={40} height={40} loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
+                : `${s.firstName[0]}${s.lastName[0]}`}
+              title={`${s.lastName}, ${s.firstName}`}
+              sub={<>{s.className ?? "No class"} · <span data-nums="">{s.admissionNo}</span>{s.boarding ? " · boarder" : ""}</>} />
+          ))}
+        </RowList>
+        <div className="max-md:hidden">
         <DataTable head={["Student", "Adm. No", "Sex", "Class", "Type", ""]}>
           {rows.map((s) => (
             <Tr key={s.id}>
@@ -177,7 +194,8 @@ export default async function Students({ params, searchParams }: {
             </Tr>
           ))}
         </DataTable>
-      )}
+        </div>
+      </>)}
       <Pagination page={page} count={Number(count)} />
     </div>
   );

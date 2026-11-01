@@ -39,6 +39,9 @@ export function OfflineClient() {
       </div>
       <div className="flex flex-1 items-center justify-center px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
         <div className="w-full max-w-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element -- precached with this page */}
+          <img src="/spot/empty-offline.webp" alt="" aria-hidden width={384} height={256}
+            className="mb-5 h-auto w-full rounded-xl object-cover" />
           <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${online ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
             {online ? <Wifi size={26} /> : <WifiOff size={26} />}
           </span>

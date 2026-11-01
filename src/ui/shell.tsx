@@ -38,9 +38,10 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
   return (
     <div className="flex min-h-screen text-[16px] max-md:text-[18px]">
       <AppNav schoolName={schoolName} role={role} userName={userName} items={items}
-        avatarUrl={avatarUrl} />
+        avatarUrl={avatarUrl} logoUrl={logoUrl} />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 mt-[calc(3.25rem+var(--sat))] flex h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:mt-0 lg:px-8">
+        {/* the breadcrumb bar is desktop chrome; a phone has one ink bar and a back chevron in the page header */}
+        <header className="sticky top-0 z-30 hidden h-12 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur print:hidden lg:flex lg:px-8">
           <RouteProgress />
           <Breadcrumbs root={schoolName} />
           <div className="flex shrink-0 items-center gap-3">
@@ -53,7 +54,7 @@ export function Shell({ schoolName, role, userName, modules, badges, logoUrl, av
             )}
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 pb-[calc(5rem+var(--sab))] print:max-w-none print:p-0 lg:px-8 lg:py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-5 pb-[calc(5rem+var(--sab))] max-lg:mt-[calc(3.5rem+var(--sat))] print:max-w-none print:p-0 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );

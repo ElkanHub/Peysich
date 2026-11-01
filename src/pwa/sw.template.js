@@ -15,7 +15,8 @@ const STATIC = `ss-static-${VERSION}`;
 const PAGES = `ss-pages-${VERSION}`;
 const MEDIA = `ss-media-${VERSION}`;
 const OFFLINE_URL = "/offline";
-const PRECACHE = [OFFLINE_URL, "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/badge-72.png"];
+const PRECACHE = [OFFLINE_URL, "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/badge-72.png",
+  "/spot/empty-offline.webp"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {

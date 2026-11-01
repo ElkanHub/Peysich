@@ -8,11 +8,12 @@ import {
   UserPlus, Library, Bus, Boxes, Briefcase, BarChart3, ClipboardList, Menu, X,
   CalendarRange,
   School, ListChecks, Inbox, Radio, ScrollText, Banknote,
-  ArrowLeftRight, Sun, Moon, CircleHelp,
+  ArrowLeftRight, Sun, Moon, CircleHelp, Bell,
   type LucideIcon, BookOpenCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 import { SignOutButton } from "./signout";
+import { RouteProgress } from "./route-progress";
 import { authClient } from "@/lib/auth-client";
 import { rememberAccount } from "@/lib/device-accounts";
 import dynamic from "next/dynamic";
@@ -150,15 +151,22 @@ function NavLinks({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
   );
 }
 
-function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "SchoolSpec", accountHref = "/account", avatarUrl }: {
+function SidebarInner({ schoolName, role, userName, items, onNavigate, subtitle = "SchoolSpec", accountHref = "/account", avatarUrl, picture }: {
   schoolName: string; role: string; userName: string; items: NavEntry[]; onNavigate?: () => void;
   subtitle?: string; accountHref?: string; avatarUrl?: string | null;
+  /** the phone drawer: the campus line drawing behind the school's name */
+  picture?: boolean;
 }) {
   return (
     <div className="flex h-full flex-col bg-ink pt-[var(--sat)]">
-      <div className="flex items-center gap-2.5 border-b border-ink-border px-4 py-4">
-        <LogoMark size={30} variant="light" />
-        <div className="min-w-0">
+      <div className={cn("relative flex items-center gap-2.5 border-b border-ink-border px-4 py-4", picture && "min-h-[7.5rem] items-end overflow-hidden")}>
+        {picture && (
+          // eslint-disable-next-line @next/next/no-img-element -- decorative line drawing
+          <img src="/spot/drawer-campus.webp" alt="" aria-hidden loading="lazy" decoding="async"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-full w-full object-cover object-bottom opacity-60" />
+        )}
+        <LogoMark size={30} variant="light" className="relative" />
+        <div className="relative min-w-0">
           <p className="truncate text-[14px] font-semibold leading-tight text-ink-text-strong">{schoolName}</p>
           <p className="text-[12px] text-ink-text/60">{subtitle}</p>
         </div>
@@ -269,8 +277,12 @@ const DRAWER_W = 288;
 /** Responsive chrome: fixed ink sidebar ≥lg; below, a drawer that behaves
  *  like a native one — swipe in from the left edge, it follows the finger,
  *  springs open past the threshold, and swipes back closed. */
-export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[]; subtitle?: string; accountHref?: string; avatarUrl?: string | null }) {
+export function AppNav(props: { schoolName: string; role: string; userName: string; items: NavEntry[]; subtitle?: string; accountHref?: string; avatarUrl?: string | null; logoUrl?: string | null }) {
   const [open, setOpen] = useState(false);
+  // the phone bar's bell: the nav badges (unacknowledged notices, nudges) in one
+  // count, landing on Announcements when this person has that page
+  const badgeTotal = props.items.reduce((a, n) => a + (n.badge ?? 0), 0);
+  const bellHref = props.items.some((n) => n.href.replace(/^\//, "") === "comms") ? "/comms" : null;
   const [dragX, setDragX] = useState<number | null>(null); // live finger position
   const touch = useRef<{ x: number; y: number; horizontal: boolean | null; from: "edge" | "drawer"; at: number | null } | null>(null);
 
@@ -372,14 +384,39 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
       <aside className="hidden w-60 shrink-0 print:hidden lg:block">
         <div className="fixed inset-y-0 w-60"><SidebarInner {...props} /></div>
       </aside>
-      {/* mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-[calc(3.25rem+var(--sat))] items-center gap-3 bg-ink px-4 pb-2.5 pt-[calc(0.625rem+var(--sat))] print:hidden lg:hidden">
-        <button onClick={() => setOpen(true)}
-          className="flex h-9 items-center gap-1.5 rounded-md px-2 text-[14px] font-medium text-ink-text hover:bg-ink-2">
-          <Menu size={20} /> Menu
+      {/* phone top bar — the one bar a phone gets: menu, the school, the bell, the person */}
+      <div className="fixed inset-x-0 top-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 bg-ink px-2.5 pt-[var(--sat)] print:hidden lg:hidden">
+        <button onClick={() => setOpen(true)} aria-label="Menu"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-ink-text hover:bg-ink-2">
+          <Menu size={22} />
         </button>
-        <LogoMark size={24} variant="light" />
-        <span className="truncate text-[14px] font-semibold text-ink-text-strong">{props.schoolName}</span>
+        {props.logoUrl
+          // eslint-disable-next-line @next/next/no-img-element -- the school's own crest
+          ? <img src={props.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-md bg-white/90 object-contain p-0.5" />
+          : <LogoMark size={26} variant="light" className="shrink-0" />}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[14px] font-semibold leading-tight text-ink-text-strong">{props.schoolName}</span>
+          <span className="block truncate text-[11.5px] capitalize leading-tight text-ink-text/60">{props.role.replace("_", " ")}</span>
+        </span>
+        {bellHref && (
+          <Link href={bellHref} aria-label={badgeTotal > 0 ? `${badgeTotal} needing attention` : "Announcements"}
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-ink-text hover:bg-ink-2">
+            <Bell size={20} />
+            {badgeTotal > 0 && (
+              <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-warning px-1 text-[10.5px] font-bold leading-none text-white" data-nums="">
+                {badgeTotal > 99 ? "99+" : badgeTotal}
+              </span>
+            )}
+          </Link>
+        )}
+        <Link href={props.accountHref ?? "/account"} aria-label="My account"
+          className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-active text-[12px] font-semibold uppercase text-ink-text-strong">
+          {props.avatarUrl
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={props.avatarUrl} alt="" className="h-full w-full object-cover" />
+            : props.userName.slice(0, 2)}
+        </Link>
+        <RouteProgress />
       </div>
       {/* drawer + scrim, always mounted so the gesture can drive them */}
       <div className={`fixed inset-0 z-50 lg:hidden print:hidden ${x === 0 && !dragging ? "pointer-events-none" : ""}`}
@@ -391,7 +428,7 @@ export function AppNav(props: { schoolName: string; role: string; userName: stri
           style={{ transform: `translateX(${x - DRAWER_W}px)`,
             transition: dragging ? "none" : "transform 260ms cubic-bezier(.32,.72,0,1)",
             touchAction: "pan-y" }}>
-          <SidebarInner {...props} onNavigate={() => setOpen(false)} />
+          <SidebarInner {...props} picture onNavigate={() => setOpen(false)} />
           <button onClick={() => setOpen(false)}
             className="absolute right-3 top-[calc(0.875rem+var(--sat))] flex h-9 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-ink-text hover:bg-ink-2">
             <X size={16} /> Close

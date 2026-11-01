@@ -163,7 +163,7 @@ export default async function RecordBook({ params, searchParams }: {
   const color = school.branding.primaryColor || "#5E1D3E";
 
   const termPicker = (base: string) => (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div className="chip-row mb-4 flex flex-wrap items-center gap-2">
       {[...yrs].sort((a, b) => b.startsAt.localeCompare(a.startsAt)).map((y) => (
         <span key={y.id} className="flex items-center gap-1.5">
           <span className="text-[13px] font-medium text-muted-foreground" data-nums="">{y.name}:</span>
@@ -248,7 +248,7 @@ export default async function RecordBook({ params, searchParams }: {
       <PageHeader title="Record book"
         sub={`${yearName.get(term.yearId)} · ${term.name} — the term's attendance book`} />
       {termPicker(`/attendance/register?c=${active.id}&`)}
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      <div className="chip-row mb-4 flex flex-wrap gap-1.5">
         {allowed.map((x) => (
           <Link key={x.id} href={`/attendance/register?c=${x.id}&t=${term.id}`}
             className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${x.id === active.id
