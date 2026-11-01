@@ -204,7 +204,7 @@ export default async function Comms({ params }: { params: Promise<{ school: stri
               </div>
             );
           })}
-          {feed.length === 0 && <Empty title="Nothing yet" hint="Announcements, events and guardian messages will appear here." />}
+          {feed.length === 0 && <Empty art="empty-notices" title="Nothing on the board yet" hint="Announcements, events and messages to parents will appear here." />}
         </div>
       </div>
 

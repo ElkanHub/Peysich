@@ -8,7 +8,7 @@ import { AnnouncementGate } from "@/ui/announcement-gate";
 import { PromoGate } from "@/ui/promo-gate";
 import { activePromos } from "@/app/platform/actions";
 import { Shell } from "@/ui/shell";
-import { cn } from "@/lib/utils";
+import { Banner } from "@/ui/kit";
 import { getBalance, ghs, LOW_BALANCE_PESEWAS } from "@/messaging/wallet";
 import { deleteAfter, fmtDay, getWorkingTerm, schoolWritable } from "@/core/terms";
 import type { Metadata } from "next";
@@ -59,54 +59,36 @@ export default async function SchoolLayout({ children, params }: {
   return (
     <Shell schoolName={school.name} role={user.role} userName={user.name} modules={modules}
       badges={badges} logoUrl={logoUrl} avatarUrl={avatarUrl} allowedTabs={grants?.tabs ?? null}>
+      {/* page-level notices, one Banner each, in a fixed order: trial → payment → frozen → wallet */}
       {trialDays !== null && user.role === "admin" && (
-        <div className="mb-5 flex items-center justify-between rounded-lg border border-primary/30 bg-brand-soft px-4 py-2.5 text-[14px]">
-          <span>
-            {trialDays <= 1
-              ? <><b>Your free trial ends {trialDays === 1 ? "tomorrow" : "today"}.</b> Choose a plan to keep going — nothing is deleted either way.</>
-              : <><b>Free trial</b> — {trialDays} days left. Your data stays safe either way.</>}
-          </span>
-          <a href="/billing" className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
-            Choose a plan
-          </a>
-        </div>
-      )}
-      {frozen && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-[14px] shadow-[var(--shadow-sm)]">
-          <span>
-            {lapsed
-              ? user.role === "admin"
-                ? <><b>{school.status === "expired" ? "Your free trial has ended." : "Your subscription has ended."}</b> Everything is kept and readable{until ? ` until ${fmtDay(until)}` : ""}. {school.status === "expired" ? "Choose a plan to carry on." : "Renew to open the next term."}</>
-                : <><b>The school&apos;s account is paused.</b> Records are kept and readable.</>
-              : term?.state === "closed"
-                ? <><b>{term.year.name} is closed.</b> {user.role === "admin" ? "Open the next term when school resumes." : "Records stay readable until the next term opens."}</>
-                : <><b>{term?.name} has ended.</b> {user.role === "admin" ? "Close it from Home, then open the next term." : "Records stay readable until the next term opens."}</>}
-          </span>
-          {user.role === "admin" && lapsed && (
-            <a href="/billing" className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">Renew</a>
-          )}
-        </div>
+        <Banner tone="brand" action={{ href: "/billing", label: "Choose a plan" }}>
+          {trialDays <= 1
+            ? <><b>Your free trial ends {trialDays === 1 ? "tomorrow" : "today"}.</b> Choose a plan to keep going — nothing is deleted either way.</>
+            : <><b>Free trial</b> — {trialDays} days left. Your data stays safe either way.</>}
+        </Banner>
       )}
       {school.status === "past_due" && user.role === "admin" && (
-        <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-danger/40 bg-danger-soft px-4 py-2.5 text-[14px]">
-          <span><b>The payment for your plan did not go through.</b> The school stays open for 14 days. Your data is safe.</span>
-          <a href="/billing" className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
-            Pay now
-          </a>
-        </div>
+        <Banner tone="danger" action={{ href: "/billing", label: "Pay now" }}>
+          <b>The payment for your plan did not go through.</b> The school stays open for 14 days. Your data is safe.
+        </Banner>
+      )}
+      {frozen && (
+        <Banner tone="muted" action={user.role === "admin" && lapsed ? { href: "/billing", label: "Renew" } : undefined}>
+          {lapsed
+            ? user.role === "admin"
+              ? <><b>{school.status === "expired" ? "Your free trial has ended." : "Your subscription has ended."}</b> Everything is kept and readable{until ? ` until ${fmtDay(until)}` : ""}. {school.status === "expired" ? "Choose a plan to carry on." : "Renew to open the next term."}</>
+              : <><b>The school&apos;s account is paused.</b> Records are kept and readable.</>
+            : term?.state === "closed"
+              ? <><b>{term.year.name} is closed.</b> {user.role === "admin" ? "Open the next term when school resumes." : "Records stay readable until the next term opens."}</>
+              : <><b>{term?.name} has ended.</b> {user.role === "admin" ? "Close it from Home, then open the next term." : "Records stay readable until the next term opens."}</>}
+        </Banner>
       )}
       {walletLow && (
-        <div className={cn("mb-5 flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-[14px]",
-          balance <= 0 ? "border-danger/40 bg-danger-soft" : "border-warning/60 bg-warning-soft")}>
-          <span>
-            {balance <= 0
-              ? <><b>Messaging balance is empty.</b> WhatsApp and SMS to parents and teachers have stopped; absence alerts and emergencies still go. Notices still reach the app and Telegram.</>
-              : <><b>Messaging balance is low</b> — {ghs(balance)} left. Top up so WhatsApp and SMS keep going.</>}
-          </span>
-          <a href="/billing" className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:bg-brand-strong">
-            Top up
-          </a>
-        </div>
+        <Banner tone={balance <= 0 ? "danger" : "warning"} action={{ href: "/billing", label: "Top up" }}>
+          {balance <= 0
+            ? <><b>Messaging balance is empty.</b> WhatsApp and SMS to parents and teachers have stopped; absence alerts and emergencies still go. Notices still reach the app and Telegram.</>
+            : <><b>Messaging balance is low</b> — {ghs(balance)} left. Top up so WhatsApp and SMS keep going.</>}
+        </Banner>
       )}
       {children}
       <Flash />

@@ -125,7 +125,7 @@ export default async function Reports({ params, searchParams }: {
         sub={`${yearName.get(term.yearId)} · ${term.name} · what families receive — sent per test, tracked separately`} />
 
       {/* records are term-scoped and year-scoped — every past term stays reachable */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="chip-row mb-4 flex flex-wrap items-center gap-2">
         {[...yrs].sort((a, b) => b.startsAt.localeCompare(a.startsAt)).map((y) => (
           <span key={y.id} className="flex items-center gap-1.5">
             <span className="text-[13px] font-medium text-muted-foreground" data-nums="">{y.name}:</span>

@@ -17,7 +17,7 @@ import { costSentence, quoteSms } from "@/messaging/wallet";
 import { generateInvoicesForTerm } from "@/modules/fees/engine";
 import { HowToPay } from "@/modules/fees/how-to-pay";
 import { generateInvoices, sendFeeReminders } from "./actions";
-import { Card, PageHeader, Stat, Empty, Badge, Tabs, btnCls, btnGhostCls, inputCls } from "@/ui/kit";
+import { Card, PageHeader, Stat, StatStrip, Spot, Empty, Badge, Tabs, btnCls, btnGhostCls, inputCls } from "@/ui/kit";
 import { ConfirmButton } from "@/ui/confirm";
 import { ChildAvatar } from "@/ui/child-avatar";
 
@@ -74,7 +74,7 @@ export default async function Fees({ params, searchParams }: {
       <div className="max-w-3xl">
         {term.viewingPast && <TermBanner term={term} />}
       <PageHeader title="Fees" sub="Your children's bills, receipts and history — one place, per child" />
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="chip-row mb-4 flex flex-wrap gap-2">
           {kids.map((k) => {
             const isActive = k.id === active.id;
             return (
@@ -94,15 +94,17 @@ export default async function Fees({ params, searchParams }: {
           })}
         </div>
 
-        <Card className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {/* the balance card: ink, the amount once, the two actions — the one bank-app moment */}
+        <Card className="relative mb-4 overflow-hidden bg-ink text-ink-text-strong md:max-w-[520px]">
+          <Spot name="spot-momo-phone" size={120} className="absolute -right-6 -top-4 h-[110px] w-[126px] opacity-90" />
+          <p className="relative text-[11px] font-semibold uppercase tracking-wider text-[#e9a9c9]">
             {term.year?.name} · {term.name} — {active.firstName} {active.lastName}
           </p>
           {inv ? (
             <>
-              <p className={`text-[30px] font-bold tracking-tight ${owing ? "text-danger" : "text-success"}`} data-nums="">
+              <p className={`relative text-[30px] font-bold tracking-tight ${owing ? "text-white" : "text-[#3fbd8a]"}`} data-nums="">
                 {owing ? ghs(owing) : "Cleared ✓"}
-                {owing > 0 && <span className="ml-2 text-[14px] font-medium text-muted-foreground">to pay</span>}
+                {owing > 0 && <span className="ml-2 text-[14px] font-medium text-ink-text">to pay</span>}
               </p>
               {inv.dueDate && owing > 0 && (
                 <Badge tone={daysLeft !== null && daysLeft < 0 ? "danger" : "warning"}>
@@ -111,20 +113,20 @@ export default async function Fees({ params, searchParams }: {
               )}
             </>
           ) : (
-            <p className="mt-1 text-sm text-muted-foreground">No bill for this term yet.</p>
+            <p className="relative mt-1 text-sm text-ink-text">No bill for this term yet.</p>
           )}
           {inv && inv.totalPesewas > 0 && (
             <>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-border/70">
-                <div className="h-full rounded-full bg-success" style={{ width: `${paidShare}%` }} />
+              <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-white/20">
+                <div className="h-full rounded-full bg-[#3fbd8a]" style={{ width: `${paidShare}%` }} />
               </div>
-              <p className="mt-1 text-[12.5px] text-muted-foreground" data-nums="">
+              <p className="relative mt-1 text-[12.5px] text-ink-text" data-nums="">
                 Paid {ghs(inv.paidPesewas)} of {ghs(inv.totalPesewas)}
               </p>
             </>
           )}
           {inv && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="relative mt-4 flex flex-wrap gap-2">
               {owing > 0 && <a href="#howtopay" className={bigBtn}>How to pay</a>}
               <a href={`/api/fees/pdf/invoice/${inv.id}`} target="_blank" className={bigGhost}>Download bill (PDF)</a>
               <Link href={`/fees/invoice/${inv.id}`} className={bigGhost}>View or print bill</Link>
@@ -375,14 +377,14 @@ export default async function Fees({ params, searchParams }: {
       ]} />
 
       {tab === "today" && <>
-      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatStrip className="mb-5">
         <Stat label="Collected this term" value={ghs(Number(t.paid))} tone="success" />
         <Stat label="Still owed" value={ghs(Number(t.billed) - Number(t.paid))}
           tone={Number(t.billed) > Number(t.paid) ? "danger" : "success"} />
         <Stat label="Past the due date" value={String(overdue.length)}
           tone={overdue.length ? "danger" : "success"} />
         <Stat label="Collected today" value={ghs(todayTotal)} />
-      </div>
+      </StatStrip>
 
       {overdue.length > 0 && (
         <p className="mb-5 rounded-lg border border-warning/60 bg-warning-soft px-4 py-2.5 text-[14px]">
@@ -431,7 +433,7 @@ export default async function Fees({ params, searchParams }: {
       </>}
 
       {tab === "ledger" && <>
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <div className="chip-row mb-3 flex flex-wrap items-center gap-1.5">
         {clsOrdered.map((c) => (
           <Link key={c.id} href={`/fees?tab=ledger&c=${c.id}${sp.f ? `&f=${sp.f}` : ""}`}
             className={`inline-flex min-h-11 items-center rounded-full px-3.5 text-[13.5px] font-medium ${c.id === activeCls?.id

@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Calendar</title><link rel="stylesheet" href="../mobile.css">
+<style>
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:13.5px}
+.cal .h{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground);padding:6px 0}
+.cal span{height:38px;display:grid;place-items:center;border-radius:10px;position:relative}
+.cal .mute{color:var(--faint)}
+.cal .on{background:var(--brand);color:#fff;font-weight:600}
+.cal .ev::after{content:"";position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--warning)}
+.cal .hol{background:var(--danger-soft);color:var(--danger)}
+</style></head><body>
+<header class="top light"><a class="back">‹</a><h1>Calendar</h1><a class="act">+ Event</a></header>
+
+<div class="wrap">
+  <div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:16px">November 2026</b><span style="color:var(--muted-foreground)">‹ &nbsp; ›</span></div>
+    <div class="cal">
+      <span class="h">M</span><span class="h">T</span><span class="h">W</span><span class="h">T</span><span class="h">F</span><span class="h">S</span><span class="h">S</span>
+      <span class="mute">27</span><span class="mute">28</span><span class="mute">29</span><span class="mute">30</span><span class="mute">31</span><span>1</span><span>2</span>
+      <span class="on">3</span><span>4</span><span class="ev">5</span><span>6</span><span class="ev">7</span><span>8</span><span>9</span>
+      <span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span class="ev">15</span><span>16</span>
+      <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span>
+      <span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><span>30</span>
+      <span class="hol">1</span><span class="mute">2</span><span class="mute">3</span><span class="mute">4</span><span class="mute">5</span><span class="mute">6</span><span class="mute">7</span>
+    </div>
+  </div>
+
+  <div class="sec"><h2>Coming up</h2><small>Term ends 12 Dec</small></div>
+  <div class="timeline">
+    <div class="tl now"><div class="card"><time>Wed 5 Nov</time><h3>Deworming exercise</h3><p>All classes · health team visiting</p></div></div>
+    <div class="tl"><div class="card"><time>Fri 7 Nov · 9am</time><h3>PTA meeting</h3><p>Assembly hall</p></div></div>
+    <div class="tl"><div class="card"><time>Sat 15 Nov</time><h3>Inter-house sports</h3><p>Chapel Field</p></div></div>
+    <div class="tl"><div class="card" style="background:var(--danger-soft)"><time style="color:var(--danger)">Mon 1 Dec</time><h3 style="color:var(--danger)">Farmers' Day — holiday</h3><p style="color:var(--danger);font-size:12.5px;margin-top:4px">remove</p></div></div>
+  </div>
+</div>
+
+<nav class="tabs"><a><span class="i"></span>Home</a><a><span class="i"></span>Attendance</a><a><span class="i"></span>Fees</a><a class="on"><span class="i"></span>Menu</a></nav>
+<div class="note"><b>What changed:</b> the month grid is sized for thumbs (38px cells, dots for events, red for holidays). "Coming up" is a timeline. The two forms ("Add an event", "Mark a holiday") sit behind the top-right action instead of two cards under the grid.</div>
+</body></html>

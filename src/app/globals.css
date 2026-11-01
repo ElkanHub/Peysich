@@ -51,8 +51,15 @@
   --danger: #c81e1e;
   --danger-soft: #fbe2e2;
 
+  /* kraft — the exercise-book paper the risograph art is printed on; a fixed
+     colour in both themes, like the printed report card */
+  --kraft: #e8dfd0;
+  --on-kraft: #2b0a1c;
+
   /* Corners: a slight curve, not a soft one. Every rounded-* utility reads
-     from the scale below, so this one number sets the feel of the whole app. */
+     from the scale below, so this one number sets the feel of the whole app.
+     Phones (below md) take a rounder curve — surfaces read as objects under a
+     thumb, not as cells in a grid. */
   --radius: 5px;
   --shadow-sm: 0 1px 2px rgb(43 10 28 / 0.06);
   --shadow-md: 0 2px 8px -2px rgb(43 10 28 / 0.10), 0 1px 2px rgb(43 10 28 / 0.06);
@@ -107,6 +114,8 @@
   --color-ink-text: var(--ink-text);
   --color-ink-text-strong: var(--ink-text-strong);
   --color-ink-active: var(--ink-active);
+  --color-kraft: var(--kraft);
+  --color-on-kraft: var(--on-kraft);
   --color-ring: var(--ring);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -235,15 +244,26 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 .lp-prose hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
 .lp-prose img { max-width: 100%; border-radius: 16px; box-shadow: var(--shadow-md); }
 
-/* ── Phone card lists ──────────────────────────────────────────────────────
-   Below md a DataTable stops being a table: each row is a card and each cell
-   a "Header: value" line (the header comes from Td's data-label, set by
-   DataTable). Above md nothing here applies. */
+/* ── Phones (below md) ─────────────────────────────────────────────────────
+   The phone language: rounder surfaces, chip rows that scroll instead of
+   wrapping, and the DataTable fallback for lists that have no phone rows
+   of their own yet. Above md nothing here applies. */
 @media (width < 48rem) {
-  .data-table { overflow-x: visible; }
+  :root, .light-scope { --radius: 12px; }
+
+  /* a row of chips never wraps on a phone: it scrolls sideways, snapping,
+     with the scrollbar hidden. On wider screens the same row wraps. */
+  .chip-row { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 2px; }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip-row > * { flex: none; scroll-snap-align: start; white-space: nowrap; }
+
+  /* a DataTable without phone rows: each row becomes a card of "Header:
+     value" lines (the header comes from Td's data-label, set by DataTable).
+     Pages that render their own <Row>s hide the table instead. */
+  .data-table { overflow-x: visible; background: transparent; box-shadow: none; }
   .data-table thead { display: none; }
   .data-table table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; min-width: 0; }
-  .data-table tr { height: auto; padding: 12px 16px; }
+  .data-table tr { height: auto; padding: 12px 16px; margin-bottom: 8px; border: 0; border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-sm); }
   .data-table td { padding: 3px 0; }
   .data-table td[data-label]:not([data-label=""])::before {
     content: attr(data-label) ": ";

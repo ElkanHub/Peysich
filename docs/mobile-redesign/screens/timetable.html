@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Timetable</title><link rel="stylesheet" href="../mobile.css"></head><body>
+<header class="top light"><a class="back">‹</a><h1>Timetable</h1><a class="act">Print</a></header>
+
+<div class="wrap">
+  <div class="seg"><a class="on">Class</a><a>Teacher</a><a>Subject</a><a>Level</a></div>
+  <div class="chips plain"><span class="chip on">JHS 2</span><span class="chip">JHS 1</span><span class="chip">JHS 3</span><span class="chip">P6</span><span class="chip">P5</span><span class="chip">P4</span></div>
+  <div class="days"><a class="on"><small>Mon</small><b>3</b></a><a><small>Tue</small><b>4</b></a><a><small>Wed</small><b>5</b></a><a><small>Thu</small><b>6</b></a><a><small>Fri</small><b>7</b></a></div>
+
+  <div class="timeline" style="margin-top:6px">
+    <div class="tl"><div class="card"><time>07:30 – 07:40</time><h3 style="color:var(--muted-foreground);font-weight:500">Assembly</h3></div></div>
+    <div class="tl"><div class="card"><time>07:40 – 08:20</time><h3>Mathematics</h3><p>Adwoa Mensah · Room 4</p></div></div>
+    <div class="tl now"><div class="card"><time>08:20 – 09:00</time><h3>English Language</h3><p>Now · Kwabena Boateng</p></div></div>
+    <div class="tl"><div class="card"><time>09:00 – 09:40</time><h3>Integrated Science</h3><p>Samuel Ofori · Lab</p></div></div>
+    <div class="tl"><div class="card" style="background:repeating-linear-gradient(-45deg,var(--muted) 0 6px,var(--border) 6px 7px)"><time>09:40 – 10:30</time><h3 style="color:var(--muted-foreground);font-weight:500">Break</h3></div></div>
+    <div class="tl"><div class="card"><time>10:30 – 11:10</time><h3>Social Studies</h3><p>Ruth Annan</p></div></div>
+    <div class="tl"><div class="card"><time>11:10 – 11:50</time><h3>RME</h3><p>Emmanuel Quaye</p></div></div>
+    <div class="tl"><div class="card"><time>12:00 – 12:40</time><h3>ICT</h3><p>Adwoa Mensah · ICT lab</p></div></div>
+  </div>
+</div>
+
+<nav class="tabs"><a><span class="i"></span>Home</a><a><span class="i"></span>Attendance</a><a><span class="i"></span>Fees</a><a class="on"><span class="i"></span>Menu</a></nav>
+<div class="note"><b>What changed:</b> on a phone the week grid becomes one day at a time: class chips, a day strip, then a timeline with "now" lit. The week grid stays on tablet and desktop. The four views (class / teacher / subject / level) are a segmented control; the wrapped chip rows become one snap row. Admins tap a slot to open the same slot editor (the `sel=` form) in a bottom sheet.</div>
+</body></html>

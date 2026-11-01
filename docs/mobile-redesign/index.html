@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SchoolSpec · phone redesign</title>
+<style>
+:root{--brand:#5e1d3e;--ink:#1a1218;--bg:#eeeaed;--card:#fff;--muted:#645e66;--border:#dbd4d9;--kraft:#e8dfd0}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 Geist,Inter,system-ui,sans-serif;background:var(--bg);color:#191419;-webkit-font-smoothing:antialiased}
+header{background:var(--ink);color:#fff;padding:28px 32px}
+header h1{margin:0;font-size:26px;letter-spacing:-.025em}header p{margin:6px 0 0;color:#d8c9d4;max-width:70ch}
+main{padding:24px 32px 60px;max-width:1500px;margin:0 auto}
+h2{font-size:20px;letter-spacing:-.02em;margin:36px 0 6px}
+.lead{color:var(--muted);margin:0 0 18px;max-width:80ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(720px,1fr));gap:22px}
+.shot{background:var(--card);border-radius:18px;box-shadow:0 2px 8px -2px rgb(43 10 28/.1);overflow:hidden;display:grid;grid-template-columns:392px 1fr}
+.shot .frame{background:var(--ink);padding:14px 0 14px 14px}
+.shot iframe{width:378px;height:760px;border:0;border-radius:22px;background:var(--bg);display:block}
+.shot .side{padding:18px 18px 18px 16px;font-size:14px}
+.shot .side h3{margin:0 0 4px;font-size:17px}
+.shot .side .route{font:12px ui-monospace,Menlo,monospace;color:var(--muted);margin-bottom:10px}
+.shot .side p{margin:0 0 10px;color:#3a333b}
+.shot .side b.k{display:block;font:600 11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--brand);margin:12px 0 4px}
+.shot .side ul{margin:0;padding-left:18px}.shot .side li{margin:2px 0}
+.shot .side a.open{display:inline-block;margin-top:12px;font-weight:600;color:var(--brand)}
+table{border-collapse:collapse;width:100%;background:var(--card);border-radius:14px;overflow:hidden;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font:600 11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:#f6f2f5}
+td code{font-size:12px;color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:#f2dce8;color:#2b0a1c}
+.tag.p{background:#ddf3e9;color:#0b7a50}.tag.n{background:#e6e1e5;color:#645e66}
+@media (max-width:900px){.shot{grid-template-columns:1fr}.shot .frame{padding:14px}.shot iframe{width:100%}}
+</style></head><body>
+<header><h1>SchoolSpec on a phone — the redesign</h1><p>Every screen below is a static HTML mockup at phone width, built on the app's own tokens. Dashed yellow notes at the foot of each one say what changed. Grey/wine blocks labelled <code>img: …</code> are images still to be generated — see <code>IMAGE_PROMPTS.md</code>. Read <code>README.md</code> for the analysis and <code>AUDIT.md</code> for the action-by-action check, the PWA notes and the desktop application.</p></header>
+<main>
+
+<h2>Doors</h2>
+<div class="grid">
+<div class="shot"><div class="frame"><iframe src="screens/sign-in.html"></iframe></div><div class="side"><h3>Sign in</h3><div class="route">/sign-in · /signup (same frame)</div>
+<p>Today the phone gets a 60px empty ink band and a white form. The three photo scenes the desktop rail shows are hidden below <code>lg</code>.</p>
+<b class="k">Changes</b><ul><li>Scene on top (46% of the screen): cut-out people, headline, wine glow — the same three scenes, random per load.</li><li>Form rises over it as a rounded paper sheet.</li><li>Remembered accounts as a pill row.</li><li>Sign-up uses the same frame; its two steps become a progress line under the sheet title.</li></ul>
+<b class="k">Images</b><ul><li>Existing <code>door/*.webp</code> work as-is (portrait crop). Optional: 3 more cut-outs, see Family C in IMAGE_PROMPTS.md.</li></ul><a class="open" href="screens/sign-in.html" target="_blank">Open full size →</a></div></div>
+</div>
+
+<h2>Home, per role</h2>
+<p class="lead">One rule for all four: photo hero with the greeting, the term strip folded into the hero's chips, then only what needs doing. No section repeats a fact from the hero.</p>
+<div class="grid">
+<div class="shot"><div class="frame"><iframe src="screens/home-admin.html"></iframe></div><div class="side"><h3>Home · Head teacher</h3><div class="route">/s/[school] (admin)</div>
+<b class="k">Today</b><p>Two top bars, text-only welcome card (photo hidden below <code>sm</code>), term strip repeating the date, setup checklist, 2×2 stats, "Needs you" card of boxes, 5 flat action buttons, attendance table, announcements card, events card. About four screens of scrolling.</p>
+<b class="k">Changes</b><ul><li>One ink top bar: school, role, bell, avatar. Breadcrumbs go (back arrow on inner pages instead).</li><li>Photo hero (<code>hero/admin.jpg</code> is already there, just un-hide it) with date, week, closing-time chips.</li><li>Stats as a swipe strip; "Needs you" as rows with the action on the right.</li><li>Quick actions as 4 tiles with spot art.</li><li>Attendance as one bar + class chips; announcements as one picture card + rows.</li></ul><a class="open" href="screens/home-admin.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/home-teacher.html"></iframe></div><div class="side"><h3>Home · Teacher</h3><div class="route">/s/[school] (teacher)</div>
+<b class="k">Changes</b><ul><li>The register is the single coloured card at the top (it is the teacher's one job at 7:30).</li><li>Head's nudge banner merges into the "To mark" list as the first row.</li><li>Today's lessons as a timeline with "now" lit.</li></ul><a class="open" href="screens/home-teacher.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/home-parent.html"></iframe></div><div class="side"><h3>Home · Parent</h3><div class="route">/s/[school] (parent)</div>
+<b class="k">Changes</b><ul><li>Each child is a picture card (the child's photo if the school has one, else spot art) with status pills and the two actions that matter.</li><li>A child with nothing pending collapses to one row.</li><li>Notice as a picture card with "tap to acknowledge".</li></ul><a class="open" href="screens/home-parent.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/home-student.html"></iframe></div><div class="side"><h3>Home · Student</h3><div class="route">/s/[school] (student)</div>
+<b class="k">Changes</b><ul><li>The "own file" card (name, class, admission no, school) merges into the hero — it repeated the top bar.</li><li>Stats as a strip; "Do today" with status tiles; lessons as a timeline; records as two tiles.</li></ul><a class="open" href="screens/home-student.html" target="_blank">Open full size →</a></div></div>
+</div>
+
+<h2>Lists — the part that collapsed</h2>
+<p class="lead">The DataTable turns into "Header: value" cards below 768px. That is the bland, cluttered look your friend saw. Every list becomes rows: avatar, title, one subtitle line, a pill if something matters, a chevron. Filters become a snap row of chips plus one Filter button that opens a bottom sheet. Stats and link-button rows above lists are cut to one line.</p>
+<div class="grid">
+<div class="shot"><div class="frame"><iframe src="screens/students.html"></iframe></div><div class="side"><h3>Students</h3><div class="route">/students · also /guardians, /admissions, /library, /inventory, /transport, /hr</div>
+<b class="k">Today</b><p>4 stat tiles, 4 grey link buttons, 2 warning boxes, a search box + 3 native selects wrapping, then cards reading "Student: …, Adm. No: …, Sex: …, Class: …, Type: …, Open file". The list starts 1.5 screens down.</p>
+<b class="k">Changes</b><ul><li>Search + Filter button (bottom sheet for status, sex, type) + class chip row that never wraps.</li><li>One row per student: photo/initials, "Surname, First", "class · number · boarder", status pill when relevant.</li><li>Stats and link buttons become one line under the count. Drafts become one tinted card.</li><li>Same row pattern for Parents, Admissions, Library, Inventory, Transport, Leave.</li></ul><a class="open" href="screens/students.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/staff.html"></iframe></div><div class="side"><h3>Staff</h3><div class="route">/staff · /staff/allocations</div>
+<b class="k">Changes</b><ul><li>Type filter becomes a segmented control carrying the counts, so the 4 stat tiles go.</li><li>"What they do" and "Contact" fold into the subtitle; login state as a pill.</li><li>Allocations and Leave as two tiles with spot art.</li></ul><a class="open" href="screens/staff.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/scores.html"></iframe></div><div class="side"><h3>Scores</h3><div class="route">/assessment · /assessment/matrix · /reports</div>
+<b class="k">Today</b><p>This is the screen with the class chips clustered in a wrapped block, above a "By students / By subjects" pair, above a grey notice about Reports, above a card of names each with wrapped per-subject chips.</p>
+<b class="k">Changes</b><ul><li>Segmented control for the view; a single snap row for classes, active one ink-filled.</li><li>The Reports notice becomes the top-right link.</li><li>One completeness bar card for the class, then rows with a "7/9" pill per child.</li><li>Report cards page uses the same bones: class chips, readiness bar, rows with "sent / ready / missing" pills.</li></ul><a class="open" href="screens/scores.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/attendance.html"></iframe></div><div class="side"><h3>Attendance (office board)</h3><div class="route">/attendance · /attendance/register</div>
+<b class="k">Changes</b><ul><li>Day strip for going back a day.</li><li>Picture card with the headline (10 of 14 registers in) and one bar.</li><li>Two lists (still to come in / marked) with class tiles, remind buttons inline, absentee names in the subtitle. Today it is a 3-column card grid that becomes one very tall column.</li></ul><a class="open" href="screens/attendance.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/register.html"></iframe></div><div class="side"><h3>Register (marking)</h3><div class="route">/attendance/[classId]</div>
+<b class="k">Changes</b><ul><li>One row per child, P / L / A toggle on the right, floating Save with the running tally, quick filters, repeat-absence ring.</li><li><span class="tag n">check first</span> the current marking widget may already be close; verify before rebuilding.</li></ul><a class="open" href="screens/register.html" target="_blank">Open full size →</a></div></div>
+
+<div class="shot"><div class="frame"><iframe src="screens/student-file.html"></iframe></div><div class="side"><h3>Student file</h3><div class="route">/students/[id] · /staff/[id] · /guardians/[id] · /children/[id] (same bones)</div>
+<b class="k">Changes</b><ul><li>Photo hero (initials-on-wine without one) with 3 fact chips; segmented control for the tabs.</li><li>Four white cards become section headers + key-value sheets. Guardians get Call.</li><li>Staff file, parent file and the parent's child view share the layout.</li></ul><a class="open" href="screens/student-file.html" target="_blank">Open full size →</a></div></div>
+</div>
+
+<h2>Money</h2>
+<div class="grid">
+<div class="shot"><div class="frame"><iframe src="screens/fees-parent.html"></iframe></div><div class="side"><h3>Fees · Parent</h3><div class="route">/fees (parent) · /fees/invoice/[id] · /fees/receipt/[id]</div>
+<b class="k">Changes</b><ul><li>Dark balance card with the amount once, due date, progress, two actions, spot art.</li><li>How to pay as rows with Copy. Receipts as rows with a PDF button.</li><li>Term picker in the top bar.</li></ul><a class="open" href="screens/fees-parent.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/fees-admin.html"></iframe></div><div class="side"><h3>Fees · Office</h3><div class="route">/fees (admin) · /fees/setup · /billing</div>
+<b class="k">Changes</b><ul><li>Wine collection card, three small tiles, two action tiles, segmented Owing / Paid / Everyone, class chips, rows with the amount on the right.</li><li>Billing (your SchoolSpec plan) uses the same card-then-rows shape.</li></ul><a class="open" href="screens/fees-admin.html" target="_blank">Open full size →</a></div></div>
+</div>
+
+<h2>This term</h2>
+<div class="grid">
+<div class="shot"><div class="frame"><iframe src="screens/homework.html"></iframe></div><div class="side"><h3>Homework</h3><div class="route">/homework · /homework/[id]</div>
+<b class="k">Changes</b><ul><li>Kraft summary card with spot art replaces 4 stat tiles; "Set homework" moves to the top-right.</li><li>Rows with the due day as the leading tile and a "to mark" pill.</li></ul><a class="open" href="screens/homework.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/announcements.html"></iframe></div><div class="side"><h3>Announcements</h3><div class="route">/comms · /billing/messages</div>
+<b class="k">Changes</b><ul><li>Three compose cards go behind "+ Post" (a sheet with three choices).</li><li>Pinned/newest as a picture card with read count; the rest as rows.</li></ul><a class="open" href="screens/announcements.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/calendar.html"></iframe></div><div class="side"><h3>Calendar</h3><div class="route">/calendar</div>
+<b class="k">Changes</b><ul><li>Thumb-sized month grid with event dots and red holidays; "Coming up" as a timeline.</li><li>Add event / mark holiday behind the top-right action.</li></ul><a class="open" href="screens/calendar.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/timetable.html"></iframe></div><div class="side"><h3>Timetable</h3><div class="route">/timetable · /settings/timetable</div>
+<b class="k">Changes</b><ul><li>Phone shows one day at a time: class chips, day strip, timeline. Week grid stays for tablet and desktop.</li><li>Up to three wrapped chip rows today become one snap row.</li></ul><a class="open" href="screens/timetable.html" target="_blank">Open full size →</a></div></div>
+</div>
+
+<h2>Chrome, settings, empties</h2>
+<div class="grid">
+<div class="shot"><div class="frame"><iframe src="screens/menu.html"></iframe></div><div class="side"><h3>Menu drawer + bottom tabs</h3><div class="route">src/ui/nav.tsx · src/ui/shell.tsx</div>
+<b class="k">Changes</b><ul><li>Picture header with the person (tap → account); icon tiles; footer as four pills.</li><li>Bottom tabs unchanged in structure: three pages + Menu, each with its word.</li><li>Shell: one 56px top bar on phones instead of ink band + breadcrumb bar (saves ~50px on every page).</li></ul><a class="open" href="screens/menu.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/account.html"></iframe></div><div class="side"><h3>My account</h3><div class="route">/account</div>
+<b class="k">Changes</b><ul><li>Profile header, grouped rows, one install card with spot art. One screen high instead of three.</li></ul><a class="open" href="screens/account.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/settings.html"></iframe></div><div class="side"><h3>School settings</h3><div class="route">/settings · /settings/assessment · /settings/promotion · /admissions/setup · /fees/setup</div>
+<b class="k">Changes</b><ul><li>Accordion becomes a grouped settings list, each row showing its current value; sub-pages open full screen with a back arrow.</li><li>School's own campus photo heads the page (new optional upload in branding).</li></ul><a class="open" href="screens/settings.html" target="_blank">Open full size →</a></div></div>
+<div class="shot"><div class="frame"><iframe src="screens/empty.html"></iframe></div><div class="side"><h3>Empty states, offline, caught-up</h3><div class="route">Empty in src/ui/kit.tsx · /offline · /no-access</div>
+<b class="k">Changes</b><ul><li>Kraft card + risograph illustration + one line + the action. Same component everywhere.</li></ul><a class="open" href="screens/empty.html" target="_blank">Open full size →</a></div></div>
+</div>
+
+<h2>Every route, mapped</h2>
+<p class="lead">Which mockup each page follows. <span class="tag">pattern</span> = follows a mockup above; <span class="tag p">touch only</span> = already fine on a phone, only the shared changes (top bar, radius, rows) apply; <span class="tag n">desktop</span> = not a phone job.</p>
+<table><tr><th>Route</th><th>Follows</th><th>Notes</th></tr>
+<tr><td><code>/sign-in</code>, <code>/signup</code></td><td><span class="tag">sign-in</span></td><td>Sign-up: same scene, steps as a progress line.</td></tr>
+<tr><td><code>/s/[school]</code> ×4 roles</td><td><span class="tag">home-*</span></td><td>Setup checklist (new schools) becomes a progress card under the hero.</td></tr>
+<tr><td><code>/students</code>, <code>/guardians</code>, <code>/admissions</code>, <code>/library</code>, <code>/inventory</code>, <code>/transport</code>, <code>/hr</code>, <code>/archives</code></td><td><span class="tag">students</span></td><td>Rows + chips + filter sheet. Archives: one row per past term.</td></tr>
+<tr><td><code>/staff</code>, <code>/staff/allocations</code></td><td><span class="tag">staff</span></td><td>Allocations: class chips + rows of subject → teacher.</td></tr>
+<tr><td><code>/students/[id]</code>, <code>/staff/[id]</code>, <code>/guardians/[id]</code>, <code>/children/[id]</code>, <code>/admissions/[id]</code></td><td><span class="tag">student-file</span></td><td>Hero + segmented control + key-value sheets.</td></tr>
+<tr><td><code>/students/new</code>, <code>/students/[id]/edit</code>, <code>/staff/new</code>, <code>/admissions/new</code>, <code>/students/import</code>, <code>…/enroll</code>, <code>…/exit</code>, <code>…/emergency</code></td><td><span class="tag p">touch only</span></td><td>Forms. Only the shared changes: 50px fields, 14px radius, one top bar with Back, sticky Save at the bottom.</td></tr>
+<tr><td><code>/attendance</code>, <code>/attendance/register</code></td><td><span class="tag">attendance</span></td><td>Record book: day strip + rows per child with status dots.</td></tr>
+<tr><td><code>/attendance/[classId]</code></td><td><span class="tag">register</span></td><td>Verify against the current widget first.</td></tr>
+<tr><td><code>/assessment</code>, <code>/assessment/matrix</code>, <code>/reports</code>, <code>/settings/assessment</code></td><td><span class="tag">scores</span></td><td>Matrix: class chips → subject rows with a completeness pill (no grid on phones).</td></tr>
+<tr><td><code>/assessment/[classId]/[subjectId]</code>, <code>/assessment/skills/[classId]</code></td><td><span class="tag p">touch only</span></td><td>Score entry is a grid by nature; keep horizontal scroll, sticky name column, 44px cells. Not in scope to reinvent.</td></tr>
+<tr><td><code>/students/[id]/report/[termId]</code>, <code>…/performance/[termId]</code>, <code>…/leaving-certificate</code>, <code>/fees/invoice/[id]</code>, <code>/fees/receipt/[id]</code>, <code>/sign/[token]</code>, <code>/n/[token]</code></td><td><span class="tag p">touch only</span></td><td>Printed documents. They should look like paper, not like the app. Add a sticky "Download PDF" bar on phones.</td></tr>
+<tr><td><code>/fees</code> (parent), <code>/fees</code> (admin), <code>/fees/setup</code>, <code>/billing</code>, <code>/billing/messages</code></td><td><span class="tag">fees-parent / fees-admin</span></td><td></td></tr>
+<tr><td><code>/homework</code>, <code>/homework/[id]</code></td><td><span class="tag">homework</span></td><td>Detail: title card, hand-in rows with mark field.</td></tr>
+<tr><td><code>/comms</code></td><td><span class="tag">announcements</span></td><td></td></tr>
+<tr><td><code>/calendar</code>, <code>/timetable</code>, <code>/settings/timetable</code></td><td><span class="tag">calendar / timetable</span></td><td></td></tr>
+<tr><td><code>/account</code>, <code>/settings</code>, <code>/settings/promotion</code>, <code>/admissions/setup</code>, <code>/help</code></td><td><span class="tag">account / settings</span></td><td>Help: searchable rows, one picture card per role guide.</td></tr>
+<tr><td><code>/analytics</code></td><td><span class="tag p">touch only</span></td><td>Charts stack one per card; the dataviz palette already works.</td></tr>
+<tr><td><code>/offline</code>, <code>/no-access</code></td><td><span class="tag">empty</span></td><td></td></tr>
+<tr><td><code>/platform/*</code> (console)</td><td><span class="tag n">desktop</span></td><td>Your own console. Gets the shared changes free via the kit; no mockup.</td></tr>
+<tr><td><code>/</code>, <code>/blog</code>, <code>/textbooks</code>, <code>/legal/*</code>, <code>/s/[school]</code> public page</td><td><span class="tag n">out of scope</span></td><td>Marketing and reader already have images and their own language.</td></tr>
+</table>
+</main></body></html>

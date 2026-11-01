@@ -4,7 +4,7 @@ import { and, eq, sql, asc } from "drizzle-orm";
 import { db } from "@/db";
 import { classes, levels, students, subjects, attendanceRecords, staff } from "@/db/schema";
 import { requireModule, getTeacherScope } from "@/core/school-context";
-import { Card, PageHeader, Empty, btnCls, btnGhostCls } from "@/ui/kit";
+import { Card, PageHeader, Empty, Row, RowList, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 import { remindClassTeacher, nudgesTodayByClass } from "./actions";
 
@@ -198,8 +198,28 @@ export default async function Attendance({ params }: { params: Promise<{ school:
       <PageHeader title="Attendance" sub={dateLabel}
         action={{ href: "/attendance/register", label: "Record book" }} />
 
+      {/* today's pulse on a phone: the photograph, the headline number, one bar */}
+      <div className="relative mb-5 flex min-h-[170px] flex-col justify-end overflow-hidden rounded-lg bg-ink p-4 text-white shadow-[var(--shadow-md)] md:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative photograph */}
+        <img src="/hero/hero-attendance-portrait.jpg" alt="" aria-hidden loading="eager" decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-[center_35%]" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgb(26 18 24 / 0.1) 0%, rgb(26 18 24 / 0.55) 45%, rgb(26 18 24 / 0.92) 100%)" }} />
+        <p className="relative font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-[#e9a9c9]">{dateLabel}</p>
+        <p className="relative mt-1 text-[24px] font-bold leading-tight tracking-[-0.03em]" data-nums="">
+          {pct === 100 ? "All registers in ✓" : `${marked.length} of ${withStudents.length} registers in`}
+        </p>
+        <div className="relative mt-2.5 h-2 overflow-hidden rounded-full bg-white/25">
+          <div className={pct === 100 ? "h-full bg-success" : "h-full bg-[#e9a9c9]"} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="relative mt-1.5 text-[13px] text-white/85" data-nums="">
+          {totals.total
+            ? <>{totals.present} present · {totals.late} late · {totals.absent} absent · {inRate}% in school</>
+            : `${enrolled} enrolled · no registers in yet`}
+        </p>
+      </div>
+
       {/* today's pulse — can the office stop chasing yet? */}
-      <Card className="mb-6">
+      <Card className="mb-6 max-md:hidden">
         <div className="grid gap-4 sm:grid-cols-4">
           <div className="sm:col-span-2">
             <div className="flex items-baseline justify-between">
@@ -239,7 +259,28 @@ export default async function Attendance({ params }: { params: Promise<{ school:
           <h2 className="mb-3 text-sm font-semibold">
             Needs attention <span className="ml-1 rounded-full bg-warning/15 px-2 py-0.5 text-[12.5px] font-semibold text-warning" data-nums="">{unmarked.length}</span>
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* phone: one row per class, the reminder on the row */}
+          <RowList className="md:hidden">
+            {unmarked.map((c) => {
+              const tname = teacherName.get(c.formMasterId ?? c.classTeacherId ?? "");
+              const first = tname?.split(" ")[0];
+              const nudge = nudgedAt.get(c.id);
+              return (
+                // a form cannot sit inside a link, so the name is the link and the row is not
+                <Row key={c.id}
+                  lead={<span className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-soft text-[12px] font-bold text-warning">{c.name.replace(/[^A-Z0-9]/gi, "").slice(0, 3)}</span>}
+                  title={<Link href={`/attendance/${c.id}`} className="hover:text-primary">{c.name}</Link>}
+                  sub={tname ? `${tname} · ${rosterN.get(c.id)} students${nudge ? ` · reminded ${hhmm(nudge)}` : ""}` : "No class teacher assigned"}
+                  trailing={tname ? (
+                    <form action={remindClassTeacher.bind(null, slug, c.id)}>
+                      <input type="hidden" name="from" value="wall" />
+                      <SubmitButton className={btnCls + " h-8 px-3 text-[13px]"} pendingText="…">{nudge ? "Again" : "Remind"}</SubmitButton>
+                    </form>
+                  ) : <Link href="/staff/allocations" className={btnGhostCls + " h-8 px-3 text-[13px]"}>Assign</Link>} />
+              );
+            })}
+          </RowList>
+          <div className="hidden gap-4 sm:grid-cols-2 md:grid lg:grid-cols-3">
             {unmarked.map((c) => {
               const tname = teacherName.get(c.formMasterId ?? c.classTeacherId ?? "");
               const first = tname?.split(" ")[0];
@@ -290,7 +331,20 @@ export default async function Attendance({ params }: { params: Promise<{ school:
           <h2 className="mb-3 text-sm font-semibold">
             Marked <span className="ml-1 rounded-full bg-success/10 px-2 py-0.5 text-[12.5px] font-semibold text-success" data-nums="">{marked.length}</span>
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <RowList className="md:hidden">
+            {marked.map((c) => {
+              const m = byClass.get(c.id)!;
+              const out = absentNames.get(c.id) ?? [];
+              return (
+                <Row key={c.id} href={`/attendance/${c.id}`}
+                  lead={<span className={`flex h-10 w-10 items-center justify-center rounded-lg text-[12px] font-bold ${m.absent > 0 ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>{c.name.replace(/[^A-Z0-9]/gi, "").slice(0, 3)}</span>}
+                  title={c.name}
+                  sub={<span data-nums="">{m.present} present{m.late > 0 ? ` · ${m.late} late` : ""}{out.length > 0 ? ` · absent: ${out.join(", ")}` : ` · saved ${m.at ? hhmm(m.at) : ""}`}</span>}
+                  trailing={<>{m.absent > 0 && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-[12px] font-semibold text-danger" data-nums="">{m.absent}</span>}<span className="text-faint">›</span></>} />
+              );
+            })}
+          </RowList>
+          <div className="hidden gap-4 sm:grid-cols-2 md:grid lg:grid-cols-3">
             {marked.map((c) => {
               const m = byClass.get(c.id)!;
               const out = absentNames.get(c.id) ?? [];

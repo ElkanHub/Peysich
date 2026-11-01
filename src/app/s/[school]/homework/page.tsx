@@ -9,7 +9,7 @@ import { mondayOf, todayIso } from "@/core/calendar";
 import Link from "next/link";
 import { createHomework, saveHomeworkConfig } from "./actions";
 import { SetHomeworkForm } from "./set-form";
-import { Card, DataTable, Field, PageHeader, Empty, Stat, Tr, Td, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
+import { Card, DataTable, Field, PageHeader, Empty, Stat, StatStrip, Row, RowList, Tr, Td, inputCls, btnCls, btnGhostCls } from "@/ui/kit";
 import { SubmitButton } from "@/ui/feedback";
 
 export default async function Homework({ params, searchParams }: {
@@ -45,7 +45,7 @@ export default async function Homework({ params, searchParams }: {
     return (
       <div className="max-w-2xl">
         <PageHeader title="Homework" sub={`What ${me.firstName}'s class has been set — your own record only`} />
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div className="chip-row mb-4 flex flex-wrap gap-1.5">
           <Link href="/homework" className={`rounded-full px-3 py-1 text-[13.5px] font-medium ${!sp.subject ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
             All subjects
           </Link>
@@ -119,7 +119,7 @@ export default async function Homework({ params, searchParams }: {
             </Link>
           ))}
         </div>
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div className="chip-row mb-4 flex flex-wrap gap-1.5">
           <Link href={q(sp.child)} className={`rounded-full px-2.5 py-0.5 text-[13px] ${!sp.subject ? "bg-muted font-medium" : "border border-border hover:bg-muted"}`}>
             All subjects
           </Link>
@@ -210,17 +210,36 @@ export default async function Homework({ params, searchParams }: {
 
     return (
       <div className="max-w-3xl">
-        <PageHeader title="Homework" sub={`Your classes: ${myCls.map((c) => c.name).join(", ")}`} />
-        <DataTable head={["Title", "Class", "Subject", "Due", cfg.recordSubmissions ? "Hand-ins" : ""]}>
-          {rows.map((r) => (
-            <Tr key={r.id}>
-              <Td className="font-medium"><Link href={`/homework/${r.id}`} className="text-primary underline-offset-2 hover:underline">{r.title}</Link></Td>
-              <Td>{r.className}</Td><Td>{r.subject}</Td>
-              <Td>{r.dueDate}</Td><Td>{cfg.recordSubmissions ? nOf.get(r.id) ?? 0 : ""}</Td>
-            </Tr>
-          ))}
-        </DataTable>
-        <Card className="mt-5">
+        <PageHeader title="Homework" sub={`Your classes: ${myCls.map((c) => c.name).join(", ")}`}
+          action={<a href="#set" className={btnCls + " md:hidden"}>Set homework</a>} />
+        {rows.length === 0 ? (
+          <Empty art="empty-homework" title="Nothing set yet"
+            hint="Set homework below and parents hear about it tonight." />
+        ) : (<>
+          <RowList className="md:hidden">
+            {rows.map((r) => (
+              <Row key={r.id} href={`/homework/${r.id}`}
+                lead={<span className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-muted font-mono text-[10px] font-semibold uppercase leading-tight text-muted-foreground" data-nums="">
+                  <span>{new Date(r.dueDate + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short" })}</span>
+                  <span className="text-[13px] text-foreground">{r.dueDate.slice(8, 10)}</span>
+                </span>}
+                title={r.title}
+                sub={`${r.className} · ${r.subject}${cfg.recordSubmissions ? ` · ${nOf.get(r.id) ?? 0} handed in` : ""}`} />
+            ))}
+          </RowList>
+          <div className="max-md:hidden">
+          <DataTable head={["Title", "Class", "Subject", "Due", cfg.recordSubmissions ? "Hand-ins" : ""]}>
+            {rows.map((r) => (
+              <Tr key={r.id}>
+                <Td className="font-medium"><Link href={`/homework/${r.id}`} className="text-primary underline-offset-2 hover:underline">{r.title}</Link></Td>
+                <Td>{r.className}</Td><Td>{r.subject}</Td>
+                <Td>{r.dueDate}</Td><Td>{cfg.recordSubmissions ? nOf.get(r.id) ?? 0 : ""}</Td>
+              </Tr>
+            ))}
+          </DataTable>
+          </div>
+        </>)}
+        <Card className="mt-5 scroll-mt-20" id="set">
           <h2 className="font-semibold">Set homework</h2>
           <p className="mt-0.5 text-[13.5px] text-muted-foreground">Due tomorrow, for the class you used last — change either if you need to.</p>
           <SetHomeworkForm action={createHomework.bind(null, slug)}
@@ -277,7 +296,7 @@ export default async function Homework({ params, searchParams }: {
       <PageHeader title="Homework"
         sub="What every class has been set — teachers assign, you see the whole picture" />
 
-      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatStrip className="mb-5">
         <Stat label="Set this term" value={String(Number(termCount[0]?.n ?? 0))} />
         <Stat label="Due this week" value={String(thisWeek.length)} />
         <Stat label="Classes with none this week" value={String(classesQuietThisWeek.length)}
@@ -285,7 +304,7 @@ export default async function Homework({ params, searchParams }: {
         <Stat label={cfg.recordSubmissions ? "Hand-in rate (14 days)" : "Hand-ins"}
           value={cfg.recordSubmissions ? (rate === null ? "—" : `${rate}%`) : "not tracked"}
           tone={rate !== null && rate < 70 ? "danger" : "default"} />
-      </div>
+      </StatStrip>
       {classesQuietThisWeek.length > 0 && (
         <p className="mb-5 rounded-md bg-warning-soft px-3 py-2 text-[13.5px]">
           No homework due this week for: <b>{classesQuietThisWeek.map((c) => c.name).join(", ")}</b> —
@@ -333,7 +352,9 @@ export default async function Homework({ params, searchParams }: {
           </section>
         );
       })}
-      {rows.length === 0 && <Empty title="Nothing matches" hint="Try widening the filters." />}
+      {rows.length === 0 && <Empty art={sp.subject || sp.from || sp.to ? "empty-search" : "empty-homework"}
+        title={sp.subject || sp.from || sp.to ? "Nothing matches" : "No homework set yet"}
+        hint={sp.subject || sp.from || sp.to ? "Try widening the filters." : "Teachers set homework from their own Homework page; it all shows here."} />}
 
       <Card className="mt-2">
         <h2 className="font-semibold">What this school records</h2>

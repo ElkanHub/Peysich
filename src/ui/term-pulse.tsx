@@ -45,7 +45,9 @@ export function TermPulse({ termName, week, total, phase, open, close, off, ends
 
   return (
     <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-card px-4 py-2 text-[13.5px] shadow-[var(--shadow-sm)]">
-      <span className="flex items-center gap-1.5">
+      {/* inside a term the hero's chips already say the week — on a phone this
+          span would say it twice, so it only shows when there is news (phase) */}
+      <span className={`flex items-center gap-1.5 ${phase ? "" : "max-sm:hidden"}`}>
         <CalendarRange size={13} className="text-primary" />
         {phase === "ended" ? (
           <span><b>{termName}</b> has ended — records stay in the book</span>

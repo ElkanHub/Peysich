@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Register · JHS 2</title><link rel="stylesheet" href="../mobile.css">
+<style>
+.mark{display:flex;gap:4px}
+.mark span{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:12.5px;font-weight:700;border:1px solid var(--border);color:var(--muted-foreground);background:var(--card)}
+.mark .p.on{background:var(--success);color:#fff;border-color:var(--success)}
+.mark .l.on{background:var(--warning);color:#fff;border-color:var(--warning)}
+.mark .a.on{background:var(--danger);color:#fff;border-color:var(--danger)}
+.save{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;width:calc(100% - 32px);max-width:398px;z-index:31}
+</style></head><body>
+<header class="top light"><a class="back">‹</a><h1>JHS 2 · Register</h1><a class="act">Mon 3 Nov</a></header>
+
+<div class="wrap">
+  <div class="card tint" style="margin-top:12px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+    <span class="ph kraft" style="width:54px;height:54px;border-radius:14px;flex:none" data-img="spot-register"></span>
+    <div><b style="font-size:15px">Everyone starts present</b><p style="margin-top:2px">Tap only the exceptions. 38 students.</p></div></div>
+  <div class="search"><div class="in">Find a name…</div></div>
+  <div class="chips plain" style="margin-bottom:12px"><span class="chip on">All 38</span><span class="chip">Absent <span class="n">2</span></span><span class="chip">Late <span class="n">1</span></span></div>
+
+  <div class="list">
+    <div class="row"><span class="av">KA</span><span class="m"><b>Abban, Kwesi</b><span>boarder</span></span><span class="mark"><span class="p on">P</span><span class="l">L</span><span class="a">A</span></span></div>
+    <div class="row"><span class="av">AA</span><span class="m"><b>Acheampong, Akosua</b><span></span></span><span class="mark"><span class="p on">P</span><span class="l">L</span><span class="a">A</span></span></div>
+    <div class="row"><span class="av"><span class="ring"></span>YA</span><span class="m"><b>Adjei, Yaw</b><span style="color:var(--danger)">Absent · 3rd time this term</span></span><span class="mark"><span class="p">P</span><span class="l">L</span><span class="a on">A</span></span></div>
+    <div class="row"><span class="av">EA</span><span class="m"><b>Agyeman, Esi</b><span style="color:var(--warning)">Late</span></span><span class="mark"><span class="p">P</span><span class="l on">L</span><span class="a">A</span></span></div>
+    <div class="row"><span class="av">KA</span><span class="m"><b>Amoah, Kofi</b><span></span></span><span class="mark"><span class="p on">P</span><span class="l">L</span><span class="a">A</span></span></div>
+    <div class="row"><span class="av">NA</span><span class="m"><b>Ankrah, Nana</b><span></span></span><span class="mark"><span class="p on">P</span><span class="l">L</span><span class="a">A</span></span></div>
+    <div class="row"><span class="av">DA</span><span class="m"><b>Asare, Dede</b><span></span></span><span class="mark"><span class="p on">P</span><span class="l">L</span><span class="a">A</span></span></div>
+    <div class="row"><span class="av">BB</span><span class="m"><b>Baah, Bismark</b><span></span></span><span class="mark"><span class="p on">P</span><span class="l">L</span><span class="a">A</span></span></div>
+  </div>
+  <div style="height:70px"></div>
+</div>
+
+<a class="btn save">Save register · 35 P · 1 L · 2 A</a>
+<nav class="tabs"><a><span class="i"></span>Home</a><a class="on"><span class="i"></span>Attendance</a><a><span class="i"></span>Fees</a><a><span class="i"></span>Menu</a></nav>
+<div class="note"><b>What changed:</b> checked against the current Register widget: it already has one row per child, a P / L / A radio group, offline queueing, and a locked state after save with "Saved at 07:52 · 2 parents told" and a Correct button. So this is a restyle only: the row kit, a floating Save bar with the running tally, and client-side Find / Absent / Late filters. After save the floating bar becomes the "Saved · N parents told · Correct" line. Admin variant: a teacher row (Call · Remind) at the top, the read-only list, and "Mark it myself" behind a ghost button at the bottom, as today. The repeat-absence ring is phase 2.</div>
+</body></html>
