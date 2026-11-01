@@ -15,6 +15,37 @@ import { releaseComponent, releaseTermReports, releasePreschoolReports, saveRepo
 import { skillRatings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 
+/** One send: what it is, where it stands, what is holding it, the button.
+ *  A bordered row that stacks on a phone and lines up on a desktop. */
+function SendRow({ title, sent, status, waiting, action, note }: {
+  title: string; sent?: React.ReactNode; status?: React.ReactNode; waiting?: React.ReactNode;
+  action?: React.ReactNode; note?: React.ReactNode;
+}) {
+  return (
+    <li className="list-none rounded-lg border border-border bg-card p-3.5 sm:flex sm:items-center sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-[15px] font-semibold">{title}</span>
+          {sent ? <Badge tone="success">sent ✓</Badge> : status}
+        </div>
+        {sent && <p className="mt-0.5 text-[13.5px] text-muted-foreground">{sent}</p>}
+        {waiting && <p className="mt-1 text-[13.5px] text-muted-foreground">{waiting}</p>}
+        {note && <p className="mt-1 text-[13px] text-muted-foreground">{note}</p>}
+      </div>
+      {action && <div className="mt-3 shrink-0 sm:mt-0 [&_button]:w-full sm:[&_button]:w-auto">{action}</div>}
+    </li>
+  );
+}
+/** "every class ready" / "3 of 5 classes ready" as a pill. */
+function Ready({ n, of }: { n: number; of: number }) {
+  const all = n === of && of > 0;
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${all ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`} data-nums="">
+      {all ? "every class ready" : `${n} of ${of} classes ready`}
+    </span>
+  );
+}
+
 const fmtDate = (d: Date) =>
   d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Accra" });
 
@@ -144,141 +175,82 @@ export default async function Reports({ params, searchParams }: {
       {viewingPast && <TermBanner term={{ ...term, state: termState(term), year: { name: yearName.get(term.yearId) ?? "" } }} />}
 
       {/* ── sent to parents: one row per test, its own state, nothing blurred ── */}
-      <Card className="mb-5">
-        <h2 className="font-semibold">{viewingPast ? `Sent to parents in ${term.name}` : "Sent to parents this term"}</h2>
-        <p className="mt-1 text-[13.5px] text-muted-foreground">
-          Each test goes out on its own — families see exactly what has been sent and
-          nothing else. Every send carries the child&apos;s full record, every subject at once.
+      {/* ── sent to parents: one bordered row per send, same shape every time ── */}
+      <section className="mb-6">
+        <div className="mb-2.5 flex items-baseline justify-between gap-3">
+          <h2 className="text-[16px] font-semibold">{viewingPast ? `Sent to parents in ${term.name}` : "Sent to parents this term"}</h2>
+          <Link href="/assessment/matrix" className="shrink-0 text-[13.5px] font-medium text-primary">Missing scores →</Link>
+        </div>
+        <p className="mb-3 text-[13.5px] text-muted-foreground">
+          Each test goes out on its own, with the child&apos;s full record. There is no un-send.
         </p>
-        <div className="mt-3 space-y-4">
+        <ul className="space-y-2.5">
           {testSections.map((sec) => (
-            <div key={sec}>
-              <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">{SECTION_LABELS[sec as Section]}</p>
-              <ul className="divide-y divide-border">
-                {S.componentsFor(sec as Section).filter((c) => !c.isExam).map((c) => {
-                  const secClasses = testClasses.filter((cl) => S.sectionOfClass(cl) === sec);
-                  const readiness = secClasses.map((cl) => ({ cl, ...classReady(cl.id, c.id) }));
-                  const readyCount = readiness.filter((r) => r.ready).length;
-                  const gaps = readiness.filter((r) => !r.ready);
-                  const allReady = secClasses.length > 0 && gaps.length === 0;
-                  const p = pubBy.get(c.id);
-                  return (
-                    <li key={c.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
-                      <span className="w-44 shrink-0 font-medium">{c.name}</span>
-                      {p ? (
-                        <>
-                          <Badge tone="success">sent ✓</Badge>
-                          <span className="text-[13.5px] text-muted-foreground">
-                            {fmtDate(p.publishedAt)} by {p.publishedBy}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className={`text-[13.5px] ${allReady ? "text-success" : "text-warning"}`} data-nums="">
-                            {allReady ? "every class ready" : `${readyCount} of ${secClasses.length} classes ready`}
-                          </span>
-                          {gaps.length > 0 && (
-                            <span className="basis-full text-[13.5px] text-muted-foreground sm:basis-auto">
-                              waiting on {gaps.map((g) => `${g.cl.name} (${g.done}/${g.total} subjects)`).join(", ")}
-                            </span>
-                          )}
-                          {!viewingPast && (
-                            <form action={releaseComponent.bind(null, slug, c.id)} className="ml-auto">
-                              <ConfirmButton className={bigGhost} disabled={!allReady}
-                                title={`Send ${c.name} results to ${parents} parents?`}
-                                body="Every class has submitted. Parents get a message; there is no un-send."
-                                confirmLabel="Send">
-                                Send to parents
-                              </ConfirmButton>
-                            </form>
-                          )}
-                        </>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+            S.componentsFor(sec as Section).filter((c) => !c.isExam).map((c) => {
+              const secClasses = testClasses.filter((cl) => S.sectionOfClass(cl) === sec);
+              const readiness = secClasses.map((cl) => ({ cl, ...classReady(cl.id, c.id) }));
+              const readyCount = readiness.filter((r) => r.ready).length;
+              const gaps = readiness.filter((r) => !r.ready);
+              const allReady = secClasses.length > 0 && gaps.length === 0;
+              const p = pubBy.get(c.id);
+              return (
+                <SendRow key={`${sec}:${c.id}`} title={`${SECTION_LABELS[sec as Section]} · ${c.name}`}
+                  sent={p ? <>{fmtDate(p.publishedAt)} by {p.publishedBy}</> : undefined}
+                  status={<Ready n={readyCount} of={secClasses.length} />}
+                  waiting={!p && gaps.length > 0 ? <>Waiting on {gaps.map((g) => `${g.cl.name} (${g.done}/${g.total})`).join(", ")}</> : undefined}
+                  action={!p && !viewingPast ? (
+                    <form action={releaseComponent.bind(null, slug, c.id)}>
+                      <ConfirmButton className={bigGhost} disabled={!allReady}
+                        title={`Send ${c.name} results to ${parents} parents?`}
+                        body="Every class has submitted. Parents get a message; there is no un-send."
+                        confirmLabel="Send">
+                        Send to parents
+                      </ConfirmButton>
+                    </form>
+                  ) : undefined} />
+              );
+            })
           ))}
 
           {/* preschool — skills-based, so their send IS the end-of-term report card */}
           {preClasses.length > 0 && (
-            <div className="border-t border-border pt-3">
-              <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Preschool</p>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="w-44 shrink-0 font-medium">Skills report (end of term)</span>
-                {preReleased.length > 0 ? (
-                  <>
-                    <Badge tone="success">sent ✓</Badge>
-                    <span className="text-[13.5px] text-muted-foreground" data-nums="">
-                      {preReleased.length} of {preKidIds.length} children
-                      {preReleasedAt ? ` · ${fmtDate(preReleasedAt)}` : ""}
-                    </span>
-                  </>
-                ) : (
-                  <span className={`text-[13.5px] ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "text-success" : "text-warning"}`} data-nums="">
-                    {ratedCount} of {preKidIds.length} children rated on the skills grid
-                  </span>
-                )}
-                {!viewingPast && (
-                  <form action={releasePreschoolReports.bind(null, slug)} className="ml-auto">
-                    <ConfirmButton className={bigGhost}
-                      title={`Send preschool skills reports to ${parents} parents?`}
-                      body={`${ratedCount} of ${preKidIds.length} children have been rated; children with nothing rated are skipped. Parents get a message.`}
-                      confirmLabel="Send">
-                      {preReleased.length ? "Send again" : "Send to parents"}
-                    </ConfirmButton>
-                  </form>
-                )}
-              </div>
-              <p className="mt-1.5 text-[13px] text-muted-foreground">
-                Preschool is assessed on the skills grid, not tests — this one send gives each
-                child&apos;s Learning &amp; Development record to their family. Children with nothing
-                rated yet are skipped, and the term stays open.
-              </p>
-            </div>
+            <SendRow title="Preschool · skills report"
+              sent={preReleased.length > 0 ? <>{preReleased.length} of {preKidIds.length} children{preReleasedAt ? ` · ${fmtDate(preReleasedAt)}` : ""}</> : undefined}
+              status={<span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${ratedCount === preKidIds.length && preKidIds.length > 0 ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`} data-nums="">{ratedCount} of {preKidIds.length} rated</span>}
+              note="Children with nothing rated yet are skipped; the term stays open."
+              action={!viewingPast ? (
+                <form action={releasePreschoolReports.bind(null, slug)}>
+                  <ConfirmButton className={bigGhost}
+                    title={`Send preschool skills reports to ${parents} parents?`}
+                    body={`${ratedCount} of ${preKidIds.length} children have been rated; children with nothing rated are skipped. Parents get a message.`}
+                    confirmLabel="Send">
+                    {preReleased.length ? "Send again" : "Send to parents"}
+                  </ConfirmButton>
+                </form>
+              ) : undefined} />
           )}
 
           {/* end-of-term report card — its own, separate send */}
-          <div className="border-t border-border pt-3">
-            <p className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">End-of-term report card</p>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="w-44 shrink-0 font-medium">Report cards (incl. exam)</span>
-              {reportsN > 0 ? (
-                <>
-                  <Badge tone="success">sent ✓</Badge>
-                  <span className="text-[13.5px] text-muted-foreground" data-nums="">
-                    {reportsN} report cards with families{term.scoresLocked ? " · scores locked" : " · scores unlocked"}
-                  </span>
-                </>
-              ) : (
-                <span className={`text-[13.5px] ${unmarked.length ? "text-warning" : "text-success"}`} data-nums="">
-                  {testClasses.length - unmarked.length} of {testClasses.length} classes ready
-                </span>
-              )}
-              {unmarked.length > 0 && (
-                <span className="basis-full text-[13.5px] text-muted-foreground sm:basis-auto">
-                  not fully marked: {unmarked.join(", ")}
-                </span>
-              )}
-              {!viewingPast && (
-                <form action={releaseTermReports.bind(null, slug)} className="ml-auto">
-                  <ConfirmButton className={reportsN ? bigGhost : bigBtn}
-                    title={`Send ${term.name} report cards to parents?`}
-                    body={`${testClasses.length + preClasses.length} classes.${unmarked.length
-                      ? ` ${unmarked.join(", ")} ${unmarked.length === 1 ? "is" : "are"} not fully marked and will go out incomplete.` : ""} Scores lock after this. ${parents} parents get a message.`}
-                    confirmLabel="Send" cancelLabel="Wait">
-                    {reportsN ? "Send again" : "Send report cards to parents"}
-                  </ConfirmButton>
-                </form>
-              )}
-            </div>
-            <p className="mt-1.5 text-[13px] text-muted-foreground">
-              Sending the end-of-term report card works out every child&apos;s class work + exam totals,
-              locks the term&apos;s scores, and includes the preschool skills reports.
-              {" "}<Link href="/assessment/matrix" className="font-medium text-primary">Which scores are still missing →</Link>
-            </p>
+          <SendRow title="End-of-term report card"
+            sent={reportsN > 0 ? <>{reportsN} report cards with families{term.scoresLocked ? " · scores locked" : " · scores unlocked"}</> : undefined}
+            status={<Ready n={testClasses.length - unmarked.length} of={testClasses.length} />}
+            waiting={unmarked.length > 0 ? <>Not fully marked: {unmarked.join(", ")}</> : undefined}
+            note="Works out class work + exam totals, locks the term's scores, and includes the preschool reports."
+            action={!viewingPast ? (
+              <form action={releaseTermReports.bind(null, slug)}>
+                <ConfirmButton className={reportsN ? bigGhost : bigBtn}
+                  title={`Send ${term.name} report cards to parents?`}
+                  body={`${testClasses.length + preClasses.length} classes.${unmarked.length
+                    ? ` ${unmarked.join(", ")} ${unmarked.length === 1 ? "is" : "are"} not fully marked and will go out incomplete.` : ""} Scores lock after this. ${parents} parents get a message.`}
+                  confirmLabel="Send" cancelLabel="Wait">
+                  {reportsN ? "Send again" : "Send report cards"}
+                </ConfirmButton>
+              </form>
+            ) : undefined} />
+        </ul>
 
+        <div>
+          <div>
             {/* unlock — the lock is on the term, so this reopens every class; the
                 class named here is what the audit line records */}
             {!viewingPast && term.scoresLocked && (
@@ -307,7 +279,7 @@ export default async function Reports({ params, searchParams }: {
             )}
           </div>
         </div>
-      </Card>
+      </section>
 
       {/* ── how the paper looks ── */}
       <Card className="mb-5">
@@ -339,7 +311,7 @@ export default async function Reports({ params, searchParams }: {
         <p className="mt-1 text-[13.5px] text-muted-foreground">
           Open any child&apos;s record exactly as it prints. Reading only — marks are edited under Assessment.
         </p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="chip-row mt-3 flex flex-wrap gap-1.5">
           {allClasses.map((c) => (
             <Link key={c.id} href={`?c=${c.id}&t=${term.id}`}
               className={`inline-flex min-h-11 items-center rounded-md border px-3 text-[13.5px] font-medium sm:min-h-0 sm:py-1 ${c.id === activeClass?.id
@@ -350,9 +322,9 @@ export default async function Reports({ params, searchParams }: {
         </div>
         <ul className="mt-3 divide-y divide-border text-sm">
           {roster.map((r) => (
-            <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+            <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2.5">
               <span className="font-medium">{r.lastName}, {r.firstName}</span>
-              <span className="flex gap-3 text-[13.5px] font-medium">
+              <span className="flex gap-3 text-[13.5px] font-medium max-sm:basis-full">
                 <Link href={`/students/${r.id}/performance/${term.id}`} className="text-primary">Record →</Link>
                 {withReport.has(r.id) && (
                   <Link href={`/students/${r.id}/report/${term.id}`} className="text-primary">Report card →</Link>

@@ -251,6 +251,13 @@ table, [data-nums] { font-variant-numeric: tabular-nums; }
 @media (width < 48rem) {
   :root, .light-scope { --radius: 12px; }
 
+  /* a grid cell's default min-width is "auto": one wide table inside a card
+     inside a grid makes the whole page scroll sideways. Cells shrink instead,
+     and the table scrolls inside its own card. The main column also clips
+     anything that still overflows, so the page itself never pans. */
+  .grid > * { min-width: 0; }
+  main { overflow-x: clip; }
+
   /* a row of chips never wraps on a phone: it scrolls sideways, snapping,
      with the scrollbar hidden. On wider screens the same row wraps. */
   .chip-row { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 2px; }
