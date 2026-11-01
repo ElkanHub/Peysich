@@ -145,7 +145,7 @@ export default async function Settings({ params, searchParams }: {
       )}
 
       {/* one page, one job — settings split by decision, tab in the URL */}
-      <nav className="mb-5 flex flex-wrap gap-1 border-b border-border">
+      <nav className="chip-row mb-5 flex flex-wrap gap-1 border-b border-border">
         {([["academics", "Academics", "/settings"], ["school", "School & identity", "/settings?tab=school"],
           ["team", "People", "/settings?tab=team"], ["yearend", "End of year", "/settings?tab=yearend"]] as const)
           .map(([key, label, href]) => (
@@ -174,22 +174,30 @@ export default async function Settings({ params, searchParams }: {
                   const status = termState(t, today);
                   return (
                     <form key={t.id} action={updateTermDates.bind(null, slug, t.id)}
-                      className="flex flex-wrap items-end gap-2 rounded-lg border border-border px-3 py-2.5">
-                      <span className="w-20 pb-2 text-sm font-medium">{t.name}</span>
+                      className="grid grid-cols-2 items-end gap-2 rounded-lg border border-border px-3 py-2.5 sm:flex sm:flex-wrap">
+                      <span className="col-span-2 flex items-center gap-2 text-sm font-medium sm:w-auto sm:pb-2">
+                        {t.name}
+                        <span className="sm:hidden">
+                          {status === "open" && <Badge tone="success">open</Badge>}
+                          {status === "ended" && <Badge tone="warning">ended</Badge>}
+                          {status === "closed" && <Badge tone="default">closed</Badge>}
+                          {status === "upcoming" && <Badge tone="brand">upcoming</Badge>}
+                        </span>
+                      </span>
                       <Field label="First day">
                         <input name="startsAt" type="date" defaultValue={t.startsAt} required className={inputCls} />
                       </Field>
                       <Field label="Last day">
                         <input name="endsAt" type="date" defaultValue={t.endsAt} required className={inputCls} />
                       </Field>
-                      <span className="pb-2.5 text-[13px] text-muted-foreground" data-nums="">{weeks} weeks</span>
-                      <span className="pb-2">
+                      <span className="text-[13px] text-muted-foreground sm:pb-2.5" data-nums="">{weeks} weeks</span>
+                      <span className="hidden sm:block sm:pb-2">
                         {status === "open" && <Badge tone="success">open</Badge>}
                         {status === "ended" && <Badge tone="warning">ended · close it from Home</Badge>}
                         {status === "closed" && <Badge tone="default">closed · in Archives</Badge>}
                         {status === "upcoming" && <Badge tone="brand">upcoming</Badge>}
                       </span>
-                      {status !== "closed" && <SubmitButton className={btnGhostCls + " ml-auto"} pendingText="Saving…">Save dates</SubmitButton>}
+                      {status !== "closed" && <SubmitButton className={btnGhostCls + " justify-self-end sm:ml-auto"} pendingText="Saving…">Save dates</SubmitButton>}
                     </form>
                   );
                 })}
@@ -202,8 +210,8 @@ export default async function Settings({ params, searchParams }: {
             <p className="mt-1 text-[13px] text-muted-foreground">A reopened term leaves Archives until it is closed again. Every reopen is recorded with your name and the reason.</p>
             {tms.filter((t) => termState(t, today) === "closed").sort((a, c) => c.startsAt.localeCompare(a.startsAt)).map((t) => (
               <form key={t.id} action={reopenTermAction.bind(null, slug, t.id)} className="mt-2 flex flex-wrap items-end gap-2">
-                <span className="w-36 pb-2 text-sm font-medium">{t.name} · {yrs.find((y) => y.id === t.yearId)?.name}</span>
-                <Field label="Why"><input name="reason" required placeholder="a mark on one report card" className={inputCls + " w-64"} /></Field>
+                <span className="basis-full text-sm font-medium sm:w-36 sm:basis-auto sm:pb-2">{t.name} · {yrs.find((y) => y.id === t.yearId)?.name}</span>
+                <div className="min-w-0 flex-1 sm:flex-none"><Field label="Why"><input name="reason" required placeholder="a mark on one report card" className={inputCls + " sm:w-64"} /></Field></div>
                 <SubmitButton className={btnGhostCls} pendingText="Reopening…">Reopen</SubmitButton>
               </form>
             ))}
@@ -213,11 +221,14 @@ export default async function Settings({ params, searchParams }: {
           A term <b>opens by itself on its first day</b> and runs to its last day. After that you have three weeks for
           corrections, then you <b>close it from Home</b> and it goes to Archives. One term is open at a time.
         </p>
-        <form action={createYear.bind(null, slug)} className="grid grid-cols-3 gap-3 border-t border-border pt-4">
+        <form action={createYear.bind(null, slug)} className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-3">
           <Field label="New year name"><input name="name" placeholder="2027/2028" required className={inputCls} /></Field>
           <Field label="Starts"><input name="startsAt" type="date" required className={inputCls} /></Field>
           <Field label="Ends"><input name="endsAt" type="date" required className={inputCls} /></Field>
-          <SubmitButton className={btnCls + " col-span-3"}>Create year (3 terms auto-created — adjust their dates above)</SubmitButton>
+          <div className="sm:col-span-3">
+            <SubmitButton className={btnCls + " w-full sm:w-auto"}>Create year</SubmitButton>
+            <p className="mt-1.5 text-[13px] text-muted-foreground">Three terms are created with it — adjust their dates above.</p>
+          </div>
         </form>
       </Section>
 
@@ -309,7 +320,7 @@ export default async function Settings({ params, searchParams }: {
         {lvs.length === 0 ? (
           <form action={setupLevels.bind(null, slug)}>
             <p className="text-sm text-muted-foreground">Tick the levels your school runs — one class per level and the standard subject list are created for you.</p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
               {LEVEL_TEMPLATE.map(([code, name]) => (
                 <label key={code} className="flex items-center gap-2">
                   <input type="checkbox" name={`lv_${code}`} defaultChecked /> {name}
@@ -329,9 +340,9 @@ export default async function Settings({ params, searchParams }: {
                     return (
                       <div key={l.id} className="rounded-lg border border-border p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <form action={updateLevel.bind(null, slug, l.id)} className="flex flex-wrap items-center gap-2">
+                          <form action={updateLevel.bind(null, slug, l.id)} className="flex min-w-0 flex-wrap items-center gap-2">
                             <input name="name" defaultValue={l.name}
-                              className="w-36 rounded-md border border-border px-2 py-1 text-sm font-medium" />
+                              className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-sm font-medium sm:w-36 sm:flex-none" />
                             <label className="flex items-center gap-1.5 text-[13px] text-muted-foreground"
                               title="Preschool levels use skills-based report cards instead of scored subjects">
                               <input type="checkbox" name="preschool" defaultChecked={l.preschool} /> skills-based reports
@@ -354,13 +365,13 @@ export default async function Settings({ params, searchParams }: {
                             const enrols = enrolsOf.get(c.id) ?? 0;
                             const removable = kids === 0 && enrols === 0;
                             return (
-                              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5">
+                              <div key={c.id} className="grid grid-cols-1 gap-2 rounded-md bg-muted/40 px-2.5 py-2 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
                                 <form action={renameClass.bind(null, slug, c.id)} className="flex items-center gap-1.5">
                                   <input name="name" defaultValue={c.name}
-                                    className="w-32 rounded-md border border-border px-2 py-1 text-xs" />
-                                  <SubmitButton className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">Rename</SubmitButton>
+                                    className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-[13px] sm:w-32 sm:flex-none sm:py-1 sm:text-xs" />
+                                  <SubmitButton className="rounded border border-border px-2 py-1.5 text-[12px] hover:bg-muted sm:py-1">Rename</SubmitButton>
                                 </form>
-                                <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                                <span className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
                                   <span data-nums="">{kids} students</span>
                                   <span>{tchs.find((t) => t.id === c.classTeacherId)?.name ?? "no class teacher"}</span>
                                   <form action={setClassRoom.bind(null, slug, c.id)} className="flex items-center gap-1">
@@ -386,7 +397,7 @@ export default async function Settings({ params, searchParams }: {
                           <form action={addClass.bind(null, slug)} className="flex items-center gap-1.5 pl-2.5">
                             <input type="hidden" name="levelId" value={l.id} />
                             <input name="name" placeholder={`${l.name} B`} required
-                              className="w-32 rounded-md border border-dashed border-border px-2 py-1 text-xs" />
+                              className="min-w-0 flex-1 rounded-md border border-dashed border-border px-2 py-1.5 text-[13px] sm:w-32 sm:flex-none sm:py-1 sm:text-xs" />
                             <SubmitButton className="rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">+ Add class</SubmitButton>
                           </form>
                         </div>
@@ -396,7 +407,7 @@ export default async function Settings({ params, searchParams }: {
                 </div>
               </div>
             ))}
-            <form action={addLevel.bind(null, slug)} className="grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
+            <form action={addLevel.bind(null, slug)} className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-4">
               <Field label="New level name">
                 <input name="name" required list="level-suggestions" placeholder="Basic 7 (B7)" className={inputCls} />
                 <datalist id="level-suggestions">
@@ -436,9 +447,9 @@ export default async function Settings({ params, searchParams }: {
             return (
               <li key={sub.id} className="py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <form action={renameSubject.bind(null, slug, sub.id)} className="flex items-center gap-1.5">
+                  <form action={renameSubject.bind(null, slug, sub.id)} className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
                     <input name="name" defaultValue={sub.name}
-                      className="w-52 rounded-md border border-border px-2 py-1 text-sm" />
+                      className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-sm sm:w-52 sm:flex-none sm:py-1" />
                     <SubmitButton className="rounded border border-border px-2 py-1 text-xs hover:bg-muted">Rename</SubmitButton>
                   </form>
                   <span className="flex items-center gap-2">
@@ -476,7 +487,7 @@ export default async function Settings({ params, searchParams }: {
           })}
         </ul>
         <form action={addSubject.bind(null, slug)} className="mt-3 flex items-end gap-2 border-t border-border pt-3">
-          <Field label="New subject"><input name="name" required placeholder="French" className={inputCls} /></Field>
+          <div className="min-w-0 flex-1 sm:flex-none"><Field label="New subject"><input name="name" required placeholder="French" className={inputCls} /></Field></div>
           <SubmitButton className={btnGhostCls}>Add subject</SubmitButton>
         </form>
         <p className="mt-3">
@@ -511,7 +522,7 @@ export default async function Settings({ params, searchParams }: {
             {rms.map((r) => (
               <li key={r.id} className="rounded-md border border-border px-3 py-2">
                 <form action={updateRoom.bind(null, slug, r.id)}
-                  className="grid grid-cols-2 items-end gap-2 sm:grid-cols-5">
+                  className="grid grid-cols-1 items-end gap-2 sm:grid-cols-5">
                   <Field label="Name"><input name="name" defaultValue={r.name} className={inputCls} /></Field>
                   <Field label="Type">
                     <select name="kind" defaultValue={r.kind} className={inputCls}>
@@ -531,7 +542,7 @@ export default async function Settings({ params, searchParams }: {
             ))}
           </ul>
         )}
-        <form action={addRoom.bind(null, slug)} className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
+        <form action={addRoom.bind(null, slug)} className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-4">
           <Field label="Room name"><input name="name" required placeholder="Science Lab" className={inputCls} /></Field>
           <Field label="Type">
             <select name="kind" className={inputCls}>
@@ -540,7 +551,7 @@ export default async function Settings({ params, searchParams }: {
           </Field>
           <Field label="Seats"><input name="capacity" type="number" min={1} placeholder="35" className={inputCls} /></Field>
           <Field label="Amenities / notes"><input name="notes" placeholder="Block B, upstairs" className={inputCls} /></Field>
-          <SubmitButton className={btnGhostCls + " col-span-2 sm:col-span-4"}>Add room</SubmitButton>
+          <SubmitButton className={btnGhostCls + " sm:col-span-4"}>Add room</SubmitButton>
         </form>
       </Section>
 
@@ -572,7 +583,7 @@ export default async function Settings({ params, searchParams }: {
       {/* ── 9 · branding ── */}
       <Section title="Branding & identity"
         hint="Logo, colours, motto and contact lines — on reports, invoices, emails and SMS">
-        <form action={saveBranding.bind(null, slug)} className="grid grid-cols-2 gap-3">
+        <form action={saveBranding.bind(null, slug)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Motto"><input name="motto" defaultValue={b.motto} className={inputCls} /></Field>
           <Field label="School colour (reports, letters & receipts)">
             <SchoolColorPicker defaultValue={b.primaryColor || "#5E1D3E"} />
@@ -586,7 +597,7 @@ export default async function Settings({ params, searchParams }: {
           <Field label="Email"><input name="email" defaultValue={b.email} className={inputCls} /></Field>
           <Field label="The name parents see on SMS (11 letters max)"><input name="smsSenderId" defaultValue={b.smsSenderId} maxLength={11} className={inputCls} /></Field>
           <Field label="Head's WhatsApp number (SchoolSpec writes here about the plan)"><input name="ownerPhone" type="tel" defaultValue={school.ownerPhone ?? ""} className={inputCls} /></Field>
-          <SubmitButton className={btnCls + " col-span-2"} pendingText="Saving…">Save branding</SubmitButton>
+          <SubmitButton className={btnCls + " sm:col-span-2"} pendingText="Saving…">Save branding</SubmitButton>
         </form>
         <div className="mt-4"><LogoUploader slug={slug} enabled={r2Enabled} currentUrl={logoUrl} /></div>
       </Section>

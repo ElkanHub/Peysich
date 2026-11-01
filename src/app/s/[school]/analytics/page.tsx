@@ -60,7 +60,7 @@ export default async function Analytics({ params, searchParams }: {
         </a>
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-0.5 border-b-2 border-border">
+      <div className="chip-row mb-5 flex flex-wrap gap-0.5 border-b-2 border-border">
         {TABS.map((t) => (
           <Link key={t.key} href={t.key ? `/analytics?tab=${t.key}` : "/analytics"}
             className={`-mb-0.5 border-b-2 px-3.5 py-2 text-[13.5px] font-semibold ${tab === t.key

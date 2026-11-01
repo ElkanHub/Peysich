@@ -38,6 +38,8 @@ const initials = (n: string) => n.split(" ").map((w) => w[0]).slice(0, 2).join("
 
 export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cells }: MatrixProps) {
   const [mode, setMode] = useState<"main" | "assistant">("main");
+  // a phone has no drag: tap a name to pick it up ("armed"), then tap where it goes
+  const [armed, setArmed] = useState<string | null>(null);
   const [sel, setSel] = useState<{ subjectId: string; classIds: string[] }>({ subjectId: "", classIds: [] });
   const [popover, setPopover] = useState<{ subjectId: string; classId: string } | null>(null);
   const [query, setQuery] = useState("");
@@ -57,7 +59,7 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
       if (r.ok) say(`${t?.name ?? "Teacher"} → ${subjects.find((s) => s.id === subjectId)?.name}, ` +
         `${classIds.length} class${classIds.length > 1 ? "es" : ""} (${mode})`);
     });
-    clearSel(); setPopover(null); setQuery("");
+    clearSel(); setPopover(null); setQuery(""); setArmed(null);
   };
   const assignClass = (teacherId: string, classId: string) => {
     const t = teachers.find((x) => x.id === teacherId);
@@ -66,8 +68,26 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
       if (r.ok) say(`${t?.name} → ${columns.find((c) => c.id === classId)?.name} ` +
         `(${mode === "main" ? "class teacher — all subjects" : "assistant"})`);
     });
-    setPopover(null); setQuery("");
+    setPopover(null); setQuery(""); setArmed(null);
   };
+  /** One chip in the drawer: draggable with a mouse, tap-to-arm with a finger. */
+  const chip = (t: MatrixTeacher, assigned: boolean) => (
+    <button key={t.id} type="button" draggable
+      onDragStart={(e) => { dragId.current = t.id; e.dataTransfer.setData("text/plain", t.id); }}
+      onDragEnd={() => { dragId.current = null; }}
+      onClick={() => setArmed((a) => (a === t.id ? null : t.id))}
+      aria-pressed={armed === t.id}
+      title={armed === t.id ? "Now tap a cell" : `${t.name} — drag into the grid, or tap then tap a cell`}
+      className={`inline-flex min-h-9 cursor-grab items-center gap-1.5 rounded-full border-[1.5px] py-0.5 pl-1 pr-2.5 text-[12.5px] font-semibold transition-transform hover:-translate-y-px active:cursor-grabbing ${
+        armed === t.id ? "border-primary bg-brand-container text-on-brand-container ring-2 ring-primary/30"
+          : assigned ? "border-border bg-muted/60 opacity-85" : "border-border-strong bg-card"}`}>
+      <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
+        style={{ background: t.color }}>{initials(t.name)}</span>
+      {t.name}
+      {assigned && <><span className="font-bold text-success">✓</span>
+        <span className="text-[10.5px] font-medium text-faint" data-nums="">{t.load}</span></>}
+    </button>
+  );
 
   // coverage: CT columns need a main; subject cells need a resolved main
   const coverage = useMemo(() => {
@@ -86,21 +106,11 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
   return (
     <div onPointerUp={() => { sweeping.current = false; }} className="relative">
       {/* ── the teacher drawer ── */}
-      <div className="sticky top-12 z-20 -mx-1 mb-3 rounded-lg border border-border bg-card/95 px-3 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur">
+      <div className="sticky top-[calc(3.5rem+var(--sat))] z-20 -mx-1 mb-3 rounded-lg border border-border bg-card/95 px-3 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur lg:top-12">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">To assign</span>
-          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
-            {teachers.filter((t) => t.load === 0).map((t) => (
-              <span key={t.id} draggable
-                onDragStart={(e) => { dragId.current = t.id; e.dataTransfer.setData("text/plain", t.id); }}
-                onDragEnd={() => { dragId.current = null; }}
-                title={`${t.name} — drag into the grid`}
-                className="inline-flex cursor-grab items-center gap-1.5 rounded-full border-[1.5px] border-border-strong bg-card py-0.5 pl-1 pr-2.5 text-[12.5px] font-semibold transition-transform hover:-translate-y-px active:cursor-grabbing">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: t.color }}>{initials(t.name)}</span>
-                {t.name}
-              </span>
-            ))}
+          <div className="chip-row flex min-w-0 flex-1 flex-wrap gap-1.5">
+            {teachers.filter((t) => t.load === 0).map((t) => chip(t, false))}
             {teachers.every((t) => t.load > 0) && (
               <span className="py-0.5 text-[13px] font-medium text-success">Everyone has a role ✓</span>
             )}
@@ -121,26 +131,20 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
             <summary className="cursor-pointer text-[11.5px] font-semibold text-muted-foreground">
               Assigned · {teachers.filter((t) => t.load > 0).length} — drag one out again for another role
             </summary>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {teachers.filter((t) => t.load > 0).map((t) => (
-                <span key={t.id} draggable
-                  onDragStart={(e) => { dragId.current = t.id; e.dataTransfer.setData("text/plain", t.id); }}
-                  onDragEnd={() => { dragId.current = null; }}
-                  title={`${t.name} · ${t.load} role${t.load === 1 ? "" : "s"} — drag for another`}
-                  className="inline-flex cursor-grab items-center gap-1.5 rounded-full border-[1.5px] border-border bg-muted/60 py-0.5 pl-1 pr-2.5 text-[12.5px] font-semibold opacity-85 transition-transform hover:-translate-y-px active:cursor-grabbing">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                    style={{ background: t.color }}>{initials(t.name)}</span>
-                  {t.name}
-                  <span className="font-bold text-success">✓</span>
-                  <span className="text-[10.5px] font-medium text-faint" data-nums="">{t.load}</span>
-                </span>
-              ))}
+            <div className="chip-row mt-1.5 flex flex-wrap gap-1.5">
+              {teachers.filter((t) => t.load > 0).map((t) => chip(t, true))}
             </div>
           </details>
         )}
         <p className="mt-1 text-[12px] text-muted-foreground" data-nums="">
-          <b className="text-foreground">Drag</b> a name in, or <b className="text-foreground">click a cell to type</b>.
-          Sweep across a subject row to give one teacher several classes at once. Double-click clears.
+          {armed ? (
+            <b className="text-primary">{teachers.find((t) => t.id === armed)?.name} picked up — tap a class-teacher box or a subject cell. Tap the name again to put it down.</b>
+          ) : (
+            <>
+              <span className="max-md:hidden"><b className="text-foreground">Drag</b> a name in, or <b className="text-foreground">click a cell to type</b>. Sweep across a subject row to give one teacher several classes at once. Double-click clears.</span>
+              <span className="md:hidden"><b className="text-foreground">Tap a name</b>, then tap where it goes. Or tap a cell to type a name. Tap a filled cell twice to clear it.</span>
+            </>
+          )}
           <span className="ml-2 font-semibold text-primary">{coverage.done} of {coverage.total} covered</span>
           {pending && <span className="ml-2 text-warning">saving…</span>}
         </p>
@@ -172,9 +176,9 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
                       <div data-ctslot={c.id}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => { e.preventDefault(); if (dragId.current) assignClass(dragId.current, c.id); }}
-                        onClick={() => setPopover({ subjectId: "", classId: c.id })}
+                        onClick={() => { if (armed) assignClass(armed, c.id); else setPopover({ subjectId: "", classId: c.id }); }}
                         className={`relative mt-1 min-h-10 cursor-pointer rounded-md border-[1.5px] px-1 py-0.5 text-[10.5px] ${
-                          c.main ? "border-primary/40 bg-card" : "border-dashed border-primary/50 bg-card/60 text-primary/70"}`}>
+                          armed ? "border-primary bg-brand-soft" : c.main ? "border-primary/40 bg-card" : "border-dashed border-primary/50 bg-card/60 text-primary/70"}`}>
                         {c.main ? (
                           <>
                             <span className="group flex items-center justify-center gap-1 font-bold"
@@ -247,6 +251,7 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
                         setSel((s) => s.classIds.includes(col.id) ? s : { ...s, classIds: [...s.classIds, col.id] });
                       }}
                       onClick={() => {
+                        if (armed) { assignSubject(armed, sub.id, selected && sel.classIds.length > 1 ? sel.classIds : [col.id]); return; }
                         if (sel.classIds.length <= 1) { setPopover({ subjectId: sub.id, classId: col.id }); setSel({ subjectId: sub.id, classIds: [col.id] }); }
                       }}
                       onDoubleClick={() => {
@@ -261,7 +266,7 @@ export function AllocationMatrix({ slug, teachers, bands, columns, subjects, cel
                         assignSubject(dragId.current, sub.id, ids);
                       }}
                       className={`relative h-10 cursor-cell border-b border-r border-border text-center align-middle ${
-                        selected ? "bg-warning-soft shadow-[inset_0_0_0_1.5px_var(--warning)]" : "bg-card"}`}>
+                        selected ? "bg-warning-soft shadow-[inset_0_0_0_1.5px_var(--warning)]" : armed && !c.main ? "bg-brand-soft" : "bg-card"}`}>
                       {c.main ? (
                         <span title={`${c.main.name}${c.pinned ? " (pinned to this class)" : ""}${c.assistants.length ? ` + ${c.assistants.map((a) => a.name).join(", ")}` : ""} — double-click to clear`}
                           className={`absolute inset-y-1.5 flex items-center justify-center gap-1 overflow-hidden whitespace-nowrap text-[11px] font-bold text-white ${

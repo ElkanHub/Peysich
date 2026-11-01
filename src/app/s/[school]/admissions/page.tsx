@@ -91,7 +91,7 @@ export default async function Admissions({ params, searchParams }: {
           hasSeats ? undefined : "set capacity in Intake settings")}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
+      <div className="chip-row mb-4 flex flex-wrap items-center gap-1.5">
         <Link href="/admissions" className={`rounded-full px-3 py-1 text-[13px] font-medium ${!sp.lvl
           ? "bg-brand-container text-on-brand-container" : "border border-border hover:bg-muted"}`}>
           All levels
@@ -103,21 +103,29 @@ export default async function Admissions({ params, searchParams }: {
             {l.name}
           </Link>
         ))}
-        <form className="ml-auto" action="/admissions">
+        <form className="ml-auto max-md:hidden" action="/admissions">
           <input name="q" defaultValue={sp.q ?? ""} placeholder="Search name or phone…"
             className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] outline-none focus:border-primary" />
         </form>
       </div>
+      <form className="mb-4 md:hidden" action="/admissions">
+        <input name="q" defaultValue={sp.q ?? ""} placeholder="Search name or phone…"
+          className="h-10 w-full rounded-md border border-border bg-card px-3.5 text-[15px] outline-none focus:border-primary" />
+      </form>
 
       {rows.length === 0 ? (
-        <Empty title="No applications yet"
+        <Empty art="empty-students" title="No applications yet"
           hint="Add the first one — a walk-in takes 30 seconds with just a name, level and guardian phone." />
       ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        /* the pipeline: four stages left to right. Below lg it is one row that
+           scrolls sideways — each column most of the screen wide, snapping —
+           so the stages keep their order and more cards only make a column
+           taller, never the page wider. */
+        <div className="gap-3 max-lg:-mx-4 max-lg:flex max-lg:snap-x max-lg:snap-mandatory max-lg:overflow-x-auto max-lg:px-4 max-lg:pb-2 max-lg:[scrollbar-width:none] max-lg:[&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4">
           {STAGES.map((stage) => {
             const list = byStage(stage);
             return (
-              <div key={stage} className="rounded-lg border border-border bg-muted/50 p-2.5">
+              <div key={stage} className="rounded-lg border border-border bg-muted/50 p-2.5 max-lg:w-[min(80vw,320px)] max-lg:shrink-0 max-lg:snap-start">
                 <p className="mb-2 flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {STAGE_LABEL[stage]}
                   <span className="rounded-full border border-border bg-card px-2 text-[11px]" data-nums="">{list.length}</span>

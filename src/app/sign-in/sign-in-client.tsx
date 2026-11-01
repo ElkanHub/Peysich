@@ -5,7 +5,7 @@ import { authClient } from "@/lib/auth-client";
 import { useDeviceAccounts, rememberAccount, forgetAccount, type DeviceAccount } from "@/lib/device-accounts";
 import { useClientValue } from "@/pwa/client";
 import { Door, doorInputCls, doorBtnCls } from "@/ui/door";
-import { Turnstile, captchaHeaders } from "@/ui/turnstile";
+import { Turnstile, captchaHeaders, TURNSTILE_SITE_KEY } from "@/ui/turnstile";
 import { cn } from "@/lib/utils";
 
 const label = "block font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground";
@@ -29,6 +29,9 @@ export function SignInClient() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!navigator.onLine) { setError("You're offline. Signing in needs a connection — try again when you have one."); return; }
+    // the security check runs on its own; until it hands over a token the
+    // server will refuse, so say so instead of failing silently
+    if (TURNSTILE_SITE_KEY && !captcha) { setError("The security check hasn't finished yet — give it a second, then tap Sign in again."); return; }
     setPending(true); setError("");
     const id = email.trim();
     const fetchOptions = { headers: captchaHeaders(captcha) };

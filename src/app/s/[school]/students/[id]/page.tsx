@@ -63,26 +63,46 @@ export default async function StudentFile({ params, searchParams }: {
 
   return (
     <div className="max-w-3xl">
-      {/* file header — identity + THE primary action, always top-right */}
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-lg font-semibold text-primary">
+      {/* file header — identity + THE primary action, always top-right. On a
+          phone the photo is the hero: full width, ink gradient, the facts as
+          chips, and the actions in a row beneath. */}
+      <div className="mb-5 sm:flex sm:items-start sm:justify-between sm:gap-4">
+        <div className="relative -mx-4 overflow-hidden bg-ink text-white sm:mx-0 sm:flex sm:items-center sm:gap-4 sm:bg-transparent sm:text-foreground">
+          {photoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-top sm:hidden" />
+          )}
+          <div className="absolute inset-0 sm:hidden" style={{ background: "linear-gradient(180deg, rgb(26 18 24 / 0.15) 0%, rgb(26 18 24 / 0.55) 50%, rgb(26 18 24 / 0.94) 100%)" }} />
+          <span className="hidden h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-lg font-semibold text-primary sm:flex">
             {photoUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={photoUrl} alt="" className="h-full w-full object-cover" />
               : `${s.firstName[0]}${s.lastName[0]}`}
           </span>
-          <div>
-            <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+          <div className={cn("relative px-4 pb-4 sm:p-0", photoUrl ? "pt-40" : "pt-5")}>
+            {!photoUrl && (
+              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand-container text-[18px] font-semibold text-on-brand-container sm:hidden">
+                {s.firstName[0]}{s.lastName[0]}
+              </span>
+            )}
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-[#e9a9c9] sm:hidden" data-nums="">
+              {cls?.name ?? "no class"} · {s.admissionNo}{s.boarding ? " · boarder" : ""}
+            </p>
+            <h1 className="mt-1 text-[24px] font-bold leading-tight tracking-tight sm:mt-0 sm:text-[22px] sm:font-semibold">
               {s.firstName} {s.otherNames ? `${s.otherNames} ` : ""}{s.lastName}
             </h1>
-            <p className="mt-0.5 text-[14px] text-muted-foreground">
+            <p className="mt-0.5 hidden text-[14px] text-muted-foreground sm:block">
               {s.admissionNo} · {cls?.name ?? "no class"}{room ? ` (${room.name})` : ""} · <span className="capitalize">{s.sex}</span>
               <span className="ml-2"><Badge tone={s.status === "active" ? "success" : "default"}>{s.status}</Badge></span>
             </p>
+            <p className="chip-row mt-3 flex gap-2 sm:hidden">
+              <span className="rounded-full bg-white px-2.5 py-1 text-[12.5px] font-semibold capitalize text-primary">{s.status}</span>
+              <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[12.5px] font-medium capitalize backdrop-blur-sm">{s.sex}</span>
+              {room && <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[12.5px] font-medium backdrop-blur-sm">{room.name}</span>}
+            </p>
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="chip-row mt-3 flex gap-2 sm:mt-0 sm:shrink-0 sm:flex-wrap">
           {s.status === "active" && (
             <Link href={`/students/${id}/emergency`} className={btnCls + " bg-danger hover:bg-danger/90"}>Emergency</Link>
           )}
@@ -123,8 +143,8 @@ export default async function StudentFile({ params, searchParams }: {
         </div>
       )}
 
-      {/* tabs — URL state, stable order */}
-      <div className="mb-5 flex gap-1 border-b border-border">
+      {/* tabs — URL state, stable order; one scrolling row on a phone */}
+      <div className="chip-row mb-5 flex gap-1 border-b border-border">
         {visibleTabs.map((t) => (
           <Link key={t} href={`?tab=${t}`}
             className={cn("border-b-2 px-3.5 py-2 text-[14px] font-medium transition-colors",
@@ -146,8 +166,8 @@ export default async function StudentFile({ params, searchParams }: {
                 ["Previous school", s.previousSchool],
                 ["Day student / Boarder", s.boarding ? "Boarder" : "Day student"]].map(([l, v]) => (
                 <div key={String(l)} className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{l}</dt>
-                  <dd className="text-right">{v ?? "—"}</dd>
+                  <dt className="shrink-0 text-muted-foreground">{l}</dt>
+                  <dd className="min-w-0 break-words text-right">{v ?? "—"}</dd>
                 </div>
               ))}
             </dl>
@@ -156,10 +176,10 @@ export default async function StudentFile({ params, searchParams }: {
             <h2 className="font-semibold">Health & emergency</h2>
             <dl className="mt-2.5 space-y-1.5 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Blood group</dt><dd>{s.bloodGroup ?? "—"}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Medical notes</dt>
-                <dd className="text-right">{s.medicalNotes ?? "—"}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted-foreground">Emergency contact</dt>
-                <dd>{s.emergencyName ? `${s.emergencyName} · ${s.emergencyPhone ?? ""}` : "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="shrink-0 text-muted-foreground">Medical notes</dt>
+                <dd className="min-w-0 break-words text-right">{s.medicalNotes ?? "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="shrink-0 text-muted-foreground">Emergency contact</dt>
+                <dd className="min-w-0 break-words text-right">{s.emergencyName ? `${s.emergencyName} · ${s.emergencyPhone ?? ""}` : "—"}</dd></div>
             </dl>
             {s.medicalNotes && (
               <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning">
@@ -182,8 +202,8 @@ export default async function StudentFile({ params, searchParams }: {
                       {g.relation}{g.occupation ? ` · ${g.occupation}` : ""}
                     </span>
                   </span>
-                  <span className="flex items-center gap-2">
-                    <span className="whitespace-nowrap text-muted-foreground">{g.phone}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <a href={`tel:${g.phone.replace(/\s/g, "")}`} className="text-muted-foreground underline-offset-2 hover:underline" data-nums="">{g.phone}</a>
                     {isAdmin && (
                       <form action={unlinkChild.bind(null, slug, g.id, id)}>
                         <SubmitButton className="rounded border border-border px-1.5 py-0.5 text-[12px] text-danger hover:bg-muted">Unlink</SubmitButton>
@@ -251,7 +271,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
     </details>
   );
 }
-const SaveBtn = () => <SubmitButton className={btnGhostCls + " col-span-2 mt-1"} pendingText="Saving…">Save</SubmitButton>;
+const SaveBtn = () => <SubmitButton className={btnGhostCls + " sm:col-span-2 mt-1"} pendingText="Saving…">Save</SubmitButton>;
 
 /** Everything the one-screen Add form left out, folded away. Each group is
  *  its own form and writes only its own fields (updateStudentDetails). */
@@ -265,7 +285,7 @@ function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
       <p className="mt-0.5 text-[14px] text-muted-foreground">Open a group when you have the information. Nothing here is required.</p>
       <div className="mt-2">
         <Group title="Date of birth & ID">
-          <form action={save} className="grid grid-cols-2 gap-2.5">
+          <form action={save} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <Field label="Date of birth"><input name="dob" type="date" defaultValue={s.dob ?? ""} className={inputCls} /></Field>
             <Field label="National ID / birth cert no"><input name="idNumber" defaultValue={s.idNumber ?? ""} placeholder="GHA-XXXXXXXXX-X" className={inputCls} /></Field>
             <Field label="Other names"><input name="otherNames" defaultValue={s.otherNames ?? ""} className={inputCls} /></Field>
@@ -278,12 +298,12 @@ function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
             <Field label="Nationality"><input name="nationality" defaultValue={s.nationality ?? ""} placeholder="Ghanaian" className={inputCls} /></Field>
             <Field label="Hometown"><input name="hometown" defaultValue={s.hometown ?? ""} className={inputCls} /></Field>
             <Field label="Religion"><input name="religion" defaultValue={s.religion ?? ""} className={inputCls} /></Field>
-            <div className="col-span-2"><Field label="Residential address"><input name="address" defaultValue={s.address ?? ""} className={inputCls} /></Field></div>
+            <div className="sm:col-span-2"><Field label="Residential address"><input name="address" defaultValue={s.address ?? ""} className={inputCls} /></Field></div>
             <SaveBtn />
           </form>
         </Group>
         <Group title="Health">
-          <form action={save} className="grid grid-cols-2 gap-2.5">
+          <form action={save} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <Field label="Blood group">
               <select name="bloodGroup" defaultValue={s.bloodGroup ?? ""} className={inputCls}>
                 <option value="">Unknown</option>
@@ -291,7 +311,7 @@ function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
               </select>
             </Field>
             <div />
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Allergies, conditions, medication — teachers of the class see a flag">
                 <textarea name="medicalNotes" rows={3} defaultValue={s.medicalNotes ?? ""}
                   placeholder="e.g. Asthmatic — inhaler in school bag. No groundnuts." className={inputCls} />
@@ -301,8 +321,8 @@ function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
           </form>
         </Group>
         <Group title="Previous school">
-          <form action={save} className="grid grid-cols-2 gap-2.5">
-            <div className="col-span-2">
+          <form action={save} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
               <Field label="Previous school & last grade completed">
                 <input name="previousSchool" defaultValue={s.previousSchool ?? ""} placeholder="Sunrise Academy — completed B3" className={inputCls} />
               </Field>
@@ -321,18 +341,18 @@ function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
           {r2Enabled
             ? <DocumentUploader slug={slug} studentId={s.id} />
             : <p className="text-sm text-muted-foreground">Uploads switch on once file storage is set up — record paper originals below.</p>}
-          <form action={addStudentItem.bind(null, slug, s.id)} className="mt-4 grid grid-cols-2 gap-2.5 border-t border-border pt-4">
-            <p className="col-span-2 text-[13px] font-semibold">School items they are holding</p>
+          <form action={addStudentItem.bind(null, slug, s.id)} className="mt-4 grid grid-cols-1 gap-2.5 border-t border-border pt-4 sm:grid-cols-2">
+            <p className="sm:col-span-2 text-[13px] font-semibold">School items they are holding</p>
             <Field label="Item"><input name="itemName" placeholder="Birth certificate (original)" className={inputCls} /></Field>
             <Field label="Kept at (be precise)"><input name="location" placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
             <Field label="Received from"><input name="receivedFrom" className={inputCls} /></Field>
             <Field label="Note"><input name="note" className={inputCls} /></Field>
-            <SubmitButton className={btnGhostCls + " col-span-2 mt-1"} pendingText="Saving…">Record item</SubmitButton>
+            <SubmitButton className={btnGhostCls + " sm:col-span-2 mt-1"} pendingText="Saving…">Record item</SubmitButton>
           </form>
         </Group>
         <Group title="Second parent / emergency contact">
-          <form action={addGuardianToStudent.bind(null, slug, s.id)} className="grid grid-cols-2 gap-2.5">
-            <p className="col-span-2 text-[13px] font-semibold">{hasGuardian ? "Another parent or guardian" : "Parent or guardian"}</p>
+          <form action={addGuardianToStudent.bind(null, slug, s.id)} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <p className="sm:col-span-2 text-[13px] font-semibold">{hasGuardian ? "Another parent or guardian" : "Parent or guardian"}</p>
             <Field label="Full name"><input name="name" required className={inputCls} /></Field>
             <Field label="Phone (reuses an existing parent)"><input name="phone" required className={inputCls} /></Field>
             <Field label="Who">
@@ -348,13 +368,13 @@ function MoreDetails({ slug, s, photoUrl, hasGuardian }: {
                 <option value="portal">Uses the parent portal</option>
               </select>
             </Field>
-            <label className="col-span-2 flex items-center gap-2 text-[14px]">
+            <label className="sm:col-span-2 flex items-center gap-2 text-[14px]">
               <input type="checkbox" name="isPrimary" defaultChecked={!hasGuardian} /> Primary contact (billing & pickups)
             </label>
-            <SubmitButton className={btnGhostCls + " col-span-2 mt-1"} pendingText="Saving…">Add guardian</SubmitButton>
+            <SubmitButton className={btnGhostCls + " sm:col-span-2 mt-1"} pendingText="Saving…">Add guardian</SubmitButton>
           </form>
-          <form action={save} className="mt-4 grid grid-cols-2 gap-2.5 border-t border-border pt-4">
-            <p className="col-span-2 text-[13px] font-semibold">Emergency contact — who the school calls if no parent answers</p>
+          <form action={save} className="mt-4 grid grid-cols-1 gap-2.5 border-t border-border pt-4 sm:grid-cols-2">
+            <p className="sm:col-span-2 text-[13px] font-semibold">Emergency contact — who the school calls if no parent answers</p>
             <Field label="Name & relation"><input name="emergencyName" defaultValue={s.emergencyName ?? ""} placeholder="Uncle — Kwame Mensah" className={inputCls} /></Field>
             <Field label="Phone"><input name="emergencyPhone" defaultValue={s.emergencyPhone ?? ""} className={inputCls} /></Field>
             <SaveBtn />
@@ -599,12 +619,12 @@ async function DocumentsTab({ slug, schoolId, studentId, isAdmin }: {
           )}
         {isAdmin && (
           <form action={addStudentItem.bind(null, slug, studentId)}
-            className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
+            className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-2">
             <Field label="Item"><input name="itemName" required placeholder="Birth certificate (original)" className={inputCls} /></Field>
             <Field label="Kept at (be precise)"><input name="location" required placeholder="Office cabinet A · folder 12" className={inputCls} /></Field>
             <Field label="Received from"><input name="receivedFrom" placeholder="Mother — Akosua Mensah" className={inputCls} /></Field>
             <Field label="Note"><input name="note" className={inputCls} /></Field>
-            <SubmitButton className={btnGhostCls + " col-span-2"}>Record item</SubmitButton>
+            <SubmitButton className={btnGhostCls + " sm:col-span-2"}>Record item</SubmitButton>
           </form>
         )}
       </Card>
@@ -725,12 +745,12 @@ async function FeeArrangements({ slug, schoolId, studentId }: {
         </ul>
         {schols.some((sc) => !mineIds.has(sc.id)) && (
           <form action={grantScholarship.bind(null, slug, studentId)} className="mt-2 flex flex-wrap items-end gap-2">
-            <select name="scholarshipId" className={inputCls + " w-48"}>
+            <select name="scholarshipId" className={inputCls + " sm:w-48"}>
               {schols.filter((sc) => !mineIds.has(sc.id)).map((sc) => (
                 <option key={sc.id} value={sc.id}>{sc.name}</option>
               ))}
             </select>
-            <input name="note" placeholder="note (why)" className={inputCls + " w-40"} />
+            <input name="note" placeholder="note (why)" className={inputCls + " sm:w-40"} />
             <SubmitButton className={btnGhostCls} pendingText="…">Grant</SubmitButton>
           </form>
         )}
@@ -743,8 +763,8 @@ async function FeeArrangements({ slug, schoolId, studentId }: {
           bill — instantly if it&apos;s already issued.
         </p>
         <form action={addAdjustment.bind(null, slug, studentId)} className="mt-2 flex flex-wrap items-end gap-2">
-          <input name="amountGhs" type="number" step="0.01" required placeholder="±GHS" className={inputCls + " w-24"} />
-          <input name="reason" required placeholder="reason (required)" className={inputCls + " w-56"} />
+          <input name="amountGhs" type="number" step="0.01" required placeholder="±GHS" className={inputCls + " w-28 sm:w-24"} />
+          <input name="reason" required placeholder="reason (required)" className={inputCls + " sm:w-56"} />
           <SubmitButton className={btnGhostCls} pendingText="…">Apply</SubmitButton>
         </form>
         {adjs.length > 0 && (

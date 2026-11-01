@@ -18,7 +18,7 @@ export function GradingEditor({ slug, caWeight, bands }: {
 
   return (
     <div>
-      <div className="flex items-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
         <label>Class score (CA)</label>
         <input type="number" min={0} max={100} value={ca}
           onChange={(e) => setCa(Number(e.target.value))} className={inputCls + " w-20"} />
@@ -40,7 +40,7 @@ export function GradingEditor({ slug, caWeight, bands }: {
           ))}
         </tbody>
       </table></div>
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => setRows([...rows, { min: 0, grade: "", remark: "" }])}
           className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">Add band</button>
         <button disabled={pending} className={btnCls}
